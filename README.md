@@ -116,3 +116,11 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - **Guided tutorial:** seven short steps under Single Player / Settings, linking to the full rules and a base-game starting setup. This is a written walkthrough, not an interactive scripted card scenario.
 - **Accessibility/mobile:** high-contrast and larger-text settings, clear keyboard focus, skip-to-content, screen-reader turn/decision announcements, scalable game panels and mobile horizontal scrolling for card rows.
 - **Intentional limits:** A live backend is still required for multiplayer. Phase 8 stores **summaries**, not deterministic replay files; true replay, localization and automated cross-browser accessibility testing remain separate future work. Printed Tower symbols and some official combination adjudications remain unverified (see `docs/RULES_AUDIT.md`).
+
+## Phase 9 — production hosting integration
+
+- `npm run build:pages`: static Pages distribution including the solo engine and `runtime-config.js`; pass `ONIRAMA_API_ORIGIN=https://your-host` to enable the remote multiplayer API.
+- `npm start`: Node 22+ backend (single-instance, atomic persistent file in `ONIRAMA_DATA_DIR`). `/api/health` reports readiness.
+- `render.yaml`: optional paid Render Blueprint with a persistent disk. Actual provider setup and the GitHub Actions variable must be completed by the repo owner before multiplayer becomes live on Pages.
+- Detailed instructions: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Future work: [docs/PHASE9_RELEASE.md](docs/PHASE9_RELEASE.md).
+- **No accounts or login**, and no account features are planned. Local solo games and settings remain browser-local.

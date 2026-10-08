@@ -50,7 +50,7 @@ test('Viewer does not reveal deck or effect choices to nonactive cooperative pla
  const s=game(['mirrors','sphinx'],152,{},'coop');const other=viewFor(s,1);assert.equal(other.deck,undefined);assert.equal(other.moduleState,undefined);assert.ok(other.players[0].hand.length===0||other.players[0].hand.every(c=>c.kind==='hidden'));
 });
 test('GitHub Pages workflow publishes a static entry point and the client-side engine',()=>{
- const wf=readFileSync('.github/workflows/pages.yml','utf8');assert.match(wf,/npm run release:gate/);assert.match(wf,/cp -R public\/\. site\//);assert.match(wf,/cp -R engine site\/engine/);assert.ok(existsSync('public/index.html'));const html=readFileSync('public/index.html','utf8');assert.match(html,/href="\.\/styles\.css"/);assert.match(html,/src="\.\/app\.js"/);
+ const wf=readFileSync('.github/workflows/pages.yml','utf8');assert.match(wf,/npm run release:gate/);assert.match(wf,/npm run build:pages/);assert.match(readFileSync('scripts/build-pages.js','utf8'),/cpSync\('public'/);assert.match(readFileSync('scripts/build-pages.js','utf8'),/cpSync\('engine'/);assert.ok(existsSync('public/index.html'));const html=readFileSync('public/index.html','utf8');assert.match(html,/href="\.\/styles\.css"/);assert.match(html,/src="\.\/app\.js"/);
 });
 
 test('Diver as final deck card loses cleanly without adding an undefined card',()=>{

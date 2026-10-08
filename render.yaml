@@ -1,0 +1,22 @@
+# Render Blueprint: a single persistent Node instance is required.
+# Render's persistent disks require a paid instance. Never scale to multiple instances
+# with the file-backed session store.
+services:
+  - type: web
+    name: onirama-multiplayer
+    runtime: node
+    plan: starter
+    buildCommand: npm run release:gate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: onirama-sessions
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ONIRAMA_DATA_DIR
+        value: /var/data
+      - key: ONIRAMA_CORS_ORIGINS
+        value: https://sea4594.github.io

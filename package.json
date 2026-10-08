@@ -1,7 +1,7 @@
 {
   "name": "onirama",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Onirama: original-visuals solo and cooperative dream labyrinth web game",
   "engines": {
@@ -11,7 +11,8 @@
     "dev": "node --watch server/index.js",
     "start": "node server/index.js",
     "test": "node --test tests/*.test.js",
-    "check": "node --check engine/game.js && node --check engine/config.js && node --check engine/zones.js && node --check engine/effects.js && node --check engine/modules.js && node --check engine/cards.js && node --check server/index.js && node --check public/app.js && node --check public/guest-data.js && npm test",
-    "release:gate": "npm run check"
+    "check": "node --check engine/game.js && node --check engine/config.js && node --check engine/zones.js && node --check engine/effects.js && node --check engine/modules.js && node --check engine/cards.js && node --check server/index.js && node --check public/app.js && node --check public/guest-data.js && node --check scripts/build-pages.js && npm test",
+    "release:gate": "npm run check",
+    "build:pages": "node scripts/build-pages.js"
   }
 }

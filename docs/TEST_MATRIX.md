@@ -47,3 +47,6 @@
 - Phase 6 save migration for queued Mirror Doors and hidden state filtering in cooperative play.
 
 **Caveat:** The general simulation bot favors ordinary card play; it does not deliberately activate every expansion ability. Named regression tests cover specific interactions, but exhaustive publisher equivalence is not claimed. Browser rendering/full end-to-end tests remain Phase 8–9 obligations.
+
+## Phase 9 infrastructure
+Cross-origin CORS/preflight, invalid origins, host health, persisted room restart, seat authentication, stale action replay, privacy-filtered partner view, API rate limiting, Pages build URL injection and HTTPS-only validation. Live hosted and browser acceptance remain outstanding.

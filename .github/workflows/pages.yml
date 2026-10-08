@@ -1,4 +1,4 @@
-name: GitHub Pages (solo edition)
+name: GitHub Pages (solo + configured multiplayer)
 on:
   push:
     branches: [main]
@@ -22,12 +22,10 @@ jobs:
         with:
           node-version: 22
       - run: npm run release:gate
-      - name: Build static solo site
-        run: |
-          mkdir -p site
-          cp -R public/. site/
-          cp -R engine site/engine
-          touch site/.nojekyll
+      - name: Build standalone site and configure multiplayer API
+        env:
+          ONIRAMA_API_ORIGIN: ${{ vars.ONIRAMA_API_ORIGIN }}
+        run: npm run build:pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
