@@ -108,3 +108,11 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - **61 passing tests:** 1,024 seeded solo/cooperative games spanning all 512 nine-expansion configurations; also targeted timing, card-identity, privacy, migration, and search/freeing tests.
 
 **Not publisher-verified:** The twelve Tower cards' exact left/right printed symbols remain provisional. Rare official cooperative expansion ownership/timing rulings, wildcard handling under Rainbow Mirror, and some scarcity/interrupt cases also remain open. See `docs/RULES_AUDIT.md` for explicit evidence and gaps. Passing the tests does not establish rulebook completeness.
+
+## Phase 8 — Guest experience (no account)
+
+- **Completed game summaries:** `Settings → History & statistics`; the app automatically records a finished solo or cooperative game once on the browser where its result is viewed. Stats include win rate and solo/co-op totals. No hidden cards, player identities, session tokens, or decks are stored in the new history data. History is not synchronized between devices; clearing browser storage deletes it. Existing Phase 7 sessions still resume.
+- **Saved expansion setups:** `New dream → Saved setups` lets you name, load, overwrite, and delete configurations. These are browser-local and independently validate expansion IDs and difficulty values. No profile or login.
+- **Guided tutorial:** seven short steps under Single Player / Settings, linking to the full rules and a base-game starting setup. This is a written walkthrough, not an interactive scripted card scenario.
+- **Accessibility/mobile:** high-contrast and larger-text settings, clear keyboard focus, skip-to-content, screen-reader turn/decision announcements, scalable game panels and mobile horizontal scrolling for card rows.
+- **Intentional limits:** A live backend is still required for multiplayer. Phase 8 stores **summaries**, not deterministic replay files; true replay, localization and automated cross-browser accessibility testing remain separate future work. Printed Tower symbols and some official combination adjudications remain unverified (see `docs/RULES_AUDIT.md`).

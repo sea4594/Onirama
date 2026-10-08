@@ -36,3 +36,28 @@ html[data-card-size="large"] .card:not(.tiny){width:88px;height:125px}
 
 /* Phase 5: distinct accessible styling for new card types and Goals. */
 .card.wild{border-color:#dcb7ef;background:linear-gradient(150deg,#4e3663,#233a53)}.card.deadEnd{border-color:#ce897b;background:linear-gradient(150deg,#634038,#2f313c)}.card.happyDream{border-color:#d4bb68;background:linear-gradient(150deg,#65583b,#293d40)}.card.denizen{border-color:#9aa2da;background:linear-gradient(150deg,#3d4a75,#2d3146)}.goal.wild{border-color:#dcb7ef}.decision .actions{max-height:420px;overflow:auto}.card .card-label{max-width:95%;overflow-wrap:anywhere;text-align:center}
+
+/* Phase 8: guest records, guided learning, mobile play and accessibility. */
+.skip-link{position:fixed;top:-100px;left:12px;z-index:200;background:var(--ui-panel);color:var(--ui-text);padding:11px 16px;border:2px solid var(--ui-accent);border-radius:9px}.skip-link:focus{top:12px}
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+a:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--ui-accent);outline-offset:3px}
+.preset-row,.history-row{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:12px;border-radius:10px;border:1px solid var(--ui-border);overflow-wrap:anywhere}
+.preset-row strong{flex:1 1 150px}.history-row>div{min-width:0;overflow-wrap:anywhere}
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stat-box{padding:18px}.stat-box strong{display:block;font-size:clamp(1.5rem,4vw,2rem);margin-top:8px}
+.tutorial-track{height:8px;background:var(--ui-soft);overflow:hidden;border-radius:100px}.tutorial-track>div{height:100%;background:var(--ui-accent);border-radius:100px;transition:width .2s}
+html[data-text-size="large"]{font-size:112.5%}
+html[data-contrast="high"]{--ui-muted:var(--ui-text);--ui-border:var(--ui-text)}
+html[data-contrast="high"] .panel,html[data-contrast="high"] .decision{border-width:2px}
+html[data-contrast="high"] .card{border-width:3px}
+html[data-contrast="high"] .chip,html[data-contrast="high"] .notice{border-width:2px}
+html[data-contrast="high"] button:focus-visible,html[data-contrast="high"] a:focus-visible{outline-width:4px;outline-offset:4px}
+@media(max-width:600px){
+  .stats-grid{gap:8px}.stat-box{padding:13px}.title-row h1{font-size:1.55rem}
+  .game-layout{min-width:0}.board-main,.board-side{min-width:0}
+  .game-layout .cards{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding:5px 3px 12px;overscroll-behavior-inline:contain;scrollbar-width:thin}
+  .game-layout .cards .card{flex-shrink:0}
+  .game-layout .decision{padding:14px;max-width:100%;overflow-wrap:anywhere}
+  .game-layout .actions button{min-height:44px}
+  .preset-row{gap:7px}.preset-row strong{flex-basis:100%}
+  .page{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
+}
