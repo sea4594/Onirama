@@ -9,7 +9,7 @@ import {objectives} from '../engine/modules.js';
 test('Configuration enables Phase 4 and rejects unavailable expansion or malformed settings',()=>{
   assert.deepEqual(validateConfig(),{ruleset:'official',expansions:[],difficulties:{}});
   assert.equal(EXPANSION_CATALOG.length,10);
-  for(const e of EXPANSION_CATALOG){assert.equal(e.available,e.phase===4||e.phase===5);if(e.available)assertConserved(newGame({config:{expansions:[e.id]}}));else assert.throws(()=>newGame({config:{expansions:[e.id]}}),/not yet playable/);}
+  for(const e of EXPANSION_CATALOG){assert.equal(e.available,true);if(e.available)assertConserved(newGame({config:{expansions:[e.id]}}));}
   for(const config of [{expansions:['unknown']},{expansions:['glyphs','glyphs']},{expansions:'glyphs'},{difficulties:{book:'hard'}},{ruleset:'custom'}])assert.throws(()=>validateConfig(config));
 });
 test('Phase 3 schema migration preserves old save and cards',()=>{

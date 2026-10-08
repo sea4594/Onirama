@@ -46,6 +46,8 @@ function useDenizen(s,cmd){need(has(s,'oniverse'),'Door to the Oniverse is disab
 // Phase 5 rules: all state transitions remain deterministic, serializable and server-owned.
 const prem=s=>s.moduleState.premonitions;
 const oni=s=>s.moduleState.oniverse;
+const mirrors=s=>s.moduleState.mirrors;
+const incubus=s=>s.moduleState.incubus;
 const allDoors=s=>s.players.flatMap(p=>p.doors);
 const basicDoors=s=>allDoors(s).filter(d=>d.kind==='door'&&d.expansion!=='oniverse');
 const availableRallied=(s,ability)=>has(s,'oniverse')?oni(s).zones.rallied.filter(c=>c.owner===s.active&&(!ability||c.ability===ability)):[];
@@ -105,6 +107,7 @@ function isVictory(s){
  if(has(s,'book')&&goals(s).some(g=>!g.done))return false;
  if(has(s,'towers')&&!hasAlignment(tower(s)))return false;
  if(has(s,'dreamcatchers')&&Object.values(stacks(s)).flat().filter(c=>c.kind==='lostDream').length!==4)return false;
+ if(has(s,'mirrors')&&!['sun','moon',...(s.config.difficulties.mirrors==='hard'?['rainbow']:[])].every(k=>mirrors(s).completed.includes(k)))return false;
  return true;
 }
 function checkWin(s){if(s.status==='active'&&isVictory(s)){s.status='won';s.phase='ended';s.pending=null;s.interrupts=[];note(s,'All objectives completed. Victory!');return true;}return false;}
@@ -140,9 +143,9 @@ function afterNightmare(s,n,special=false){
  if(has(s,'towers')&&tower(s).length&&!hasAlignment(tower(s))||has(s,'towers')&&tower(s).length&&s.config.difficulties.towers==='hard'){
    s.pending={type:'towerPenalty',card:n,special};s.phase='decision';return;
  }
- s.discard.push(n);s.pending=null;if(special){if(fillSpecial(s))endTurn(s);}else refill(s);
+ if(n)s.discard.push(n);s.pending=null;if(special){if(fillSpecial(s))endTurn(s);}else refill(s);
 }
-function resolveNightmare(s,option,id){const n=s.pending.card;let special=false;
+function resolveNightmare(s,option,id){const n=s.pending.card;let special=Boolean(s.pending.incubus);
  if(option==='key'){need(spots(s).some(x=>x.id===id&&x.card.symbol==='key'),'Choose an available Key');s.discard.push(takeSpot(s,id));note(s,'A Key was sacrificed.');}
  else if(option==='door'){loseDoor(s,id);}
  else if(option==='reveal'){for(let i=0;i<5&&s.deck.length;i++){const c=takeTop(s);(c.kind==='location'||c.kind==='tower'?s.discard:s.limbo).push(c);}note(s,'Nightmare revealed up to five cards.');}
@@ -157,6 +160,9 @@ function refill(s){
    const c=takeTop(s);
    if(c.kind==='location'||c.kind==='tower'||c.kind==='deadEnd'){if(hand(s).length<quota(s))hand(s).push(c);else s.shared.push(c);continue;}
    if(c.kind==='door'){const keys=matchingKeys(s,c.color);const chromatic=availableRallied(s,'chromatic');if(keys.length){s.pending={type:'door',card:c,keys,chromatic:chromatic.map(d=>d.id)};s.phase='decision';return;}s.limbo.push(c);continue;}
+   if(c.kind==='sphinx'){s.pending={type:'sphinxName',card:c};s.phase='decision';return;}
+   if(c.kind==='diver'){if(!s.deck.length){s.discard.push(c);s.status='lost';s.phase='ended';note(s,'Deck exhausted before the Diver could reveal a card.');return;}s.pending={type:'diver',card:c,cards:takeLook(s,1,'bottom')};s.phase='decision';return;}
+   if(c.kind==='confusion'){s.pending={type:'confusion',card:c};s.phase='decision';return;}
    if(c.kind==='lostDream'){s.limbo.push(c);note(s,'A Lost Dream entered Limbo.');continue;}
    if(c.kind==='happyDream'){s.pending={type:'happyDream',card:c};s.phase='decision';return;}
    if(c.kind==='denizen'){const can=spots(s).filter(x=>x.card.kind!=='deadEnd').map(x=>x.id);if(can.length){s.pending={type:'rally',card:c,choices:can};s.phase='decision';return;}s.discard.push(c);continue;}
@@ -194,12 +200,43 @@ function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromati
  return targets;
 }
 function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(d.color!==color&&d.color!=='wild')spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');if(s.status==='active'&&o.source==='deck')shuffleAfterSearch(s,freeId);}
+// Phase 6: promo and appendix effects share the base draw, Door and Nightmare transitions.
+const MIRROR_NAMES=['red','blue','green','brown','sun','moon','key','glyph','rainbow'];
+function mirrorEnabled(s,name){return MIRROR_NAMES.includes(name)&&(name!=='glyph'||has(s,'glyphs'))&&(name!=='rainbow'||s.config.difficulties.mirrors==='hard');}
+function mirrorMatch(c,name){if(c.kind!=='location')return false;if(name==='rainbow')return COLORS.includes(c.color);if(COLORS.includes(name))return c.color===name||c.color==='wild';return c.symbol===name;}
+function playMirrorPair(s,cmd){need(has(s,'mirrors')&&mirrorEnabled(s,cmd.mirror),'Mirror unavailable');need(!mirrors(s).completed.includes(cmd.mirror),'Mirror already explored');const ids=cmd.ids;need(Array.isArray(ids)&&ids.length===2&&ids[0]!==ids[1],'Choose two distinct Location cards');const first=spots(s).find(x=>x.id===ids[0]),second=spots(s).find(x=>x.id===ids[1]);need(first&&second&&mirrorMatch(first.card,cmd.mirror)&&mirrorMatch(second.card,cmd.mirror),'Both cards must match one Mirror');const a=mirrors(s).zones[cmd.mirror];need(a.length<=2,'Mirror is already full');if(cmd.mirror==='rainbow')need(new Set([...a.map(c=>c.color),first.card.color,second.card.color]).size===a.length+2,'Rainbow Mirror requires one card of each color');a.push(takeSpot(s,ids[0]),takeSpot(s,ids[1]));note(s,`Placed two Locations under ${cmd.mirror} Mirror.`);
+ if(a.length!==4){refill(s);return;}mirrors(s).completed.push(cmd.mirror);s.discard.push(...a.splice(0));note(s,`Explored ${cmd.mirror} Mirror.`);
+ if(cmd.mirror==='green'){const i=s.deck.findIndex(c=>c.kind==='nightmare');if(i>=0)s.discard.push(...s.deck.splice(i,1));shuffleAfterSearch(s);}
+ if(['red','blue','brown','key','glyph'].includes(cmd.mirror)){s.pending={type:'mirrorReward',mirror:cmd.mirror,options:(cmd.mirror==='blue'?s.discard:s.deck).map(c=>({...c}))};s.phase='decision';return;}
+ if(checkWin(s))return;refill(s);
+}
+function resolveMirrorReward(s,cmd){const p=s.pending;need(cmd.type==='mirrorReward'&&p.type==='mirrorReward','Resolve the Mirror reward');const name=p.mirror;const source=name==='blue'?s.discard:s.deck;let picks=cmd.ids||[];need(Array.isArray(picks)&&new Set(picks).size===picks.length,'Select each card at most once');const cardFor=id=>source.find(c=>c.id===id);need(picks.every(id=>p.options.some(c=>c.id===id)&&cardFor(id)),'Select available cards from the indicated pile');const doors=source.filter(c=>c.kind==='door');
+ if(name==='red'||name==='blue'){need(picks.length===Math.min(2,source.length),'Select the required two cards (or all remaining)');const taken=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);if(name==='red')shuffleAfterSearch(s);for(const c of [...taken].reverse())s.deck.push(c);}
+ else if(name==='brown'||name==='key'||name==='glyph'){
+   need(picks.every(id=>cardFor(id)?.kind==='door'),'Select Doors');
+   if(name==='brown')need(picks.length===Math.min(1,doors.length),'Brown Mirror takes one Door');
+   if(name==='glyph')need(picks.length===Math.min(3,doors.length),'Glyph Mirror takes three Doors');
+   if(name==='key'){
+     const nightmares=s.deck.filter(c=>c.kind==='nightmare').slice(0,2);for(const n of nightmares)s.discard.push(...s.deck.splice(s.deck.findIndex(c=>c.id===n.id),1));
+     const available=source.filter(c=>c.kind==='door'&&c.color===cmd.color);need(COLORS.includes(cmd.color)&&picks.length===Math.min(2,available.length),'Key Mirror needs two Doors of the chosen color');need(picks.every(id=>cardFor(id)?.color===cmd.color),'Door color mismatch');
+   }
+   const gained=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);shuffleAfterSearch(s);
+   s.pending=null;for(let i=0;i<gained.length;i++){acquireDoor(s,gained[i],'Mirror');if(s.status==='won'){s.limbo.push(...gained.slice(i+1));return;}}
+ }else throw Error('Unknown Mirror');
+ s.pending=null;if(s.status==='active')finishAcquisition(s);
+}
+function activateIncubus(s){need(has(s,'incubus')&&incubus(s).level!=='easy','Incubus activation requires Apprentice or True level');need(!incubus(s).zones.stored.length,'Incubus already charged');const required=incubus(s).level==='true'?2:1;
+ while(incubus(s).zones.stored.length<required){if(!s.deck.length){s.status='lost';s.phase='ended';return;}const c=takeTop(s);if(['location','tower','deadEnd'].includes(c.kind))incubus(s).zones.stored.push(c);else s.limbo.push(c);}
+ note(s,`Incubus charged with ${required} Location cards; pay a Nightmare penalty.`);s.pending={type:'nightmare',card:null,incubus:true};s.phase='decision';
+}
+function cancelWithIncubus(s){need(has(s,'incubus')&&s.pending?.type==='nightmare'&&!s.pending.incubus,'Can only cancel a drawn Nightmare');const i=incubus(s);if(i.level==='easy'){need(!i.used,'Incubus already used');i.used=true;}else{need(i.zones.stored.length===(i.level==='true'?2:1),'Incubus must be fully charged');s.discard.push(...i.zones.stored.splice(0));}s.discard.push(s.pending.card);s.pending=null;refill(s);}
 export function newGame({mode='solo',seed=Date.now(),names=['Dreamwalker','Partner'],config}={}){
  need(['solo','coop'].includes(mode),'Invalid game mode');const rules=validateConfig(config);
  const players=names.slice(0,mode==='coop'?2:1).map((name,i)=>({id:i,name:String(name||`Player ${i+1}`).slice(0,40),hand:[],labyrinth:[],doors:[],streakColor:null,streak:0,series:[]}));
  const s={schema:3,rulesVersion:RULESET_VERSION,config:rules,moduleState:{},effects:[],continuations:[],events:[],interrupts:[],mode,rng:(Number(seed)>>>0)||1,deck:createDeck(rules.expansions),discard:[],limbo:[],shared:[],draft:[],players,active:0,turn:1,phase:mode==='coop'?'draft':'action',pending:null,status:'active',log:[]};
  for(const mod of activeModules(rules))s.moduleState[mod.id]=mod.setup(s);
  if(has(s,'oniverse')){const denizens=s.deck.filter(c=>c.kind==='denizen');shuffle(s,denizens);const removed=new Set(denizens.slice(0,8).map(c=>c.id));oni(s).zones.unused.push(...s.deck.filter(c=>removed.has(c.id)));s.deck=s.deck.filter(c=>!removed.has(c.id));}
+ if(has(s,'incubus'))incubus(s).level=rules.difficulties.incubus||'easy';
  if(has(s,'dreamcatchers')&&rules.difficulties.dreamcatchers==='hard')dream(s).failsafes=0;
  shuffle(s,s.deck);
  if(mode==='solo'){for(let i=0;i<5;i++)if(!dealLocation(s,players[0].hand))return s;}
@@ -211,12 +248,14 @@ export function legalActions(s){if(s.status!=='active')return [];
  if(s.phase==='draft')return s.draft.map(c=>({type:'draft',id:c.id}));
  const bonus=has(s,'book')&&s.discard.length>=Math.min(...Object.values(spellCosts(s)))?[{type:'cast',spells:Object.entries(spellCosts(s)).filter(([spell,cost])=>s.discard.length>=cost&&(spell!=='punishment'||s.pending?.type==='nightmare')).map(([spell])=>spell)}]:[];
  if(s.phase==='decision'){
-  const p=s.pending;const list={door:{type:'door',choices:(p.keys||[]).map(x=>x.id).concat('limbo')},doorSearch:{type:'doorSearch',choices:doorSearchTargets(s,p.color)},nightmare:{type:'nightmare',choices:['key','door','reveal','hand']},prophecy:{type:'prophecy'},incantation:{type:'incantation'},towerLook:{type:'towerLook'},towerPenalty:{type:'towerPenalty'},catchChoose:{type:'catchChoose'},catchOverload:{type:'catchOverload'},spellPeek:{type:'spellPeek'},moduleDecision:{type:'moduleDecision'},happyDream:{type:'happyDream'},happyPeek:{type:'happyPeek'},happyFetch:{type:'happyFetch'},rally:{type:'rally'},premonitionPick:{type:'premonitionPick'},premonitionDoor:{type:'premonitionDoor'},denizenPeek:{type:'denizenPeek'}};
+  const p=s.pending;const list={door:{type:'door',choices:(p.keys||[]).map(x=>x.id).concat('limbo')},doorSearch:{type:'doorSearch',choices:doorSearchTargets(s,p.color)},nightmare:{type:'nightmare',choices:['key','door','reveal','hand']},prophecy:{type:'prophecy'},incantation:{type:'incantation'},towerLook:{type:'towerLook'},towerPenalty:{type:'towerPenalty'},catchChoose:{type:'catchChoose'},catchOverload:{type:'catchOverload'},spellPeek:{type:'spellPeek'},moduleDecision:{type:'moduleDecision'},happyDream:{type:'happyDream'},happyPeek:{type:'happyPeek'},happyFetch:{type:'happyFetch'},rally:{type:'rally'},premonitionPick:{type:'premonitionPick'},premonitionDoor:{type:'premonitionDoor'},denizenPeek:{type:'denizenPeek'},sphinxName:{type:'sphinxName'},sphinxResolve:{type:'sphinxResolve'},diver:{type:'diver'},confusion:{type:'confusion'},mirrorReward:{type:'mirrorReward'}};
   return [list[p.type]].filter(Boolean).concat(bonus);
  }
  if(s.phase!=='action')return [];
  const actions=spots(s).flatMap(x=>[...(x.card.kind==='location'&&own(s).labyrinth.at(-1)?.symbol!==x.card.symbol?[{type:'play',id:x.id}]:[]),...(x.card.kind==='tower'?[{type:'playTower',id:x.id}]:[]),...(x.card.kind!=='deadEnd'?[{type:'discard',id:x.id}]:[])]);
  if(has(s,'crossroads'))actions.push({type:'escape'});
+ if(has(s,'mirrors'))for(const m of MIRROR_NAMES)if(mirrorEnabled(s,m)&&!mirrors(s).completed.includes(m))actions.push({type:'mirrorPair',mirror:m});
+ if(has(s,'incubus')&&incubus(s).level!=='easy'&&!incubus(s).zones.stored.length)actions.push({type:'incubusActivate'});
  if(has(s,'oniverse'))for(const d of availableRallied(s))actions.push({type:'useDenizen',id:d.id,ability:d.ability});
  if(has(s,'dreamcatchers')&&dream(s).failsafes&&occupied(s).length)actions.push({type:'freeCatcher',choices:occupied(s)});
  return actions.concat(bonus);
@@ -226,6 +265,8 @@ export function act(previous,command){
  if(command.type==='cast'){need(s.phase==='action'||s.phase==='decision','Spell unavailable during draft or refill');castSpell(s,command);return s;}
  if(s.phase==='draft'){need(command.type==='draft','Choose a card from the draft');const i=s.draft.findIndex(c=>c.id===command.id);need(i!==-1,'Card not available in draft');hand(s).push(s.draft.splice(i,1)[0]);if(s.players.every(p=>p.hand.length===3)){s.shared=s.draft.splice(0);s.active=0;s.phase='action';}else s.active=1-s.active;return s;}
  if(s.phase==='action'){
+  if(command.type==='mirrorPair'){playMirrorPair(s,command);return s;}
+  if(command.type==='incubusActivate'){activateIncubus(s);return s;}
   if(command.type==='escape'){need(has(s,'crossroads'),'Escape requires Crossroads and Dead Ends');s.discard.push(...hand(s).splice(0));if(s.mode==='coop')s.discard.push(...s.shared.splice(0));note(s,'Escaped the Dead Ends by discarding the entire hand.');if(fillSpecial(s))endTurn(s);return s;}
   if(command.type==='useDenizen'){useDenizen(s,command);return s;}
   if(command.type==='freeCatcher'){need(has(s,'dreamcatchers')&&dream(s).failsafes>0,'No Failsafe Book available');need(occupied(s).includes(command.index),'Choose an occupied catcher');dream(s).failsafes--;freeCatcher(s,command.index);return s;}
@@ -247,6 +288,11 @@ export function act(previous,command){
   throw Error('That action is unavailable');
  }
  need(s.phase==='decision'&&s.pending,'Resolve the pending decision first');const p=s.pending;
+ if(p.type==='sphinxName'){need(command.type==='sphinxName'&&([...COLORS,'moon','key',...(has(s,'glyphs')?['glyph']:[])].includes(command.aspect)),'Name a permitted color or symbol');s.pending={type:'sphinxResolve',card:p.card,aspect:command.aspect,cards:takeLook(s,5,'bottom')};return s;}
+ if(p.type==='sphinxResolve'){need(command.type==='sphinxResolve','Resolve the Sphinx');const match=p.cards.some(c=>c.color===p.aspect||c.symbol===p.aspect);const ids=p.cards.map(c=>c.id);need(Array.isArray(command.order)&&command.order.length===ids.length&&new Set(command.order).size===ids.length&&command.order.every(id=>ids.includes(id)),'Return every revealed card exactly once');if(match){need(ids.includes(command.topId),'Choose any one revealed card for the top');putBottom(s,p.cards.filter(c=>c.id!==command.topId),command.order.filter(id=>id!==command.topId));s.deck.push(p.cards.find(c=>c.id===command.topId));}else putBottom(s,p.cards,command.order);s.discard.push(p.card);s.pending=null;if(!match){s.discard.push(...hand(s).splice(0));if(s.mode==='coop')s.discard.push(...s.shared.splice(0));if(fillSpecial(s))endTurn(s);}else refill(s);return s;}
+ if(p.type==='diver'){need(command.type==='diver','Resolve the Diver');const ids=p.cards.map(c=>c.id);if(command.option==='continue'){need(s.deck.length>0&&p.cards.at(-1)?.kind!=='nightmare','Cannot continue after Nightmare or deck end');p.cards.push(takeLook(s,1,'bottom')[0]);return s;}need(command.option==='stop'||command.option==='nightmare','Choose stop or Nightmare');const hit=p.cards.at(-1)?.kind==='nightmare';need((hit&&command.option==='nightmare')||(!hit&&command.option==='stop'),'Must resolve a revealed Nightmare');need(Array.isArray(command.order)&&command.order.length===ids.length-(hit?0:1)&&new Set(command.order).size===command.order.length&&command.order.every(id=>ids.includes(id)&&(!hit? id!==p.cards.at(-1).id:true)),'Invalid bottom order');putBottom(s,hit?p.cards:p.cards.slice(0,-1),command.order);if(hit){s.pending={type:'nightmare',card:p.card};return s;}s.deck.push(p.cards.at(-1));s.discard.push(p.card);s.pending=null;refill(s);return s;}
+ if(p.type==='confusion'){need(command.type==='confusion','Resolve Confusion');const cards=[...hand(s),...(s.mode==='coop'?s.shared:[])];need(Array.isArray(command.order)&&command.order.length===cards.length&&new Set(command.order).size===cards.length&&command.order.every(id=>cards.some(c=>c.id===id)),'Choose bottom-deck order of entire hand');hand(s).length=0;if(s.mode==='coop')s.shared.length=0;putBottom(s,cards,command.order);s.discard.push(p.card);s.pending=null;if(fillSpecial(s))endTurn(s);return s;}
+ if(p.type==='mirrorReward'){resolveMirrorReward(s,command);return s;}
  if(p.type==='rally'){
    need(command.type==='rally','Choose whether to rally the Denizen');const d=p.card;
    if(command.cardId==='skip')s.discard.push(d);
@@ -293,6 +339,7 @@ export function act(previous,command){
    else {need(p.keys.some(k=>k.id===command.keyId),'Key does not match this Door');const key=takeSpot(s,command.keyId);if(d.color!=='wild'&&key.color!==d.color)spendDenizen(s,p.chromatic?.[0],'chromatic');s.discard.push(key);acquireDoor(s,d,'Key');}
    if(s.status==='active'){s.pending=null;finishAcquisition(s);}return s;
  }
+ if(p.type==='nightmare'&&command.type==='incubusCancel'){cancelWithIncubus(s);return s;}
  if(p.type==='nightmare'&&command.type==='nightmare'&&command.option==='mirror'){spendDenizen(s,command.denizenId,'mirror');s.limbo.push(p.card);s.pending=null;refill(s);return s;}
  if(p.type==='nightmare'){need(command.type==='nightmare','Resolve the Nightmare');resolveNightmare(s,command.option,command.cardId);return s;}
  if(p.type==='towerPenalty'){
@@ -300,8 +347,8 @@ export function act(previous,command){
    if(command.option==='discard'){
      const a=tower(s),i=a.findIndex(c=>c.id===command.towerId);need(i!==-1,'Select a played Tower');
      if(i>0&&i<a.length-1)need(!edgesConflict(a[i-1].right,a[i+1].left),'Removing this Tower would connect matching symbols');
-     s.discard.push(a.splice(i,1)[0]);s.discard.push(p.card);note(s,'A Tower was destroyed by the Nightmare.');
-   }else if(command.option==='fake'){s.limbo.push(p.card);note(s,'Nightmare sent to Limbo; Tower protected for now.');}
+     s.discard.push(a.splice(i,1)[0]);if(p.card)s.discard.push(p.card);note(s,'A Tower was destroyed by the Nightmare.');
+   }else if(command.option==='fake'){if(p.card)s.limbo.push(p.card);note(s,'Nightmare sent to Limbo; Tower protected for now.');}
    else throw Error('Choose a Tower consequence');
    s.pending=null;if(p.special){if(fillSpecial(s))endTurn(s);}else refill(s);return s;
  }
@@ -338,9 +385,12 @@ export function viewFor(s,seat=null){const c=structuredClone(normalizeSave(s));d
  if(has(s,'crossroads'))c.expansion.crossroads={hard:s.config.difficulties.crossroads==='hard'};
  if(has(s,'book'))c.expansion.book={goals:goals(s).map(g=>({color:g.color,done:g.done})),discardCount:book(s).zones.removed.length,costs:spellCosts(s)};
  if(has(s,'dreamcatchers'))c.expansion.dreamcatchers={active:[...dream(s).active],failsafes:dream(s).failsafes,stacks:Object.values(stacks(s)).map(a=>structuredClone(a))};
+ if(has(s,'mirrors'))c.expansion.mirrors={completed:[...mirrors(s).completed],stacks:Object.fromEntries(Object.entries(mirrors(s).zones).filter(([k])=>mirrorEnabled(s,k)).map(([k,v])=>[k,structuredClone(v)]))};
+ if(has(s,'incubus'))c.expansion.incubus={level:incubus(s).level,used:incubus(s).used,stored:structuredClone(incubus(s).zones.stored)};
  if(has(s,'towers'))c.expansion.towers={alignment:structuredClone(tower(s)),protected:hasAlignment(tower(s))&&s.config.difficulties.towers!=='hard'};
  delete c.moduleState;
  if(c.mode==='coop')for(let i=0;i<c.players.length;i++)if(i!==seat)c.players[i].hand=c.players[i].hand.map(x=>({id:x.id,kind:'hidden'}));
+ if(c.pending?.type==='diver')c.pending.remaining=s.deck.length;
  if(c.pending?.type==='doorSearch'&&(c.mode==='solo'||seat===s.active))c.pending.targets=doorSearchTargets(s,c.pending.color);
  if(c.pending&&c.mode==='coop'&&seat!==s.active)c.pending={type:'private-decision',player:s.active};
  return c;

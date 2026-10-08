@@ -9,7 +9,7 @@ const spot=s=>s.players[s.active].hand.find(c=>c.kind==='location'&&c.symbol!=='
 const turn=s=>act(s,{type:'discard',id:spot(s).id});
 
 test('Phase 5 configurations, exact physical counts, Denizen hidden selection and Book wildcard Goal',()=>{
- const available=EXPANSION_CATALOG.filter(x=>x.available);assert.equal(available.length,7);
+ const available=EXPANSION_CATALOG.filter(x=>x.phase<=5);assert.equal(available.length,7);
  for(let bits=0;bits<128;bits++){
   const ids=available.filter((_,i)=>bits&(1<<i)).map(x=>x.id),s=make(ids,25+bits);
   assertConserved(s);assert.equal(s.deck.length+s.players[0].hand.length+s.limbo.length+Object.values(s.moduleState).flatMap(m=>Object.values(m.zones||{}).flat()).length, 76+(ids.includes('glyphs')?12:0)+(ids.includes('dreamcatchers')?4:0)+(ids.includes('towers')?12:0)+(ids.includes('premonitions')?4:0)+(ids.includes('crossroads')?16:0)+(ids.includes('oniverse')?17:0));

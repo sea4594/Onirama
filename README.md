@@ -1,8 +1,8 @@
 # Onirama
 
-An original-art, browser-based dream labyrinth card game. The project implements the base game and the first four Second Edition expansions, with cooperative play and a phased roadmap for the rest.
+An original-art, browser-based dream labyrinth card game. The project implements the base game, all seven Second Edition boxed expansions and both promotional expansions, with cooperative play and a phased roadmap for the rest.
 
-> **Current state:** Runnable solo and two-player cooperative game with Book of Steps, Glyphs, Dreamcatchers, Towers, and their documented difficulty variants. Unfinished expansions remain disabled on both client and server. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
+> **Current state:** Runnable solo and two-player cooperative game with all seven boxed expansions, both promotional sets (Mirrors; Sphinx/Diver/Confusion), and the separate Little Incubus modifier. Rare interactions remain pending the Phase 7 audit. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
 
 ## Quick start
 
@@ -27,9 +27,13 @@ npm run release:gate
 
 Data is stored under `server-data/sessions.json` by default (ignored by Git). To change it, set `ONIRAMA_DATA_DIR`. To change the port, set `PORT`.
 
+## Online publishing
+
+A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, browser-only solo edition**, including the rules engine and local saved game. After the hotfix is pushed, choose **GitHub → Settings → Pages → Source → GitHub Actions** once; the site is published at https://sea4594.github.io/Onirama/. GitHub Pages does **not** run Node services. Online multiplayer needs a separately hosted server (Phase 9), while `npm start` runs both frontend and multiplayer locally. See [deployment notes](docs/DEPLOYMENT.md).
+
 ## What works today
 
-- **Phase 5:** Book of Steps (ordered Goals, rollback, three discard-funded spells, difficult costs); Glyphs (eight Glyph Locations, four extra Doors, Incantation); Dreamcatchers (four Lost Dreams, storing and freeing, overload, difficult mode); Towers (shared row, edge matching, discard peek, Nightmare consequences, difficult mode). Solo and guest cooperative configurations share one rules engine.
+- **Phase 6:** Mirrors (nine printed references, conditional Glyph/Rainbow), Sphinx/Diver/Confusion (14 promo draw cards), and Little Incubus (three levels, base-game-only); **Phase 5:** Book of Steps (ordered Goals, rollback, three discard-funded spells, difficult costs); Glyphs (eight Glyph Locations, four extra Doors, Incantation); Dreamcatchers (four Lost Dreams, storing and freeing, overload, difficult mode); Towers (shared row, edge matching, discard peek, Nightmare consequences, difficult mode). Solo and guest cooperative configurations share one rules engine.
 - **No accounts or login** (permanent product decision); room codes and local preferences are retained.
 
 - Original, responsive, keyboard-usable card UI with Single Player / Multiplayer / Settings tabs and BibleGuessr-inspired theme presets (Ocean, Forest, Clay, Berry, light/dark); rulebook and roadmap.
@@ -37,8 +41,8 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 - Solo base game: legal Labyrinth placement, Door search with choice to skip, Key Prophecy, all four Nightmare penalties, individual draw/refill decisions, Limbo, immediate victory and deck-exhaustion defeat.
 - Official two-player *structure*: eight-card public initial draft, three private cards per player, two face-up shared cards, alternating turns, separate Labyrinths and Doors, optional swap after a discard, and whole-hand redraws.
 - Invite-only cooperative rooms, seat-specific bearer credentials, server-authoritative game state, event stream, reconnection/reload, persistent state, action-version checks.
-- Server-side hidden-hand and hidden-deck filtering.
-- Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, all Phase 5 expansion modules, unique card zones, and objective hooks. Unavailable expansions are blocked server-side.
+- Server-side hidden-hand and hidden-deck filtering. GitHub Pages solo sessions are stored only in the current browser.
+- Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, Phase 6 promo/Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
 **Important limitations:** No public deployment hardening, matchmaking, sophisticated visual card art, tutorial walkthroughs, guest history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. Accounts and login are explicitly out of scope permanently; all gameplay is guest-based. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
@@ -47,7 +51,7 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ```text
 engine/
-  cards.js       Base and Phase 5 card catalog
+  cards.js       Base and Phase 6 card catalog
   config.js      Versioned rules configuration, expansion availability, save upgrade
   zones.js       Card-location registry and card conservation
   effects.js     Serializable, resumable effect processor
@@ -85,3 +89,12 @@ Do not mark a rule as verified merely because an automated test passes. Each rul
 Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead Ends**, and **Door to the Oniverse**, including configurable harder variants, card-zone tracking, interaction panels, and Denizen choices. All seven standard expansions can now be selected in solo or cooperative mode. The Oniverse set randomly removes eight of sixteen Denizens unseen; those cards remain in a private removed-card zone for card conservation. No account/profile/login is implemented or planned.
 
 **Rules audit status:** Gameplay is enabled, but Phase 7 still must verify rare cross-expansion rulings, physical Tower edge symbols, and multiplayer expansion ownership. These should not be described as publisher-verified.
+
+## Phase 6 — Promos, Incubus, and Pages
+
+- Mirrors: double-Location pair placement, explore/discard four cards, eight normal Mirrors plus optional Rainbow and Glyph, immediate or player-selected rewards, additional victory requirements.
+- Sphinx, Diver, Confusion: bottom-deck reveals, feature nomination, continuation and order decisions, hand renewal, 2 extra Nightmares.
+- Little Incubus: New Dreamwalker cancellation or Apprentice/True charging and Nightmare anticipation; blocked from combined expansion games by official-compatibility validation.
+- GitHub Pages workflow deploys frontend and engine; local solo saves require no server, and multiplayer correctly informs users they need its separately hosted Node backend.
+
+**Scope of verification:** 53 automated tests, including setup/card conservation for all 512 combinations of the nine combinable expansion groups in both player modes. This is not a substitute for the Phase 7 printed-card and rare-combination rules audit.

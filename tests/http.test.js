@@ -17,7 +17,7 @@ test('HTTP solo and cooperative authorization, game start, privacy, stale action
   try{
     let ready=false;for(let i=0;i<60;i++){try{const r=await fetch(host+'/');if(r.ok){ready=true;break;}}catch{}await sleep(40);}assert.ok(ready,'Server did not start');
     const catalog=await request('/api/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.expansions.length,10);
-    const blocked=await request('/api/solo','POST',{name:'Unverified',config:{expansions:['mirrors']}});assert.equal(blocked.status,400);assert.match(blocked.data.error,/not yet playable/);
+    const blocked=await request('/api/solo','POST',{name:'Unverified',config:{expansions:['mirrors','incubus']}});assert.equal(blocked.status,400);assert.match(blocked.data.error,/cannot be combined/);
     const expanded=await request('/api/solo','POST',{name:'Expansions',config:{expansions:['book','glyphs','dreamcatchers','towers'],difficulties:{book:'normal',dreamcatchers:'normal',towers:'hard'}}});
     assert.equal(expanded.status,201);const all=await request(`/api/rooms/${expanded.data.room.id}/state`,'GET',null,expanded.data.token);
     assert.equal(all.status,200);assert.equal(all.data.game.config.expansions.length,4);assert.equal(all.data.game.expansion.book.goals.length,12);

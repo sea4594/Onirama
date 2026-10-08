@@ -39,7 +39,7 @@ This document separates **implemented and tested** from **unimplemented**, **ass
 | Premonitions | Implemented/tested: four Happy Dreams, eight trigger/penalty types, 4/5/6 face-up, choice ordering | Publisher timing audit with additional expansion effects |
 | Crossroads and Dead Ends | Implemented/tested: six wild Locations, ten Dead Ends, Escape, hard middle-only rule | Overlapping wildcard sequence edge-cases |
 | Door to the Oniverse | Implemented/tested: wildcard Door, 8/16 randomly selected Denizens, rally, eight abilities, Treasure Keeper | Timing of Denizens versus spells, rare cooperative ownership |
-| Mirrors / Sphinx / Incubus | Unavailable — Phase 6 | Full effect implementation |
+| Mirrors / Sphinx / Incubus | Implemented with tested core effects and visible decisions | Rare simultaneous-trigger interactions, card scarcity and official cooperative rulings remain under Phase 7 audit |
 
 ## Phase 4 rulings and scope
 
@@ -68,3 +68,11 @@ This document separates **implemented and tested** from **unimplemented**, **ass
 ## Rule-adjudication acceptance criteria
 
 For every unclear case, log: an ID, precise scenario, applicable expansion combination(s), verbatim section/page reference or publisher clarification, the chosen implementation behavior, whether it is **official** or **house rule**, and at least one deterministic test ID. Keep rule changes versioned so historical saved games can be replayed accurately.
+
+## Phase 6 audit
+
+- **Mirrors:** nine conceptual double-sided Mirror slots live outside the draw deck. Glyph is conditional on Glyphs; Rainbow is an opt-in hard variant. Four stacked cards return to discard after exploration; Red, Blue, Green, Brown, Key, and Glyph rewards use deck/discard searches. Tested pair validity, three extra win goals, selection, and card conservation.
+- **Promo dreams:** Sphinx names one color or Moon/Key/Glyph but not Sun, inspects bottom five, and forces redraw upon failure. Diver reveals from deck bottom, may stop or continue, and becomes a Nightmare on a drawn Nightmare. Confusion returns the hand to the deck bottom then special-refills. 4 copies each plus two ordinary Nightmares.
+- **Incubus:** official mode prevents combining with expansions. Easy one-off cancel, Apprentice/True charge using one/two Locations before paying a virtual Nightmare consequence. The pawn and Mirror slots are non-deck objects; stored Incubus Locations are tracked as physical cards.
+- **Known adjudications:** card scarcity during Mirror rewards and wild Crossroads under Rainbow need edition-specific rulings; multiplayer shared Mirrors and compound Premonition effects need resolution order verification. Phase 6's successful tests do not establish publisher approval.
+- **Source for promo:** https://funmill.ru/images/rules/02768-2.pdf . Incubus source: official Expansion Book appendix.

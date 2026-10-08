@@ -25,6 +25,7 @@ export function createDeck(expansions=[]){
  if(expansions.includes('premonitions'))for(let n=0;n<4;n++)add('happyDream',null,null,{expansion:'premonitions'});
  if(expansions.includes('crossroads')){for(const symbol of ['sun','sun','sun','moon','moon','key'])add('location','wild',symbol,{expansion:'crossroads'});for(let n=0;n<10;n++)add('deadEnd',null,null,{expansion:'crossroads'});}
  if(expansions.includes('oniverse')){add('door','wild',null,{expansion:'oniverse'});for(const ability of DENIZENS)for(let n=0;n<2;n++)add('denizen',null,null,{ability,expansion:'oniverse'});}
+ if(expansions.includes('sphinx')){for(const kind of ['sphinx','diver','confusion'])for(let n=0;n<4;n++)add(kind,null,null,{expansion:'sphinx'});for(let n=0;n<2;n++)add('nightmare',null,null,{expansion:'sphinx'});}
  if(expansions.includes('towers'))for(const color of COLORS)for(const number of [3,4,5]){
    // Edge patterns must be audited against the specific edition's physical card faces.
    const left=['red','green'].includes(color)?'sun':'moon';const right=left==='sun'?'moon':'sun';
@@ -32,4 +33,4 @@ export function createDeck(expansions=[]){
  }
  return cards;
 }
-export function expectedCards(expansions=[]){return 76+(expansions.includes('glyphs')?12:0)+(expansions.includes('dreamcatchers')?4:0)+(expansions.includes('towers')?12:0)+(expansions.includes('premonitions')?4:0)+(expansions.includes('crossroads')?16:0)+(expansions.includes('oniverse')?17:0);}
+export function expectedCards(expansions=[]){return 76+(expansions.includes('glyphs')?12:0)+(expansions.includes('dreamcatchers')?4:0)+(expansions.includes('towers')?12:0)+(expansions.includes('premonitions')?4:0)+(expansions.includes('crossroads')?16:0)+(expansions.includes('oniverse')?17:0)+(expansions.includes('sphinx')?14:0);}

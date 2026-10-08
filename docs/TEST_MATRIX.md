@@ -29,3 +29,10 @@
 - Every Denizen ability is exercised at least once in targeted unit tests.
 - Premonitions, Happy Dream actions, Deck fetch without doubled card identity, Dead End Escape, Crossroads difficult variant, Oniverse wild Door/Goal, and migrated Phase 4 saves have separate tests.
 - These tests **do not** certify every publisher rule interaction; Phase 7 tracks unresolved multiplayer and stacked-effect adjudications.
+
+## Phase 6 gate
+
+- 53 tests: 512 initialization/configuration combinations of the nine combinable expansion sets, tested for solo and cooperative game state conservation (1,024 setups).
+- Sphinx named aspects, Diver continuations/penalty, Confusion, Mirror pair matching/rewards, hard Rainbow requirements, Incubus levels/compatibility and private viewer filtering have targeted tests.
+- Browser rendering smoke tested with a Node VM shim. Full Chromium screenshot navigation unavailable under the current container network restrictions.
+- GitHub Pages workflow copies relative-path static files and engine and must pass the full release gate before deploying.
