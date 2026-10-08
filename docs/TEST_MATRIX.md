@@ -21,3 +21,11 @@
 - All 16 combinations of the first four expansions tested across solo/cooperative seeded games (12 seeds per combination and mode).
 - Dedicated tests for printed expansion totals, Goal reopening, spell costs/order, Glyph Incantations, Dreamcatcher Failsafe and overload preservation, Tower alignment and Nightmare penalty.
 - Browser UI and HTTP acceptance tests follow the same full release gate.
+
+
+## Phase 5 gate
+
+- All 128 combinations of the seven standard expansions undergo seeded solo/cooperative simulations with full card-conservation checks.
+- Every Denizen ability is exercised at least once in targeted unit tests.
+- Premonitions, Happy Dream actions, Deck fetch without doubled card identity, Dead End Escape, Crossroads difficult variant, Oniverse wild Door/Goal, and migrated Phase 4 saves have separate tests.
+- These tests **do not** certify every publisher rule interaction; Phase 7 tracks unresolved multiplayer and stacked-effect adjudications.

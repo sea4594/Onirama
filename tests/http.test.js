@@ -17,11 +17,19 @@ test('HTTP solo and cooperative authorization, game start, privacy, stale action
   try{
     let ready=false;for(let i=0;i<60;i++){try{const r=await fetch(host+'/');if(r.ok){ready=true;break;}}catch{}await sleep(40);}assert.ok(ready,'Server did not start');
     const catalog=await request('/api/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.expansions.length,10);
-    const blocked=await request('/api/solo','POST',{name:'Unverified',config:{expansions:['premonitions']}});assert.equal(blocked.status,400);assert.match(blocked.data.error,/not yet playable/);
+    const blocked=await request('/api/solo','POST',{name:'Unverified',config:{expansions:['mirrors']}});assert.equal(blocked.status,400);assert.match(blocked.data.error,/not yet playable/);
     const expanded=await request('/api/solo','POST',{name:'Expansions',config:{expansions:['book','glyphs','dreamcatchers','towers'],difficulties:{book:'normal',dreamcatchers:'normal',towers:'hard'}}});
     assert.equal(expanded.status,201);const all=await request(`/api/rooms/${expanded.data.room.id}/state`,'GET',null,expanded.data.token);
     assert.equal(all.status,200);assert.equal(all.data.game.config.expansions.length,4);assert.equal(all.data.game.expansion.book.goals.length,12);
     assert.equal(all.data.game.expansion.dreamcatchers.stacks.length,4);assert.equal(all.data.game.expansion.towers.alignment.length,0);
+    const expanded5=await request('/api/solo','POST',{name:'Phase5',config:{expansions:['premonitions','crossroads','oniverse'],difficulties:{premonitions:'extreme',crossroads:'hard'}}});
+    assert.equal(expanded5.status,201);
+    const p5=await request(`/api/rooms/${expanded5.data.room.id}/state`,'GET',null,expanded5.data.token);
+    assert.equal(p5.status,200);assert.equal(p5.data.game.expansion.premonitions.faceUp.length,6);
+    assert.equal(p5.data.game.expansion.premonitions.reserveCount,2);
+    assert.equal(p5.data.game.expansion.crossroads.hard,true);
+    assert.equal(p5.data.game.expansion.oniverse.rallied.length,0);
+    assert.equal(p5.data.game.deck,undefined);assert.equal(p5.data.game.moduleState,undefined);
     const solo=await request('/api/solo','POST',{name:'Solo'});assert.equal(solo.status,201);const id=solo.data.room.id;
     const unauthorized=await request(`/api/rooms/${id}/state`);assert.equal(unauthorized.status,401);
     const initial=await request(`/api/rooms/${id}/state`,'GET',null,solo.data.token);assert.equal(initial.status,200);

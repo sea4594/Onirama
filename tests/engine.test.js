@@ -54,7 +54,7 @@ test('illegal commands never mutate state, adjacent symbol cannot be repeated',(
   }
 });
 test('Door search is optional, cannot resolve twice',()=>{
-  const s=seeded();const p=s.players[0],location=p.hand[0];p.streakColor=location.color;p.streak=2;
+  const s=seeded();const p=s.players[0],location=p.hand[0];p.series=[{id:'prepared1',color:location.color},{id:'prepared2',color:location.color}];
   const a=act(s,{type:'play',id:location.id});assert.equal(a.phase,'decision');assert.equal(a.pending.type,'doorSearch');
   const b=act(a,{type:'doorSearch',option:'skip'});assert.equal(b.players[0].doors.length,0);
   assert.throws(()=>act(a,{type:'doorSearch',option:'neither'}));assertConserved(b);

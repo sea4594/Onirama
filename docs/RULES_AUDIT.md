@@ -36,7 +36,9 @@ This document separates **implemented and tested** from **unimplemented**, **ass
 | Glyphs | Playable solo/co-op; 8 Glyphs and 4 Doors | Cross-expansion pairing/adjudications during Phase 7 |
 | Dreamcatchers | Playable solo/co-op; 4 Lost Dreams, 4 catchers, Failsafes, overload | Search/free timing and edge cases with future expansions |
 | Towers | Playable solo/co-op; edge placement, deck peek, Nightmare loss | **Printed left/right symbols on each of the 12 physical cards need edition-level image audit**; current card metadata should be treated as provisional |
-| Premonitions / Crossroads / Oniverse | Unavailable — Phase 5 | Full effect implementation |
+| Premonitions | Implemented/tested: four Happy Dreams, eight trigger/penalty types, 4/5/6 face-up, choice ordering | Publisher timing audit with additional expansion effects |
+| Crossroads and Dead Ends | Implemented/tested: six wild Locations, ten Dead Ends, Escape, hard middle-only rule | Overlapping wildcard sequence edge-cases |
+| Door to the Oniverse | Implemented/tested: wildcard Door, 8/16 randomly selected Denizens, rally, eight abilities, Treasure Keeper | Timing of Denizens versus spells, rare cooperative ownership |
 | Mirrors / Sphinx / Incubus | Unavailable — Phase 6 | Full effect implementation |
 
 ## Phase 4 rulings and scope
@@ -47,6 +49,15 @@ This document separates **implemented and tested** from **unimplemented**, **ass
 - Cooperative Glyphs extra Door ownership (team total 12 including one of each color per player) and cooperative Book shared Goal sequencing are implementation adjudications pending final publisher verification. They must not be mistaken for sourced publisher rulings.
 - Phase 4 is **playable**, but this document is deliberately not a claim that all publisher card art, rare multi-expansion timings, or all six combinations are officially verified. Phase 7 resolves those remaining audits.
 - Guest-only product: never implement account signup, signin or profile identity.
+
+## Phase 5 rules and adjudications
+
+- Oniverse Door: is a distinct wildcard Door and does not replace one of the eight/twelve normal Doors. Book of Steps gains one additional wildcard Goal. Unselected Denizens are hidden in a removed-from-play physical zone. Each rallied Denizen belongs to its acquiring player in this implementation.
+- Premonitions: checked on successful Door acquisition, with immediate victory priority. If multiple conditions are met, active player chooses resolution order, and eligibility is recalculated after each effect. The one-of-a-color co-op win condition is preserved; Premonitions currently evaluate the team Door display collectively, pending publisher adjudication.
+- Crossroads: at most one wildcard per Door trio; hard mode permits it only in the middle. Dead Ends cannot be individually discarded; the player can use Escape to discard and replace the whole hand (personal plus shared). Nightmare reveal sends Dead Ends to Limbo.
+- Treasure Keeper: stored cards are in a separate physical zone; using them removes the associated rallied Keeper from play. In two-player mode, the stored card belongs to the player's Keeper, not the shared resources.
+- Card searches with fewer cards than requested use the available cards, without inventing replacements. This is an application ruling until the combination-by-combination audit is complete.
+- **Potential mismatch with official rules:** The base app currently treats a Nightmare in the Tower expansion using its existing two-way Tower penalty; exact timing and all 12 printed edge symbols are still marked unverified from Phase 4. Do not claim fully verified Onirim fidelity until Phase 7.
 
 ## Official sources
 
