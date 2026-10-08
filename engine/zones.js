@@ -12,6 +12,7 @@ export function physicalZones(s){
   for(const [moduleId,module] of Object.entries(s.moduleState||{}))for(const [name,cards] of Object.entries(module.zones||{})){if(!Array.isArray(cards))throw Error('Module zone must be an array');result.push([`module:${moduleId}:${name}`,cards]);}
   if(s.pending?.card)result.push(['pending:card',[s.pending.card]]);
   if(s.pending?.cards)result.push(['pending:cards',s.pending.cards]);
+  for(const [i,frame] of (s.interrupts||[]).entries()){if(frame.pending?.card)result.push([`interrupt:${i}:card`,[frame.pending.card]]);if(frame.pending?.cards)result.push([`interrupt:${i}:cards`,frame.pending.cards]);}
   return result;
 }
 export function assertCardsUnique(s,expected=76){

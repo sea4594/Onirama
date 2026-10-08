@@ -30,18 +30,23 @@ This document separates **implemented and tested** from **unimplemented**, **ass
 
 ## Status for each expansion
 
-| Expansion | Card/effect registry | Playable | Edge-case tests | Cooperative interactions verified |
-|---|---|---|---|---|
-| Book of Steps | Catalog only | No | No | No |
-| Glyphs | Catalog only | No | No | No |
-| Dreamcatchers | Catalog only | No | No | No |
-| Towers | Catalog only | No | No | No |
-| Happy Dreams and Dark Premonitions | Catalog only | No | No | No |
-| Crossroads and Dead Ends | Catalog only | No | No | No |
-| Door to the Oniverse | Catalog only | No | No | No |
-| Mirrors promo | Catalog only | No | No | No |
-| Sphinx, Diver and Confusion promo | Catalog only | No | No | No |
-| Little Incubus | Catalog only | No | No | No |
+| Expansion | Status | Remaining verification |
+|---|---|---|
+| Book of Steps | Playable solo/co-op; Goal order, loss rollback and all three spells | Clarify spell interruption timing during nested searches |
+| Glyphs | Playable solo/co-op; 8 Glyphs and 4 Doors | Cross-expansion pairing/adjudications during Phase 7 |
+| Dreamcatchers | Playable solo/co-op; 4 Lost Dreams, 4 catchers, Failsafes, overload | Search/free timing and edge cases with future expansions |
+| Towers | Playable solo/co-op; edge placement, deck peek, Nightmare loss | **Printed left/right symbols on each of the 12 physical cards need edition-level image audit**; current card metadata should be treated as provisional |
+| Premonitions / Crossroads / Oniverse | Unavailable — Phase 5 | Full effect implementation |
+| Mirrors / Sphinx / Incubus | Unavailable — Phase 6 | Full effect implementation |
+
+## Phase 4 rulings and scope
+
+- Book of Steps: if a won Door is lost, flip **its** Goal back to incomplete and treat the earliest incomplete Goal as required next. Extra Glyph Door Goals increase the ordered row from 8 to 12. Costs are 5/7/10 or hard 6/9/12, removed cards remain in the conservation registry.
+- Dreamcatchers: one entire Limbo group is assigned to an empty catcher. Overload removes **one selected catcher**, shuffling its held cards with the current Limbo; other occupied catchers stay occupied. Failsafe freeing is allowed at the beginning of a turn. Deck-search shuffles may free a selected occupied catcher.
+- Towers: the single Alignment is shared in two-player mode, per the printed expansion's cooperative clarification. Normal difficulty protects completed four-color Alignment; hard mode removes this protection. Tower side-symbol metadata requires verification against all 12 printed cards.
+- Cooperative Glyphs extra Door ownership (team total 12 including one of each color per player) and cooperative Book shared Goal sequencing are implementation adjudications pending final publisher verification. They must not be mistaken for sourced publisher rulings.
+- Phase 4 is **playable**, but this document is deliberately not a claim that all publisher card art, rare multi-expansion timings, or all six combinations are officially verified. Phase 7 resolves those remaining audits.
+- Guest-only product: never implement account signup, signin or profile identity.
 
 ## Official sources
 

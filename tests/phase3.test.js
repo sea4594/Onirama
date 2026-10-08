@@ -6,16 +6,16 @@ import {enqueueEffects,resolveEffectDecision} from '../engine/effects.js';
 import {findCard,zoneArray,assertCardsUnique} from '../engine/zones.js';
 import {objectives} from '../engine/modules.js';
 
-test('Phase 3 configuration rejects every unavailable expansion and malformed settings',()=>{
+test('Configuration enables Phase 4 and rejects unavailable expansion or malformed settings',()=>{
   assert.deepEqual(validateConfig(),{ruleset:'official',expansions:[],difficulties:{}});
   assert.equal(EXPANSION_CATALOG.length,10);
-  for(const e of EXPANSION_CATALOG){assert.equal(e.available,false);assert.throws(()=>newGame({config:{expansions:[e.id]}}),/not yet playable/);}
+  for(const e of EXPANSION_CATALOG){assert.equal(e.available,e.phase===4);if(e.available)assertConserved(newGame({config:{expansions:[e.id]}}));else assert.throws(()=>newGame({config:{expansions:[e.id]}}),/not yet playable/);}
   for(const config of [{expansions:['unknown']},{expansions:['glyphs','glyphs']},{expansions:'glyphs'},{difficulties:{book:'hard'}},{ruleset:'custom'}])assert.throws(()=>validateConfig(config));
 });
 test('Phase 3 schema migration preserves old save and cards',()=>{
   const old=newGame({seed:92});old.schema=1;delete old.config;delete old.rulesVersion;delete old.moduleState;delete old.effects;delete old.continuations;delete old.events;
-  const upgraded=normalizeSave(old);assert.equal(upgraded.schema,2);assert.equal(upgraded.rulesVersion,RULESET_VERSION);assert.equal(old.schema,1);assertConserved(upgraded);
-  const after=act(old,{type:'discard',id:old.players[0].hand.find(x=>x.symbol!=='key')?.id||old.players[0].hand[0].id});assert.equal(after.schema,2);assertConserved(after);
+  const upgraded=normalizeSave(old);assert.equal(upgraded.schema,3);assert.equal(upgraded.rulesVersion,'base-2');assert.equal(old.schema,1);assertConserved(upgraded);
+  const after=act(old,{type:'discard',id:old.players[0].hand.find(x=>x.symbol!=='key')?.id||old.players[0].hand[0].id});assert.equal(after.schema,3);assertConserved(after);
 });
 test('Effect interpreter serializes decisions and resumes queued card movements exactly once',()=>{
   const s=newGame({seed:41});const id=s.deck.at(-1).id;const before=s.deck.length;

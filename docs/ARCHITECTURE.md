@@ -27,13 +27,13 @@ A stale `expectedVersion` returns an error and never replays an old command. For
 4. Protect all writes with transactions, crash recovery, versioned schema migration, and backups; synchronous JSON persistence is not safe for scaling or multiple servers.
 5. Add comprehensive audit/visibility tagging to event logs so private information never appears in a public history or replay.
 6. Scope updates to authorized seats only; test reconnects while resolving decisions.
-7. Define account deletion/privacy policies and retention schedule before collecting personal information.
+7. Publish guest-session retention and deletion policies before collecting personal information.
 8. Conduct authorization, injection, XSS, CSP, accessibility and network failure testing before declaring production-ready.
 
-## Phase 3 implementation
+## Phase 3/4 implementation
 
 - `config.js` rejects unimplemented expansion combinations even when a caller bypasses the browser and submits direct API requests. The game includes `schema:2`, `rulesVersion`, `config`, `moduleState`, `effects`, `continuations`, `events`. Existing schema-1 session games are upgraded on use without losing card instances.
 - `zones.js` enumerates player, common, temporary, and module card zones and checks card conservation. Module state is never exposed in client views.
-- `effects.js` provides deterministic, serializable `log`, `move`, `shuffle`, `decision` effects. A decision suspends subsequent effects until the authorized actor responds. Unsupported effects fail explicitly. This infrastructure does not yet imply support for any expansion card behavior.
+- `effects.js` provides deterministic, serializable `log`, `move`, `shuffle`, `decision` effects. A decision suspends subsequent effects until the authorized actor responds. Unsupported effects fail explicitly. Phase 4 expansion actions also use serializable, server-validated pending decisions; future expansions will extend this framework.
 - `modules.js` is a registry with `setup`, `onEvent`, and `objectives` hooks. The base game calls it on Door acquisition and Limbo resolution. Additional effects will be integrated at phase-specific rule boundaries as expansions are implemented.
 - UI remains dependency-free. The theme palettes and navigation pattern were adapted from the supplied BibleGuessr project, without copying its Next.js stack or private app data. Settings persist locally; server game state remains authoritative.

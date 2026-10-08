@@ -1,8 +1,8 @@
 # Onirama
 
-An original-art, browser-based dream labyrinth card game. The project targets a faithful base-game implementation with cooperative play and a phased roadmap for all standard and promotional expansions.
+An original-art, browser-based dream labyrinth card game. The project implements the base game and the first four Second Edition expansions, with cooperative play and a phased roadmap for the rest.
 
-> **Current state:** Runnable base-game solo and two-player cooperative MVP with Phase 3 expansion-ready foundation and three-tab navigation. **Expansions are not yet playable**; the UI disables them rather than pretending to implement them. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
+> **Current state:** Runnable solo and two-player cooperative game with Book of Steps, Glyphs, Dreamcatchers, Towers, and their documented difficulty variants. Unfinished expansions remain disabled on both client and server. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
 
 ## Quick start
 
@@ -29,22 +29,25 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ## What works today
 
+- **Phase 4:** Book of Steps (ordered Goals, rollback, three discard-funded spells, difficult costs); Glyphs (eight Glyph Locations, four extra Doors, Incantation); Dreamcatchers (four Lost Dreams, storing and freeing, overload, difficult mode); Towers (shared row, edge matching, discard peek, Nightmare consequences, difficult mode). Solo and guest cooperative configurations share one rules engine.
+- **No accounts or login** (permanent product decision); room codes and local preferences are retained.
+
 - Original, responsive, keyboard-usable card UI with Single Player / Multiplayer / Settings tabs and BibleGuessr-inspired theme presets (Ocean, Forest, Clay, Berry, light/dark); rulebook and roadmap.
 - Base 76-card deck with unique card IDs and reproducible seeded shuffles.
 - Solo base game: legal Labyrinth placement, Door search with choice to skip, Key Prophecy, all four Nightmare penalties, individual draw/refill decisions, Limbo, immediate victory and deck-exhaustion defeat.
 - Official two-player *structure*: eight-card public initial draft, three private cards per player, two face-up shared cards, alternating turns, separate Labyrinths and Doors, optional swap after a discard, and whole-hand redraws.
 - Invite-only cooperative rooms, seat-specific bearer credentials, server-authoritative game state, event stream, reconnection/reload, persistent state, action-version checks.
 - Server-side hidden-hand and hidden-deck filtering.
-- Versioned ruleset/config validation, v1→v2 saved-state migration, deterministic effect queue with serializable pending decisions, card-zone registry, and expansion module/event/objective hooks. Unavailable expansions are blocked on the server.
+- Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, all Phase 4 expansion modules, unique card zones, and objective hooks. Unavailable expansions are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
-**Important limitations:** No expansion rules yet; no public deployment hardening, matchmaking, optional accounts, sophisticated visual card art, tutorial walkthroughs, history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. No login is required or planned until cross-device saves or optional account-linked features are genuinely needed. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
+**Important limitations:** No public deployment hardening, matchmaking, sophisticated visual card art, tutorial walkthroughs, guest history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. Accounts and login are explicitly out of scope permanently; all gameplay is guest-based. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
 
 ## Architecture
 
 ```text
 engine/
-  cards.js       Exact base card registry; expansion catalog
+  cards.js       Base and Phase 4 card catalog
   config.js      Versioned rules configuration, expansion availability, save upgrade
   zones.js       Card-location registry and card conservation
   effects.js     Serializable, resumable effect processor

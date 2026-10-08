@@ -16,3 +16,8 @@
 - Save/resume during every pending decision must produce identical subsequent game state.
 - Rules-adjudication tests are tied to rulebook page or official clarification before official-mode enablement.
 - Playwright tests cover desktop/mobile viewports, keyboard and screen reader semantics, dialogs and visible legal actions.
+
+## Phase 4
+- All 16 combinations of the first four expansions tested across solo/cooperative seeded games (12 seeds per combination and mode).
+- Dedicated tests for printed expansion totals, Goal reopening, spell costs/order, Glyph Incantations, Dreamcatcher Failsafe and overload preservation, Tower alignment and Nightmare penalty.
+- Browser UI and HTTP acceptance tests follow the same full release gate.
