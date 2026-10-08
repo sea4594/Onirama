@@ -16,6 +16,8 @@ test('HTTP solo and cooperative authorization, game start, privacy, stale action
   }
   try{
     let ready=false;for(let i=0;i<60;i++){try{const r=await fetch(host+'/');if(r.ok){ready=true;break;}}catch{}await sleep(40);}assert.ok(ready,'Server did not start');
+    const catalog=await request('/api/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.expansions.length,10);
+    const blocked=await request('/api/solo','POST',{name:'Unverified',config:{expansions:['glyphs']}});assert.equal(blocked.status,400);assert.match(blocked.data.error,/not yet playable/);
     const solo=await request('/api/solo','POST',{name:'Solo'});assert.equal(solo.status,201);const id=solo.data.room.id;
     const unauthorized=await request(`/api/rooms/${id}/state`);assert.equal(unauthorized.status,401);
     const initial=await request(`/api/rooms/${id}/state`,'GET',null,solo.data.token);assert.equal(initial.status,200);

@@ -3,3 +3,31 @@
 @media(max-width:900px){.game-layout{grid-template-columns:1fr}.board-side{display:grid;grid-template-columns:1fr 1fr}.nav{padding:14px}.page{padding:16px}.card{width:65px;height:94px}.card .symbol{font-size:1.7rem}.grid3{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.grid,.grid3,.board-side{grid-template-columns:1fr}.nav .brand{font-size:1.15rem}.nav-right a{font-size:.77rem;padding:5px!important}.nav{gap:4px}.page{padding:12px}.panel{padding:14px;border-radius:14px}.card{width:calc((100vw - 67px)/5);max-width:76px;height:100px}.card.tiny{width:38px;height:57px}.card .card-label{font-size:.56rem}.cards{gap:5px}.hero{padding-top:28px}.hero p{font-size:1rem}.hero h1{font-size:2.8rem}.door-group{min-width:70px}.board-side .panel{padding:14px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+/* Phase 3: BibleGuessr-inspired three primary tabs and familiar theme palette.
+   These are original Onirama components, not bundled BibleGuessr assets. */
+html[data-theme="ocean"][data-mode="light"]{--ui-bg:#edf2f7;--ui-panel:#ffffff;--ui-soft:#d9e2ec;--ui-text:#1f2f3d;--ui-muted:#455a6f;--ui-accent:#3f586e;--ui-border:#cad5e0}
+html[data-theme="ocean"][data-mode="dark"]{--ui-bg:#151d25;--ui-panel:#2c3a47;--ui-soft:#475f73;--ui-text:#f1f6fb;--ui-muted:#c5d3e0;--ui-accent:#93a7bf;--ui-border:#536478}
+html[data-theme="bw"][data-mode="light"]{--ui-bg:#f2f2f2;--ui-panel:#fff;--ui-soft:#f8f8f8;--ui-text:#1f1f1f;--ui-muted:#656565;--ui-accent:#404040;--ui-border:#d6d6d6}
+html[data-theme="bw"][data-mode="dark"]{--ui-bg:#1b1b1b;--ui-panel:#2a2a2a;--ui-soft:#343434;--ui-text:#f8f8f8;--ui-muted:#c1c1c1;--ui-accent:#d7d7d7;--ui-border:#505050}
+html[data-theme="forest"][data-mode="light"]{--ui-bg:#eef2ed;--ui-panel:#fff;--ui-soft:#dfe6dd;--ui-text:#1f2c1e;--ui-muted:#3f533f;--ui-accent:#4d6350;--ui-border:#cad6c9}
+html[data-theme="forest"][data-mode="dark"]{--ui-bg:#171d16;--ui-panel:#303a2e;--ui-soft:#5e6e5b;--ui-text:#f3f7f2;--ui-muted:#c9d2c7;--ui-accent:#93a390;--ui-border:#566453}
+html[data-theme="clay"][data-mode="light"]{--ui-bg:#f5f1ee;--ui-panel:#fff;--ui-soft:#e8dfda;--ui-text:#433630;--ui-muted:#5e4f48;--ui-accent:#9a7f70;--ui-border:#ddd0c7}
+html[data-theme="clay"][data-mode="dark"]{--ui-bg:#1d1918;--ui-panel:#4f453f;--ui-soft:#65574f;--ui-text:#faf3ef;--ui-muted:#e9ddd7;--ui-accent:#e8dfda;--ui-border:#73645a}
+html[data-theme="berry"][data-mode="light"]{--ui-bg:#f8f2f5;--ui-panel:#fff;--ui-soft:#e9d6df;--ui-text:#4a2f3f;--ui-muted:#664857;--ui-accent:#8a5870;--ui-border:#e2cbd7}
+html[data-theme="berry"][data-mode="dark"]{--ui-bg:#1a1419;--ui-panel:#3f2e3a;--ui-soft:#614255;--ui-text:#fff6fb;--ui-muted:#f4e3ec;--ui-accent:#debfce;--ui-border:#755668}
+html{background:var(--ui-bg);color:var(--ui-text)}body{background:var(--ui-bg);color:var(--ui-text)}
+.nav{background:var(--ui-panel);border-color:var(--ui-border);padding:12px max(16px,calc((100vw - 1100px)/2));box-shadow:0 2px 12px #0001}.nav .brand{font-size:1.25rem;color:var(--ui-accent)}.nav-right a:not(.brand){color:var(--ui-muted)}.nav-right a:hover{color:var(--ui-text)}
+.panel{background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 7px 20px #0000000b;color:var(--ui-text)}
+.section-title,.title-row h1,.prose h2{color:var(--ui-text)}.muted,.tile p,.prose,.decision p{color:var(--ui-muted)}.eyebrow,.section-label{color:var(--ui-accent)}.chip{color:var(--ui-accent);border-color:var(--ui-border);background:var(--ui-soft)}
+button{color:var(--ui-text);background:var(--ui-soft);border-color:var(--ui-border)}button:hover:not(:disabled){background:var(--ui-border);border-color:var(--ui-accent)}button.primary,.primary{background:var(--ui-accent);border-color:var(--ui-accent);color:var(--ui-panel)}button.primary:hover:not(:disabled){filter:brightness(1.14);background:var(--ui-accent)}
+.inline-input{background:var(--ui-panel);border:1px solid var(--ui-border);color:var(--ui-text)}.inline-input:focus-visible{outline:3px solid var(--ui-accent);outline-offset:2px}
+.notice{border-color:var(--ui-border);background:var(--ui-soft);color:var(--ui-text)}.status{color:var(--ui-muted)}.log div{border-color:var(--ui-border)}.prose a{color:var(--ui-accent)}
+.card{color:#f4ebda}.card .symbol{color:#f6efe2}.card .card-label{color:#f4ebda}.door-slot{color:var(--ui-muted)}
+.decision{background:var(--ui-soft);border-color:var(--ui-border);color:var(--ui-text)}.decision h2{color:var(--ui-text)}
+.home-screen{max-width:650px}.home-screen>section p,.route>section p{line-height:1.6}.expansion-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.expansion-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:1px solid var(--ui-border);border-radius:10px;font-size:.83rem}.expansion-row .chip{flex-shrink:0}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;z-index:60;background:var(--ui-panel);border-top:1px solid var(--ui-border);display:flex;align-items:stretch;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #0000000a}
+.bottom-nav-item{display:flex;gap:4px;flex-direction:column;align-items:center;justify-content:center;min-height:65px;flex:1;max-width:260px;text-decoration:none;color:var(--ui-muted);font-size:.78rem;font-weight:600;border-top:3px solid transparent}
+.bottom-nav-item.active{color:var(--ui-accent);border-top-color:var(--ui-accent);background:var(--ui-soft)}.bottom-icon{font-size:1.3rem;line-height:1.1}.page{padding-bottom:110px}
+html[data-motion="reduced"] *,html[data-motion="reduced"] *::before,html[data-motion="reduced"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+html[data-card-size="large"] .card:not(.tiny){width:88px;height:125px}
+@media(max-width:600px){.expansion-list{grid-template-columns:1fr}.nav{padding:11px 14px}.nav-right{gap:3px}.nav-right a:not(.brand){font-size:.78rem}.bottom-nav-item{font-size:.73rem}.page{padding-bottom:105px}html[data-card-size="large"] .card:not(.tiny){width:calc((100vw - 66px)/5);height:115px}}

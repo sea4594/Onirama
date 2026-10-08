@@ -2,18 +2,7 @@
 
 An original-art, browser-based dream labyrinth card game. The project targets a faithful base-game implementation with cooperative play and a phased roadmap for all standard and promotional expansions.
 
-> **Current state:** Runnable base-game solo and two-player cooperative MVP. **Expansions are not yet playable**; the UI disables them rather than pretending to implement them. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
-
-## Updates through hotfix ZIPs
-
-Use the supplied `ONIRAMA_..._HOTFIX.zip` rather than copying repository files manually. Unzip the archive in `~/Downloads` and run `ONIRAMA_..._HOTFIX/apply-test-commit-push.sh`. The script applies its bundled `files/` to **`~/Desktop/Onirama`** on **`main`**, runs `npm run release:gate`, and commits/pushes **only if the entire gate succeeds**. It refuses a dirty working tree, the wrong branch, the wrong remote, or diverged remote history. An unsuccessful gate leaves edits uncommitted so the error can be diagnosed. The initial hotfix includes the full project because the remote repository is initially empty; subsequent hotfixes contain only changed files and required deletion instructions.
-
-### Requirements
-
-- macOS with `bash`, `git`, and **Node.js 22+** on `PATH`.
-- GitHub credentials configured locally so `git push origin main` works.
-- `~/Desktop/Onirama` may not exist (the initial installer creates it), or it must be a **clean** git repository on `main` connected to `sea4594/Onirama`.
-- The script will add `origin` pointing to `https://github.com/sea4594/Onirama.git` if missing. It does not overwrite an existing, non-empty non-Git folder.
+> **Current state:** Runnable base-game solo and two-player cooperative MVP with Phase 3 expansion-ready foundation and three-tab navigation. **Expansions are not yet playable**; the UI disables them rather than pretending to implement them. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
 
 ## Quick start
 
@@ -40,21 +29,26 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ## What works today
 
-- Original, responsive, keyboard-usable card UI; rulebook and development roadmap routes.
+- Original, responsive, keyboard-usable card UI with Single Player / Multiplayer / Settings tabs and BibleGuessr-inspired theme presets (Ocean, Forest, Clay, Berry, light/dark); rulebook and roadmap.
 - Base 76-card deck with unique card IDs and reproducible seeded shuffles.
 - Solo base game: legal Labyrinth placement, Door search with choice to skip, Key Prophecy, all four Nightmare penalties, individual draw/refill decisions, Limbo, immediate victory and deck-exhaustion defeat.
 - Official two-player *structure*: eight-card public initial draft, three private cards per player, two face-up shared cards, alternating turns, separate Labyrinths and Doors, optional swap after a discard, and whole-hand redraws.
 - Invite-only cooperative rooms, seat-specific bearer credentials, server-authoritative game state, event stream, reconnection/reload, persistent state, action-version checks.
 - Server-side hidden-hand and hidden-deck filtering.
+- Versioned ruleset/config validation, v1→v2 saved-state migration, deterministic effect queue with serializable pending decisions, card-zone registry, and expansion module/event/objective hooks. Unavailable expansions are blocked on the server.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
-**Important limitations:** No expansion rules yet; no public deployment hardening, matchmaking, optional accounts, sophisticated visual card art, tutorial walkthroughs, history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
+**Important limitations:** No expansion rules yet; no public deployment hardening, matchmaking, optional accounts, sophisticated visual card art, tutorial walkthroughs, history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. No login is required or planned until cross-device saves or optional account-linked features are genuinely needed. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
 
 ## Architecture
 
 ```text
 engine/
   cards.js       Exact base card registry; expansion catalog
+  config.js      Versioned rules configuration, expansion availability, save upgrade
+  zones.js       Card-location registry and card conservation
+  effects.js     Serializable, resumable effect processor
+  modules.js     Registered rules module hooks and objective collection
   game.js        Deterministic rules engine, state machine, legality, secret filtering
   random.js      Deterministic shuffle
 server/
@@ -66,6 +60,7 @@ public/
 
 tests/           Engine invariants, seeded bot simulations, HTTP auth/room tests
 docs/            Phase plan, rules audit, architecture, test matrix
+scripts/         Optional safe git initialization / push helper
 .github/         Continuous integration
 ```
 

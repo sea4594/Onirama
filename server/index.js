@@ -4,6 +4,7 @@ import {readFileSync,writeFileSync,existsSync,mkdirSync} from 'node:fs';
 import {join,extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {newGame,act,viewFor,assertConserved} from '../engine/game.js';
+import {validateConfig,EXPANSION_CATALOG} from '../engine/config.js';
 
 const root=resolve(fileURLToPath(new URL('../public/',import.meta.url)));
 const store=resolve(process.env.ONIRAMA_DATA_DIR||'server-data');mkdirSync(store,{recursive:true});
@@ -19,7 +20,7 @@ const json=(res,status,data)=>{
 };
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; object-src 'none'"};
 const asError=(e)=>({error:e instanceof Error?e.message:'Request rejected'});
-const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===0,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status});
+const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===0,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status,config:x.config||validateConfig()});
 function credentials(x,request){
   const bearer=request.headers.authorization||'';
   const credential=bearer.startsWith('Bearer ')?bearer.slice(7):null;
@@ -32,9 +33,10 @@ function sendEvents(x){
     res.write(`data: ${JSON.stringify({room:roomSummary(x,seat),game:x.game?viewFor(x.game,seat):null})}\n\n`);
   }catch{}
 }
-function create(mode,name){
+function create(mode,name,rawConfig){
+  const config=validateConfig(rawConfig);
   const id=token().slice(0,12),key=token();
-  const x={id,code:code(),mode,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],game:null,version:0,createdAt:Date.now()};
+  const x={id,code:code(),mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],game:null,version:0,createdAt:Date.now()};
   sessions[id]=x;save();return {room:roomSummary(x,0),token:key};
 }
 async function body(req){
@@ -44,11 +46,12 @@ async function body(req){
 }
 function endpoint(req,res,url,data){
   const segments=url.pathname.split('/').filter(Boolean);
+  if(req.method==='GET'&&url.pathname==='/api/catalog')return json(res,200,{expansions:EXPANSION_CATALOG});
   if(req.method==='POST'&&url.pathname==='/api/solo'){
-    const o=create('solo',data.name);
-    sessions[o.room.id].game=newGame({mode:'solo'});save();return json(res,201,o);
+    const o=create('solo',data.name,data.config);
+    sessions[o.room.id].game=newGame({mode:'solo',config:sessions[o.room.id].config});save();return json(res,201,o);
   }
-  if(req.method==='POST'&&url.pathname==='/api/rooms')return json(res,201,create('coop',data.name));
+  if(req.method==='POST'&&url.pathname==='/api/rooms')return json(res,201,create('coop',data.name,data.config));
   if(req.method==='POST'&&url.pathname==='/api/join'){
     const x=Object.values(sessions).find(x=>x.mode==='coop'&&x.code===String(data.code||'').trim().toUpperCase());
     if(!x)throw Error('Room code not found');if(x.game)throw Error('This game has already started');if(x.seats[1])throw Error('Room is full');
@@ -74,7 +77,7 @@ function endpoint(req,res,url,data){
     if(x.mode!=='coop'||seat!==0)throw Error('Only the host can start the cooperative game');
     if(x.game)throw Error('Game already started');
     if(!x.seats[1]||!x.ready.every(Boolean))throw Error('Both players must join and be ready');
-    x.game=newGame({mode:'coop',names:x.seats.map(v=>v.name)});x.version++;save();sendEvents(x);
+    x.game=newGame({mode:'coop',names:x.seats.map(v=>v.name),config:x.config});x.version++;save();sendEvents(x);
     return json(res,200,{ok:true,version:x.version});
   }
   if(req.method==='POST'&&operation==='action'){

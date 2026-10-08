@@ -1,5 +1,9 @@
 import { createDeck, COLORS } from './cards.js';
 import {shuffle} from './random.js';
+import {validateConfig,normalizeSave,RULESET_VERSION} from './config.js';
+import {enqueueEffects,resolveEffectDecision} from './effects.js';
+import {assertCardsUnique} from './zones.js';
+import {activeModules,emitGameEvent} from './modules.js';
 
 const own = (state) => state.players[state.active];
 const hand = (state) => own(state).hand;
@@ -7,6 +11,7 @@ const need = (state) => state.mode==='solo'?5:3;
 const target = (state) => state.mode==='solo'?5:3;
 const takeTop = (state) => state.deck.pop();
 const note=(s,message)=>{s.log.push(message); if(s.log.length>150)s.log.shift();};
+const event=(s,type,data={})=>{const effects=emitGameEvent(s,{type,...data});if(effects.length)enqueueEffects(s,effects);};
 function fail(message){ throw new Error(message); }
 function required(cond,message){if(!cond) fail(message);}
 const matchingKeys=(s,color)=>[
@@ -23,12 +28,12 @@ function findById(arr,id){ return arr.find(x=>x.id===id); }
 function acquireDoor(s,door,from) {
   // In cooperative play every player must collect one of each color.
   if(s.mode==='coop' && own(s).doors.some(x=>x.color===door.color)) { s.limbo.push(door);note(s,`An already-collected ${door.color} Door enters Limbo.`);return; }
-  own(s).doors.push(door);note(s,`${own(s).name} unlocked a ${door.color} Door (${from}).`);
+  own(s).doors.push(door);note(s,`${own(s).name} unlocked a ${door.color} Door (${from}).`);event(s,'doorAcquired',{doorId:door.id,color:door.color,from,player:s.active});
   if(s.mode==='solo' ? own(s).doors.length===8 : s.players.every(p=>COLORS.every(c=>p.doors.some(d=>d.color===c)))){
     s.status='won';s.phase='ended';s.pending=null;note(s,'All required Doors collected. Victory!');
   }
 }
-function reshuffleLimbo(s) { if(s.limbo.length){s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,'Limbo shuffled into deck.');} }
+function reshuffleLimbo(s) { if(s.limbo.length){const effects=s.limbo.map(c=>({type:'move',from:'limbo',to:'deck',cardId:c.id}));effects.push({type:'shuffle',zone:'deck'},{type:'log',message:'Limbo shuffled into deck.'});enqueueEffects(s,effects);event(s,'limboResolved');} }
 // Initial and Nightmare-replacement drawing: Dreams and Doors enter Limbo without effects.
 function dealLocation(s,to){
   while(true){
@@ -98,10 +103,12 @@ function resolveNightmare(s,option,id){
   } else fail('Choose a valid Nightmare penalty');
   s.discard.push(nightmare);s.pending=null;refill(s);
 }
-export function newGame({mode='solo',seed=Date.now(),names=['Dreamwalker','Partner']}={}){
+export function newGame({mode='solo',seed=Date.now(),names=['Dreamwalker','Partner'],config}={}){
   required(['solo','coop'].includes(mode),'Invalid mode');
   const players=names.slice(0,mode==='coop'?2:1).map((name,i)=>({id:i,name:String(name||`Player ${i+1}`).slice(0,40),hand:[],labyrinth:[],doors:[],streakColor:null,streak:0}));
-  const s={schema:1,mode,rng:(Number(seed)>>>0)||1,deck:createDeck(),discard:[],limbo:[],shared:[],draft:[],players,active:0,turn:1,phase:mode==='coop'?'draft':'action',pending:null,status:'active',log:[]};
+  const rules=validateConfig(config);
+  const s={schema:2,rulesVersion:RULESET_VERSION,config:rules,moduleState:{},effects:[],continuations:[],events:[],mode,rng:(Number(seed)>>>0)||1,deck:createDeck(),discard:[],limbo:[],shared:[],draft:[],players,active:0,turn:1,phase:mode==='coop'?'draft':'action',pending:null,status:'active',log:[]};
+  for(const mod of activeModules(rules))s.moduleState[mod.id]=mod.setup(s);
   shuffle(s,s.deck);
   if(mode==='solo'){for(let i=0;i<5;i++)if(!dealLocation(s,players[0].hand))return s;}
   else {for(let i=0;i<8;i++)if(!dealLocation(s,s.draft))return s;}
@@ -128,7 +135,7 @@ export function legalActions(s){
 }
 function finishAction(s){refill(s);}
 export function act(previous,command){
-  const s=structuredClone(previous);
+  const s=structuredClone(normalizeSave(previous));
   required(s.status==='active','Game has ended');
   required(command && typeof command==='object','Missing command');
   if(s.phase==='draft'){
@@ -174,6 +181,7 @@ export function act(previous,command){
     return s;
   }
   required(s.phase==='decision'&&s.pending,'Resolve the current decision first');
+  if(s.pending.type==='moduleDecision'){required(command.type==='moduleDecision','Resolve the pending effect decision');resolveEffectDecision(s,command,s.active);return s;}
   if(s.pending.type==='doorSearch'){
     required(command.type==='doorSearch','Choose whether to search for the Door');
     required(['claim','skip'].includes(command.option),'Invalid Door search choice');
@@ -211,7 +219,9 @@ export function act(previous,command){
 }
 // Minimize information disclosure for a viewer; never expose deck contents or the PRNG seed.
 export function viewFor(s,seat=null){
-  const copy=structuredClone(s);delete copy.rng;
+  const copy=structuredClone(normalizeSave(s));delete copy.rng;
+  // Never send hidden module card zones or queued effect internals to a client.
+  delete copy.effects;delete copy.continuations;delete copy.moduleState;delete copy.events;
   copy.deckCount=copy.deck.length;delete copy.deck;
   if(copy.mode==='coop')for(let i=0;i<copy.players.length;i++)if(i!==seat){
     copy.players[i].hand=copy.players[i].hand.map(x=>({id:x.id,kind:'hidden'}));
@@ -219,12 +229,4 @@ export function viewFor(s,seat=null){
   if(copy.pending && seat!==s.active && copy.mode==='coop')copy.pending={type:'private-decision',player:s.active};
   return copy;
 }
-export function assertConserved(s){
-  const piles=[s.deck,s.discard,s.limbo,s.shared,s.draft,...s.players.flatMap(p=>[p.hand,p.labyrinth,p.doors])];
-  if(s.pending?.card)piles.push([s.pending.card]);
-  if(s.pending?.cards)piles.push(s.pending.cards);
-  const all=piles.flat().map(c=>c.id);
-  required(all.length===76,`Card count ${all.length}, expected 76`);
-  required(new Set(all).size===76,'Duplicate card instance');
-  return true;
-}
+export function assertConserved(s){return assertCardsUnique(normalizeSave(s),76);}
