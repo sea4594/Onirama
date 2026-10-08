@@ -36,3 +36,14 @@
 - Sphinx named aspects, Diver continuations/penalty, Confusion, Mirror pair matching/rewards, hard Rainbow requirements, Incubus levels/compatibility and private viewer filtering have targeted tests.
 - Browser rendering smoke tested with a Node VM shim. Full Chromium screenshot navigation unavailable under the current container network restrictions.
 - GitHub Pages workflow copies relative-path static files and engine and must pass the full release gate before deploying.
+
+## Phase 7 regression gate
+
+- **61 tests**, including **1,024 complete seeded solo/co-op games** across all **512 possible configurations** of the nine combinable expansion groups (not counting difficulty permutations). Unlike Phase 6's setup-only sweep, each runs until victory or defeat while checking physical card conservation on every transition.
+- Book of Steps + Glyph Mirror: mandatory ordered Door goals, including returned Doors when a goal is not next.
+- Key Mirror + Dark Premonitions: the first Door is acquired, its triggered penalty blocks the reward, and only afterward is the second Door awarded. This is tested with persistent extra-card-zone accounting.
+- Hammer Bird: removal of one Labyrinth color restores the preceding unfinished color sequence, allowing a later Door.
+- Dreamcatchers + Red and Green Mirrors: optional catcher freeing on deck-search reshuffle, retaining Failsafe Books.
+- Phase 6 save migration for queued Mirror Doors and hidden state filtering in cooperative play.
+
+**Caveat:** The general simulation bot favors ordinary card play; it does not deliberately activate every expansion ability. Named regression tests cover specific interactions, but exhaustive publisher equivalence is not claimed. Browser rendering/full end-to-end tests remain Phase 8–9 obligations.

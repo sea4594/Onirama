@@ -31,7 +31,7 @@ function useDenizen(s,cmd){need(has(s,'oniverse'),'Door to the Oniverse is disab
  }
  if(ability==='hammer'){
    need(own(s).labyrinth.length>0,'The Labyrinth is empty');spendDenizen(s,d.id,ability);const row=own(s).labyrinth,color=row.at(-1).color;
-   while(row.length&&row.at(-1).color===color)s.discard.push(row.pop());own(s).series=[];note(s,'Hammer Bird cleared the ending Labyrinth sequence.');return;
+   while(row.length&&row.at(-1).color===color)s.discard.push(row.pop());rebuildSeries(s);note(s,'Hammer Bird cleared the ending Labyrinth sequence.');return;
  }
  if(ability==='squirrel'||ability==='harpoon'){
    spendDenizen(s,d.id,ability);const cards=takeLook(s,5);if(ability==='harpoon'){s.discard.push(...cards.filter(c=>c.kind==='nightmare'));s.pending={type:'denizenPeek',cards:cards.filter(c=>c.kind!=='nightmare'),place:'bottom'};}else s.pending={type:'denizenPeek',cards,place:'top'};s.phase='decision';return;
@@ -63,7 +63,7 @@ function premonitionLoop(s,after='refill'){
  if(s.status!=='active')return;
  const options=activePremonitions(s);
  if(options.length){s.pending={type:'premonitionPick',options,after};s.phase='decision';return;}
- s.pending=null;if(after==='action'){s.phase='action';return;}if(after==='special'){if(fillSpecial(s))endTurn(s);return;}refill(s);
+ s.pending=null;if(after==='action'){s.phase='action';return;}if(after==='special'){if(fillSpecial(s))endTurn(s);return;}if(after==='mirrorDoors'){continueMirrorDoors(s);return;}refill(s);
 }
 function applyPremonition(s,id,after){const p=prem(s);need(activePremonitions(s).includes(id),'Premonition trigger is not active');p.faceUp.splice(p.faceUp.indexOf(id),1);p.resolved.push(id);note(s,`Dark Premonition: ${id}.`);
  if(id==='red2'){s.discard.push(...s.deck.filter(c=>c.kind==='location'&&c.color==='red'));s.deck=s.deck.filter(c=>!(c.kind==='location'&&c.color==='red'));}
@@ -82,6 +82,12 @@ function runLocation(s,c){const p=own(s);p.series??=[];let series=p.series;
  series.push({id:c.id,color:c.color});
  if(series.length>=3){const realColors=series.filter(x=>x.color!=='wild').map(x=>x.color),wildIndex=series.findIndex(x=>x.color==='wild');const valid=realColors.length>=2&&realColors.every(v=>v===realColors[0])&&(wildIndex<0||s.config.difficulties.crossroads!=='hard'||wildIndex===1);p.series=[];return valid?realColors[0]:null;}
  p.series=series;return null;
+}
+function rebuildSeries(s){
+ // Recompute the underlying Door sequence after Hammer Bird changes the Labyrinth.
+ const actual=own(s),replayed={active:0,players:[{series:[]}],config:s.config};
+ for(const card of actual.labyrinth)runLocation(replayed,card);
+ actual.series=replayed.players[0].series;
 }
 function continueAfterDenizen(s){s.pending=null;s.phase='action';}
 
@@ -206,12 +212,22 @@ function mirrorEnabled(s,name){return MIRROR_NAMES.includes(name)&&(name!=='glyp
 function mirrorMatch(c,name){if(c.kind!=='location')return false;if(name==='rainbow')return COLORS.includes(c.color);if(COLORS.includes(name))return c.color===name||c.color==='wild';return c.symbol===name;}
 function playMirrorPair(s,cmd){need(has(s,'mirrors')&&mirrorEnabled(s,cmd.mirror),'Mirror unavailable');need(!mirrors(s).completed.includes(cmd.mirror),'Mirror already explored');const ids=cmd.ids;need(Array.isArray(ids)&&ids.length===2&&ids[0]!==ids[1],'Choose two distinct Location cards');const first=spots(s).find(x=>x.id===ids[0]),second=spots(s).find(x=>x.id===ids[1]);need(first&&second&&mirrorMatch(first.card,cmd.mirror)&&mirrorMatch(second.card,cmd.mirror),'Both cards must match one Mirror');const a=mirrors(s).zones[cmd.mirror];need(a.length<=2,'Mirror is already full');if(cmd.mirror==='rainbow')need(new Set([...a.map(c=>c.color),first.card.color,second.card.color]).size===a.length+2,'Rainbow Mirror requires one card of each color');a.push(takeSpot(s,ids[0]),takeSpot(s,ids[1]));note(s,`Placed two Locations under ${cmd.mirror} Mirror.`);
  if(a.length!==4){refill(s);return;}mirrors(s).completed.push(cmd.mirror);s.discard.push(...a.splice(0));note(s,`Explored ${cmd.mirror} Mirror.`);
- if(cmd.mirror==='green'){const i=s.deck.findIndex(c=>c.kind==='nightmare');if(i>=0)s.discard.push(...s.deck.splice(i,1));shuffleAfterSearch(s);}
+ if(cmd.mirror==='green'){const i=s.deck.findIndex(c=>c.kind==='nightmare');if(i>=0)s.discard.push(...s.deck.splice(i,1));shuffleAfterSearch(s,cmd.freeId);}
  if(['red','blue','brown','key','glyph'].includes(cmd.mirror)){s.pending={type:'mirrorReward',mirror:cmd.mirror,options:(cmd.mirror==='blue'?s.discard:s.deck).map(c=>({...c}))};s.phase='decision';return;}
  if(checkWin(s))return;refill(s);
 }
+function continueMirrorDoors(s){
+ // Resolving several Mirror Doors is sequential: each acquisition must trigger
+ // Premonitions and immediate victory before the next Door may be awarded.
+ if(s.status!=='active')return;
+ const waiting=mirrors(s).zones.queuedDoors;
+ if(!waiting.length){s.pending=null;refill(s);return;}
+ const door=waiting.shift();acquireDoor(s,door,'Mirror');
+ if(s.status!=='active'){s.limbo.push(...waiting.splice(0));return;}
+ premonitionLoop(s,'mirrorDoors');
+}
 function resolveMirrorReward(s,cmd){const p=s.pending;need(cmd.type==='mirrorReward'&&p.type==='mirrorReward','Resolve the Mirror reward');const name=p.mirror;const source=name==='blue'?s.discard:s.deck;let picks=cmd.ids||[];need(Array.isArray(picks)&&new Set(picks).size===picks.length,'Select each card at most once');const cardFor=id=>source.find(c=>c.id===id);need(picks.every(id=>p.options.some(c=>c.id===id)&&cardFor(id)),'Select available cards from the indicated pile');const doors=source.filter(c=>c.kind==='door');
- if(name==='red'||name==='blue'){need(picks.length===Math.min(2,source.length),'Select the required two cards (or all remaining)');const taken=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);if(name==='red')shuffleAfterSearch(s);for(const c of [...taken].reverse())s.deck.push(c);}
+ if(name==='red'||name==='blue'){need(picks.length===Math.min(2,source.length),'Select the required two cards (or all remaining)');const taken=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);if(name==='red')shuffleAfterSearch(s,cmd.freeId);for(const c of [...taken].reverse())s.deck.push(c);}
  else if(name==='brown'||name==='key'||name==='glyph'){
    need(picks.every(id=>cardFor(id)?.kind==='door'),'Select Doors');
    if(name==='brown')need(picks.length===Math.min(1,doors.length),'Brown Mirror takes one Door');
@@ -220,10 +236,10 @@ function resolveMirrorReward(s,cmd){const p=s.pending;need(cmd.type==='mirrorRew
      const nightmares=s.deck.filter(c=>c.kind==='nightmare').slice(0,2);for(const n of nightmares)s.discard.push(...s.deck.splice(s.deck.findIndex(c=>c.id===n.id),1));
      const available=source.filter(c=>c.kind==='door'&&c.color===cmd.color);need(COLORS.includes(cmd.color)&&picks.length===Math.min(2,available.length),'Key Mirror needs two Doors of the chosen color');need(picks.every(id=>cardFor(id)?.color===cmd.color),'Door color mismatch');
    }
-   const gained=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);shuffleAfterSearch(s);
-   s.pending=null;for(let i=0;i<gained.length;i++){acquireDoor(s,gained[i],'Mirror');if(s.status==='won'){s.limbo.push(...gained.slice(i+1));return;}}
+   const gained=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);shuffleAfterSearch(s,cmd.freeId);
+   mirrors(s).zones.queuedDoors.push(...gained);s.pending=null;continueMirrorDoors(s);return;
  }else throw Error('Unknown Mirror');
- s.pending=null;if(s.status==='active')finishAcquisition(s);
+ s.pending=null;if(s.status==='active')refill(s);
 }
 function activateIncubus(s){need(has(s,'incubus')&&incubus(s).level!=='easy','Incubus activation requires Apprentice or True level');need(!incubus(s).zones.stored.length,'Incubus already charged');const required=incubus(s).level==='true'?2:1;
  while(incubus(s).zones.stored.length<required){if(!s.deck.length){s.status='lost';s.phase='ended';return;}const c=takeTop(s);if(['location','tower','deadEnd'].includes(c.kind))incubus(s).zones.stored.push(c);else s.limbo.push(c);}

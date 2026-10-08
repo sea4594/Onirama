@@ -2,7 +2,7 @@
 
 An original-art, browser-based dream labyrinth card game. The project implements the base game, all seven Second Edition boxed expansions and both promotional expansions, with cooperative play and a phased roadmap for the rest.
 
-> **Current state:** Runnable solo and two-player cooperative game with all seven boxed expansions, both promotional sets (Mirrors; Sphinx/Diver/Confusion), and the separate Little Incubus modifier. Rare interactions remain pending the Phase 7 audit. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
+> **Current state:** Runnable solo and two-player cooperative game with all seven boxed expansions, both promotional sets (Mirrors; Sphinx/Diver/Confusion), and the separate Little Incubus modifier. A Phase 7 cross-expansion regression audit is included; some publisher rulings remain unverified. This repository is an **unofficial, unaffiliated** adaptation; game concepts belong to their respective owners. No publisher artwork or rulebook text is included.
 
 ## Quick start
 
@@ -42,7 +42,7 @@ A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, brows
 - Official two-player *structure*: eight-card public initial draft, three private cards per player, two face-up shared cards, alternating turns, separate Labyrinths and Doors, optional swap after a discard, and whole-hand redraws.
 - Invite-only cooperative rooms, seat-specific bearer credentials, server-authoritative game state, event stream, reconnection/reload, persistent state, action-version checks.
 - Server-side hidden-hand and hidden-deck filtering. GitHub Pages solo sessions are stored only in the current browser.
-- Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, Phase 6 promo/Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
+- Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, expansion and Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
 **Important limitations:** No public deployment hardening, matchmaking, sophisticated visual card art, tutorial walkthroughs, guest history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. Accounts and login are explicitly out of scope permanently; all gameplay is guest-based. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
@@ -51,7 +51,7 @@ A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, brows
 
 ```text
 engine/
-  cards.js       Base and Phase 6 card catalog
+  cards.js       Base and expansion card catalog
   config.js      Versioned rules configuration, expansion availability, save upgrade
   zones.js       Card-location registry and card conservation
   effects.js     Serializable, resumable effect processor
@@ -98,3 +98,13 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - GitHub Pages workflow deploys frontend and engine; local solo saves require no server, and multiplayer correctly informs users they need its separately hosted Node backend.
 
 **Scope of verification:** 53 automated tests, including setup/card conservation for all 512 combinations of the nine combinable expansion groups in both player modes. This is not a substitute for the Phase 7 printed-card and rare-combination rules audit.
+
+## Phase 7 — Cross-expansion timing and integrity
+
+- Mirror-granted Doors resolve **one at a time**; a newly triggered Dark Premonition interrupts the reward and the unclaimed Doors remain in a persistent, conserved expansion zone. Effects resume after each decision, and immediate victory is honored.
+- Hammer Bird now recomputes the remaining Labyrinth's Door sequence instead of losing legitimate prior progress.
+- Mirror deck searches can optionally free a Dreamcatcher (including Green Mirror); the Happy Dream deck-search interface now exposes its existing free-catcher action.
+- Phase 6 saves migrate to the versioned Phase 7 queue layout without deleting games.
+- **61 passing tests:** 1,024 seeded solo/cooperative games spanning all 512 nine-expansion configurations; also targeted timing, card-identity, privacy, migration, and search/freeing tests.
+
+**Not publisher-verified:** The twelve Tower cards' exact left/right printed symbols remain provisional. Rare official cooperative expansion ownership/timing rulings, wildcard handling under Rainbow Mirror, and some scarcity/interrupt cases also remain open. See `docs/RULES_AUDIT.md` for explicit evidence and gaps. Passing the tests does not establish rulebook completeness.

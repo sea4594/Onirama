@@ -76,3 +76,25 @@ For every unclear case, log: an ID, precise scenario, applicable expansion combi
 - **Incubus:** official mode prevents combining with expansions. Easy one-off cancel, Apprentice/True charge using one/two Locations before paying a virtual Nightmare consequence. The pawn and Mirror slots are non-deck objects; stored Incubus Locations are tracked as physical cards.
 - **Known adjudications:** card scarcity during Mirror rewards and wild Crossroads under Rainbow need edition-specific rulings; multiplayer shared Mirrors and compound Premonition effects need resolution order verification. Phase 6's successful tests do not establish publisher approval.
 - **Source for promo:** https://funmill.ru/images/rules/02768-2.pdf . Incubus source: official Expansion Book appendix.
+
+## Phase 7 interaction audit (rules version `phase7-1`)
+
+| Case | Evidence and disposition | Regression coverage | Status |
+|---|---|---|---|
+| Key/Glyph Mirror gives multiple Doors while Dark Premonitions are live | Premonitions trigger on each successfully claimed Door. Remaining Mirror rewards now wait in `mirrors.zones.queuedDoors`, which is included in physical conservation and persisted across refresh/reconnect. | `phase7.test.js`: Key Mirror/Premonition; Glyph Mirror/Book | Implemented, tested; card-ordering interpretation |
+| Hammer Bird removes trailing Locations | A Labyrinth remainder can itself form an unfinished same-color sequence. Its series is replayed from physical cards rather than cleared. | `phase7.test.js`: Hammer Bird partial trio | Implemented/tested |
+| Dreamcatchers can be freed when a deck search reshuffles | Expansion text permits freeing on search-triggered shuffles. Green/Red/Brown/Key/Glyph Mirror searches and Happy Dream fetch now expose the previously missing optional choice. | `phase7.test.js`: Green and Red Mirror freeing | Verified general search rule; implementation tested |
+| Every nine-expansion configuration works in both supported modes | All 512 masks, solo and cooperative, run seeded games through victory/defeat with unique physical IDs throughout. | `phase7.test.js`: 1,024 full games | **Integrity only, not complete rule fidelity** |
+| Saved Phase 6 games with Mirrors | `normalizeSave()` supplies missing queue and upgrades rules version. | `phase7.test.js`: save migration | Implemented/tested |
+
+### Still-open, not publisher-verified
+
+1. **Towers: all 12 physical cards' edge-symbol layouts.** The card registry currently uses provisional generated patterns. The expansion rule requires neighboring sides to share *no* identical printed Sun/Moon symbols; scanned card faces or a publisher list are needed before certifying this effect. Source: [Second Edition Book of Expansions](https://images.zmangames.com/filer_public/7f/c7/7fc752e5-1a46-408f-b9cc-db5196be46ee/en-onirim-rules_ext-1.pdf), Towers.
+2. **Cooperative ownership of additional expansion objectives:** The base two-player rule is documented, and Towers clearly have a shared row; other expansion-zone/team Goal effects remain implementation adjudications until corroborated. These are not labeled as publisher-verified.
+3. **Crossroads on hard Rainbow Mirror:** Wild color eligibility and assignments lack an unambiguous combined-expansion ruling. Current UI requires four printed colors, and therefore does not count a Crossroad under Rainbow.
+4. **Scarcity and nested effects:** Exact handling of missing search targets, exhausted deck before a special reveal, and interruption by different Denizen/Spell combinations has incomplete publisher-level evidence. Current code uses deterministic fallback and tests for card conservation, but some rulings remain provisional.
+5. **Promo interaction validation:** Sphinx, Diver, and Confusion are independently tested, and all combination simulations terminate. This is not evidence of an exhaustive timing audit of every special-reveal interaction.
+
+**Source status:** The official expansion PDF was indexed for the Tower search, False Destruction, and Alignment rules. The source confirms those general effects, not exact printed data for each Tower card. Where the full scanned PDF or primary photos were unavailable, no printed card details were invented.
+
+**Outstanding Phase 7 acceptance items:** exact printed Tower layouts; publisher-backed decisions for ambiguous co-op interactions, difficult Rainbow wildcards, and scarce-card edge cases; end-to-end tests for every distinct action type. These remain blockers to claiming official-rule completeness, although the hotfix itself can be released as a tested correctness improvement.
