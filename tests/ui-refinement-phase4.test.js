@@ -15,11 +15,13 @@ test('Phase 4 selects four distinct physical arrangements based on usable shape'
  assert.equal(tabletopDimensions(844,390,'solo',6).columns,3);
  assert.equal(tabletopDimensions(1440,900,'solo',6).columns,4);
 });
-test('Dense screens reduce expansion layout pressure before attempting whole-board zoom',()=>{
+test('Dense screens reduce expansion pressure before a width-preserving paint-only fit',()=>{
  for(const pressure of ['tight','minimum'])assert.ok(css.includes(`data-tt4-pressure="${pressure}"`));
  for(const shape of ['wide','medium','short','portrait'])assert.ok(css.includes(`data-tt4-shape="${shape}"`));
  const source=readFileSync('public/tabletop/fit.js','utf8');
- assert.ok(source.indexOf("['normal',1]")<source.indexOf("let lower=.25"));
+ assert.ok(source.indexOf("['normal',1]")<source.indexOf("let scale=1"));
+ assert.match(source,/table\.style\.transform=.*scale/);
+ assert.doesNotMatch(source,/table\.style\.zoom=String\(middle\)/);
  assert.match(source,/reflowLabyrinths\(table\)/);
  assert.match(css,/\.tt5-expansions\{grid-area:expansions/);
  assert.match(css,/\.tt6-grid\{/);

@@ -32,7 +32,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   if(!width||!height)return null;
   const zones=table.querySelectorAll('.tt5-zone').length;
   const plan=tabletopDimensions(width,height,mode,zones);
-  table.style.transform='';table.style.zoom='1';
+  table.style.transform='';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
   table.dataset.tt4Shape=plan.shape;
   table.dataset.tt4ExpansionCount=String(zones);
   table.style.setProperty('--tt4-exp-columns',plan.columns);
@@ -48,19 +48,32 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
     reflowLabyrinths(table);
     if(table.getBoundingClientRect().height<=height-1)break;
   }
-  // Very short or highly unusual combinations may still require a small
-  // whole-board fit. Preserve all zones rather than cutting any offscreen.
-  const natural=table.getBoundingClientRect().height;
-  let zoom=1;
-  if(natural>height-1){
-    let lower=.25,upper=1,best=.25;
-    for(let i=0;i<10;i++){
-      const middle=(lower+upper)/2;table.style.zoom=String(middle);
-      reflowLabyrinths(table);
-      if(table.getBoundingClientRect().height<=height-1){best=middle;lower=middle;}else upper=middle;
-    }
-    zoom=best;table.style.zoom=String(zoom);
+  // Lay out at an expanded logical width when height is scarce, then
+  // paint-scale *once*. Unlike CSS zoom, the columns cannot reflow after
+  // fitting, so compact phones do not suddenly become microscopic.
+  let scale=1;
+  for(let i=0;i<14;i++){
+    table.style.width=`${width/scale}px`;
+    reflowLabyrinths(table);
+    const natural=table.offsetHeight;
+    const next=Math.min(1,Math.max(.25,(height-1)/natural));
+    if(Math.abs(next-scale)<.003){scale=next;break;}
+    scale=(scale+next)/2;
   }
+  // The final fit is determined using the *same* width used for measurement.
+  table.style.width=`${width/scale}px`;
+  reflowLabyrinths(table);
+  scale=Math.min(scale,(height-1)/table.offsetHeight,1);
+  // Final corrected scale may require one more layout-width update.
+  for(let i=0;i<3;i++){
+    table.style.width=`${width/scale}px`;
+    reflowLabyrinths(table);
+    const corrected=Math.min(1,(height-1)/table.offsetHeight);
+    if(Math.abs(corrected-scale)<.003)break;
+    scale=Math.min(scale,corrected);
+  }
+  table.style.transform=scale<1?`scale(${scale})`:'';
+  const zoom=scale;
   reflowLabyrinths(table);
   table.dataset.tt4Fit=used;
   table.style.setProperty('--game-fit-scale',String(zoom));

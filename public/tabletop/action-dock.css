@@ -165,3 +165,40 @@
 .tt6-dock-decision .decision:has([data-mirror-choice]) .tt4-card-option input{position:absolute;right:0;bottom:0;margin:0;min-height:10px;width:11px;height:11px;z-index:1}
 .tt6-dock-decision .decision:has([data-mirror-choice]) .tt7-compact-row{gap:2px}
 @media(orientation:landscape) and (min-width:600px){.tt6-dock-decision .decision:has([data-mirror-choice]){flex-wrap:wrap}}
+
+/* Phase 6C: stable bottom action shelf. Never a full-height sidebar. */
+#app>.page.game-viewport{--tt6-dock-height:158px;display:block!important}
+.game-viewport>.tt6-table-slot{position:absolute!important;inset:0 0 var(--tt6-dock-height) 0!important;min-height:0}
+.game-viewport>.tt6-workspace{position:absolute!important;inset:auto 0 0 0!important;height:var(--tt6-dock-height)!important;width:100%!important;border-top:1px solid var(--ui-border);border-left:0;box-sizing:border-box}
+.tt6-pile-inspector{bottom:calc(var(--tt6-dock-height) + 8px)!important;right:10px!important}
+.tt6-dock-status strong{font-size:clamp(.85rem,2.2vw,1.02rem)}
+.tt6-dock-scroll{align-items:center}
+.tt6-workspace .tt6-dock-button,.tt6-workspace .tt6-dock-decision button{min-height:37px;padding:6px 10px;font-size:.85rem;line-height:1.1}
+.tt6-dock-decision .tt3-order-handle .card{width:clamp(24px,9vw,52px)}
+.tt6-dock-decision .tt4-card-option .card{width:clamp(23px,8vw,45px)}
+.tt6-dock-decision .tt7-prophecy-slot{height:75px;flex-basis:60px;width:60px}
+.tt6-dock-decision .tt7-prophecy-slot .card{width:43px}
+.tt6-dock-decision .tt7-option{min-height:39px;max-width:94px;font-size:.8rem}
+.tt6-dock-decision .tt7-night-options{max-width:440px}
+.tt5-alignment .tt5-contents{justify-content:center!important}
+.tt5-alignment .tt5-tower-cards{flex:0 1 auto;justify-content:center;min-width:0}
+.tt5-alignment .tt5-tower-cards .tt5-preview{justify-content:center}
+.tt5-premonition[data-action^="happyPremonitionSelect:"]{cursor:pointer;appearance:none;font:inherit}
+.tt5-premonition.tt7-premonition-selected{outline:2px solid var(--ui-accent);outline-offset:-2px;box-shadow:0 0 0 2px var(--table-gold-line)}
+.tt5-premonition:focus-visible{outline:2px solid var(--ui-accent)}
+@media(orientation:portrait) and (max-width:500px){
+ #app>.page.game-viewport{--tt6-dock-height:152px}
+ .tt6-workspace .tt6-dock-button,.tt6-workspace .tt6-dock-decision button{min-height:39px}
+}
+@media(orientation:landscape) and (max-height:460px){
+ #app>.page.game-viewport{--tt6-dock-height:114px}
+ .tt6-workspace .tt6-dock-button,.tt6-workspace .tt6-dock-decision button{min-height:32px;font-size:.76rem;padding:4px 7px}
+ .tt6-dock-decision .tt3-order-handle .card{width:36px}
+ .tt6-dock-decision .tt7-prophecy-slot{height:57px;flex-basis:47px}
+ .tt6-dock-decision .tt7-prophecy-slot .card{width:32px}
+}
+@media(orientation:landscape) and (min-width:1000px) and (min-height:500px){
+ .game-viewport>.tt6-workspace{left:auto!important;right:0!important;width:min(480px,45vw)!important;border-left:1px solid var(--ui-border);border-radius:9px 0 0 0}
+ .tt6-dock-decision .tt3-order-handle .card{width:50px}
+ .tt6-dock-decision .tt4-card-option .card{width:43px}
+}

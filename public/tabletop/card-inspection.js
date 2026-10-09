@@ -1,6 +1,7 @@
 import {htmlEscape,cardDescription} from './cards.js';
 
 // Rule summaries for printed card types. Never infer rules from unrevealed state.
+const PREMONITIONS={red2:'2 red Doors: discard red Locations',green2:'2 green Doors: return a Nightmare',blue2:'2 blue Doors: discard two Keys',brown2:'2 brown Doors: lose a Door',pair2:'2 matching Doors: lose one',doors5:'5 Doors: reveal two Premonitions',rainbow4:'4 colors: discard Happy Dreams',doors3:'3 Doors: redraw your hand'};
 const ABILITIES={
  architect:'Allows a Location to follow the same symbol in your Labyrinth.',
  cyclobot:'Exchange one Location in your hand with one in the discard pile.',
@@ -16,6 +17,7 @@ export function cardHelp(card){
  const kind=card.kind,extra=card.expansion;
  let detail='';
  switch(kind){
+  case 'premonition':detail=PREMONITIONS[card.premonitionId]||'Dark Premonition';break;
   case 'location':
    detail=card.symbol==='key'?'Play into your Labyrinth, discard to use Prophecy, or spend as a matching Key to claim a Door.':card.symbol==='glyph'?'A Glyph Location. Discard it to trigger its five-card Incantation, or play it in your Labyrinth.':'Play in your Labyrinth if its symbol differs from the previous Location, or discard it.';
    if(card.color==='wild')detail+=' A Crossroads Location counts as a wild color for matching effects.';
@@ -32,7 +34,7 @@ export function cardHelp(card){
   case 'confusion':detail='Reorder your hand onto the bottom of the deck, then draw a replacement hand.';break;
   default:detail='See the relevant base-game or expansion rules for this card.';
  }
- const title=cardDescription(card).replace(/^([a-z])/,(_,a)=>a.toUpperCase());
+ const title=kind==='premonition'?'Dark Premonition':cardDescription(card).replace(/^([a-z])/,(_,a)=>a.toUpperCase());
  return {title,detail};
 }
 /** Small, non-modal inspection bubble; closes without changing game state. */
@@ -58,7 +60,7 @@ export function createCardInspector({root}){
  function context(e){const card=findCard(e.target);if(!card||!root.contains(card))return;
    e.preventDefault();cancelHold();open(card,e.clientX,e.clientY,{focus:true});
  }
- function down(e){if(e.pointerType==='mouse'||e.button!==0)return;
+ function down(e){if(e.button!==0)return;
    const card=findCard(e.target);if(!card||!root.contains(card))return;
    cancelHold();heldId=null;pointer={id:e.pointerId,x:e.clientX,y:e.clientY,card};
    timer=setTimeout(()=>{if(!pointer)return;const {x,y,card,id}=pointer;cancelHold();heldId=id;ignoreClick=true;open(card,x,y);},500);

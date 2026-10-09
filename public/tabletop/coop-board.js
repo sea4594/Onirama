@@ -30,11 +30,11 @@ function playerArea(p,seat,isTurn,config,canDrop=false,decisionTargets=new Set()
       <div class="tt6-player-labyrinth ${canDrop?'tt6-active-labyrinth':''}" ${canDrop?'data-tt-drop="play"':''} aria-label="${esc(p.name)}'s Labyrinth"><div class="tt6-region-heading">Labyrinth <b>${p.labyrinth.length}</b></div><div class="tt6-labyrinth-cards" data-tabletop-scroll="labyrinth-${seat}">${stack(p.labyrinth)}</div>${canDrop?`<button type="button" class="tt3-zone-action" data-tt-drop="play" aria-label="Play selected Location" disabled>${icon('enter')}</button>`:''}</div></div>
   </section>`;
 }
-function handArea(cards,label,{active=false,selectedId='',privateBacks=false,shared=false,decisionTargets=new Set(),decisionSelected=new Set(),spellGoalMode=false,spellGoals=[]}={}){
+function handArea(cards,label,{active=false,selectedId='',privateBacks=false,shared=false,decisionTargets=new Set(),decisionSelected=new Set(),spellGoalMode=false,spellGoals=[],selectedPremonition=null}={}){
   return `<div class="tt6-hand-block ${shared?'tt6-shared-block':''}" aria-label="${esc(label)}"><div class="tt6-region-heading">${esc(label)} <b>${cards.length}</b></div><div class="tt6-hand-cards">${cards.map(c=>`<span class="tt6-card-wrap">${privateBacks||c.kind==='hidden'?preview({kind:'hidden'}):renderCard(c,{select:active||decisionTargets.has(c.id),interactive:active,selectedId:decisionSelected.has(c.id)?c.id:selectedId,highlight:decisionTargets.has(c.id)})}</span>`).join('')||`<span class="tt6-empty">${icon('diamond')}</span>`}</div></div>`;
 }
 function piles(g,m){return `<section class="tt6-piles" aria-label="Card piles"><div class="tt6-pile" aria-label="Draw deck, ${m.deckCount} cards"><button type="button" class="tt6-pile-inspect" data-action="inspectPile:deck" aria-label="Inspect draw pile"><div class="tt2-deck-back" aria-hidden="true">${icon('sparkle')}</div><small>Deck</small><b>${m.deckCount}</b></button></div><div class="tt6-pile" data-tt-drop="discard" aria-label="Discard pile, ${m.discard.length} cards"><button type="button" class="tt6-pile-inspect" data-action="inspectPile:discard" aria-label="Inspect discard pile"><div class="tt6-pile-face">${m.discard.length?renderCard(m.discard.at(-1),{tiny:true}):icon('diamond')}</div><small>Discard</small><b>${m.discard.length}</b></button><button class="tt3-zone-action tt3-discard-action" type="button" data-tt-drop="discard" aria-label="Discard selected card" disabled>${icon('enter')}</button></div><div class="tt6-pile" aria-label="Limbo, ${m.limbo.length} cards"><button type="button" class="tt6-pile-inspect" data-action="inspectPile:limbo" aria-label="Inspect Limbo pile"><div class="tt6-pile-face">${m.limbo.length?renderCard(m.limbo.at(-1),{tiny:true}):icon('diamond')}</div><small>Limbo</small><b>${m.limbo.length}</b></button></div></section>`;}
-export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,connected=true,decisionTargets=new Set(),decisionSelected=new Set(),spellGoalMode=false,spellGoals=[]}={}){
+export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,connected=true,decisionTargets=new Set(),decisionSelected=new Set(),spellGoalMode=false,spellGoals=[],selectedPremonition=null}={}){
   const m=cooperativeTabletopModel(g,seat,{selectedId,canAct}),opponent=1-seat;
   const canSelect=m.active&&!m.isDraft;
   const draft=`<section class="tt6-draft" aria-label="Public card draft"><div class="tt6-region-heading">Draft ${g.draft?.length||0} <small>${esc(g.players[g.active]?.name||'Player')}'s pick</small></div><div class="tt6-draft-cards">${m.draft.map(c=>renderCard(c,{select:m.canDraft,interactive:false})).join('')}</div></section>`;
@@ -52,7 +52,7 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
       <div class="tt6-center">${piles(g,m)}${shared}</div>
       ${m.isDraft?draft:''}
       <div class="tt6-self">${playerArea(m.mine,seat,g.active===seat,g.config,m.active,decisionTargets)}${hand}${actions}</div>
-      ${renderExpansionTabletop(g,{canAct:m.active||m.canDraft,decisionTargets,spellGoalMode,spellGoals})}
+      ${renderExpansionTabletop(g,{canAct:m.active||m.canDraft,decisionTargets,spellGoalMode,spellGoals,selectedPremonition})}
     </div>
     ${g.status!=='active'?`<div class="tt2-finish"><strong>${g.status==='won'?'The dream is escaped':'The dream ends'}</strong>${button('New game','setup')}${button('History','history')}</div>`:''}
   </div>`;
