@@ -33,11 +33,13 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 `npm start` remains an optional legacy local Node server for development; it is **not used by GitHub Pages** once Firebase is configured. The Firebase client intentionally uses its own Firestore storage, so old Node-hosted rooms are not migrated.
 
-## UI redesign progress (v0.16.0)
+## UI redesign progress (v0.19.0)
 
-- **UI Phases 1–3:** reusable card and layout foundations; solo base-game virtual tabletop; tap, keyboard, and drag-to-play/discard; draggable revealed-card ordering.
-- **UI Phase 4:** all 23 mandatory effect types appear in accessible temporary dialogs. Mirror pairs, Cyclobot, cooperative discard/swap and Spellbook use optional contextual dialogs. Mandatory effects cannot be dismissed without choosing a legal resolution. See [Phase 4 dialogs](docs/UI_PHASE4_DIALOGS.md).
-- Phases 5–6 will redesign permanent expansion components and the full cooperative table; the older board areas remain usable until then.
+- **UI Phases 1–4:** shared card/layout primitives, base solo tabletop, drag/tap/keyboard controls, and all 23 mandatory decision overlays.
+- **UI Phase 5:** all nine combinable expansion areas plus Little Incubus integrated into the solo tabletop.
+- **UI Phase 6:** two-player tabletop, private/shared hands, draft, Doors, Labyrinths and Firebase-compatible actions.
+- **UI Phase 7:** redesigned minimal home, multiplayer, room lobby, join, expansion setup, Settings, tutorial, history, Rules and roadmap; see [UI Phase 7](docs/UI_PHASE7_MINIMAL_SHELL.md).
+- **Remaining UI Phases 8–9:** real-device/live Firebase QA, complete visual/interaction audit, old UI removal and final release.
 
 ## What works today
 
