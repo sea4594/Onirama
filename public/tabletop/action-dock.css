@@ -1,0 +1,91 @@
+/* Phase 6 — reserved, immutable action footprint. Only its content scrolls. */
+#app>.page.game-viewport{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 132px;gap:0;overflow:hidden}
+.game-viewport>.tt6-table-slot{min-width:0;min-height:0;overflow:hidden;position:relative;grid-row:1;grid-column:1}
+.game-viewport .tt6-table-slot>.tt2-root{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;transform-origin:top center;overflow:visible;position:relative}
+.game-viewport .tt6-table-slot>.tt2-root[data-tt4-shape]{width:100%;max-width:none}
+.tt6-workspace{box-sizing:border-box;min-width:0;min-height:0;grid-row:2;grid-column:1;z-index:30;background:var(--ui-panel);border-top:1px solid var(--ui-border);color:var(--ui-text);display:flex;flex-direction:column;overflow:hidden;padding:5px max(9px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));gap:3px}
+.tt6-dock-status{flex:none;display:flex;align-items:baseline;gap:10px;min-width:0;line-height:1.25}
+.tt6-dock-status strong{font-size:.85rem;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt6-dock-subtitle{font-size:.72rem;color:var(--ui-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt6-dock-scroll{flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.tt6-dock-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:37px}
+.tt6-dock-tip{font-size:.81rem;color:var(--ui-muted)}
+.tt6-dock-button,.tt6-dock-decision button{font-size:.78rem;min-height:32px;padding:5px 9px;border-radius:7px}
+.tt6-dock-decision .decision{padding:0;border:0;box-shadow:none;background:transparent;max-width:none;margin:0;gap:4px;display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start}
+.tt6-dock-decision .decision>h2{display:none}
+.tt6-dock-decision .decision>p,.tt6-dock-decision .decision>.muted.small{font-size:.69rem;line-height:1.2;flex:0 0 100%;margin:0}
+.tt6-dock-decision .decision>.actions,.tt6-dock-decision .decision>.stack{display:flex;flex-wrap:wrap;gap:5px;align-items:center;max-width:100%}
+.tt6-dock-decision .cards{display:flex;align-items:flex-start;flex-wrap:nowrap;gap:5px;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.tt6-dock-decision .tt3-order-list{flex:1 1 100%;padding:2px 3px 8px}
+.tt6-dock-decision .tt3-order-item{flex:none;gap:2px}
+.tt6-dock-decision .tt3-order-handle .card{width:50px;max-width:50px;min-width:0;height:auto;aspect-ratio:.71}
+.tt6-dock-decision .tt3-order-item button{min-height:24px;padding:2px 4px;font-size:.65rem}
+.tt6-dock-decision .tt4-card-choices{display:flex;flex-wrap:nowrap;gap:5px;max-width:100%;overflow-x:auto;min-width:0}
+.tt6-dock-decision .tt4-card-option{flex:none;padding:2px 4px;font-size:.7rem;min-height:0;max-width:80px}
+.tt6-dock-decision .tt4-card-option .card{width:39px;max-width:39px;min-width:0;height:auto;aspect-ratio:.71}
+.tt6-dock-decision select,.tt6-dock-decision input{max-width:100%;min-height:28px;font-size:.76rem}
+.tt6-dock-decision label{font-size:.76rem}
+.tt6-dock-decision .tt4-spell-shortcut{flex:none}
+.tt6-pile-inspect{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:0;border-radius:6px;padding:0;min-width:0;color:inherit;cursor:pointer}
+.tt6-pile-inspect:hover,.tt6-pile-inspect:focus-visible{background:var(--ui-soft);outline:1px solid var(--ui-accent)}
+.tt6-pile-inspect .tt2-deck-back{pointer-events:none}
+.tt6-pile-inspect .card{pointer-events:none}
+.tt6-pile-inspector{position:fixed;z-index:210;right:clamp(8px,2vw,24px);bottom:148px;width:min(440px,calc(100vw - 16px));max-height:min(62dvh,580px);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--ui-border);border-radius:13px;background:var(--ui-panel);color:var(--ui-text);box-shadow:0 18px 45px #0009}
+.tt6-pile-inspector>header{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--ui-border);flex:none}
+.tt6-pile-inspector>header strong{font-size:.95rem}
+.tt6-pile-inspector>header span{color:var(--ui-muted);font-size:.75rem;margin-left:auto}
+.tt6-pile-close{width:30px;min-height:30px;font-size:22px;line-height:1;padding:0;background:transparent;border:0;color:inherit}
+.tt6-pile-scroll{overflow-y:auto;min-height:0;overscroll-behavior:contain;padding:7px 13px;scrollbar-width:thin}
+.tt6-inventory-group{padding:5px 0 9px}.tt6-inventory-group+ .tt6-inventory-group{border-top:1px solid var(--ui-border)}
+.tt6-inventory-group h3{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ui-muted);margin:0 0 4px}
+.tt6-inventory-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:13px;row-gap:5px}
+.tt6-inventory-line{display:flex;justify-content:space-between;gap:5px;font-size:.75rem;line-height:1.25;min-width:0}
+.tt6-inventory-line b{white-space:nowrap;font-variant-numeric:tabular-nums}.tt6-inventory-line small{font-size:.68rem;color:var(--ui-muted)}
+/* Landscape: controls occupy a fixed side rail; never resize the board as instructions change. */
+@media(orientation:landscape) and (min-width:600px){
+ #app>.page.game-viewport{grid-template-columns:minmax(0,1fr) 234px;grid-template-rows:minmax(0,1fr)}
+ .game-viewport>.tt6-table-slot{grid-column:1;grid-row:1}
+ .tt6-workspace{grid-column:2;grid-row:1;border-top:0;border-left:1px solid var(--ui-border);padding:8px 7px;gap:7px}
+ .tt6-dock-status{display:flex;flex-direction:column;gap:3px}
+ .tt6-dock-subtitle{white-space:normal;line-height:1.3}
+ .tt6-dock-decision .decision{flex-direction:column;align-items:stretch}
+ .tt6-dock-decision .decision>p{flex:0 0 auto}
+ .tt6-dock-decision .tt3-order-list{flex:0 0 auto;flex-wrap:wrap;overflow:visible}
+ .tt6-dock-decision .tt4-card-choices{flex-wrap:wrap;overflow:visible}
+ .tt6-pile-inspector{right:250px;bottom:10px;max-height:calc(100dvh - 20px)}
+}
+@media(orientation:landscape) and (max-height:400px) and (min-width:600px){
+ #app>.page.game-viewport{grid-template-columns:minmax(0,1fr) 194px}
+ .tt6-workspace{padding:5px;gap:3px}.tt6-dock-status strong{font-size:.72rem}.tt6-dock-subtitle{font-size:.66rem}
+ .tt6-dock-decision .tt3-order-handle .card{width:35px}.tt6-dock-decision .tt4-card-option .card{width:30px}
+ .tt6-pile-inspector{right:202px}
+}
+@media(orientation:portrait) and (max-width:500px){
+ #app>.page.game-viewport{grid-template-rows:minmax(0,1fr) 126px}
+ .tt6-workspace{padding-top:4px}
+ .tt6-pile-inspector{bottom:135px;max-height:min(62dvh,540px)}
+}
+@media(max-height:430px) and (max-width:599px){#app>.page.game-viewport{grid-template-rows:minmax(0,1fr) 95px}.tt6-pile-inspector{bottom:102px}}
+/* Explicit bounds avoid intrinsic card sizes resizing grid tracks on tablets. */
+#app>.page.game-viewport{display:block;position:relative}
+.game-viewport>.tt6-table-slot{position:absolute;top:0;left:0;right:0;bottom:132px;width:auto;height:auto;overflow:hidden}
+.game-viewport>.tt6-workspace{position:absolute;left:0;right:0;bottom:0;top:auto;height:132px;width:auto}
+@media(orientation:landscape) and (min-width:600px){
+ .game-viewport>.tt6-table-slot{left:0;right:234px;top:0;bottom:0}
+ .game-viewport>.tt6-workspace{left:auto;right:0;top:0;bottom:0;width:234px;height:100%}
+}
+@media(orientation:landscape) and (max-height:400px) and (min-width:600px){
+ .game-viewport>.tt6-table-slot{right:194px}
+ .game-viewport>.tt6-workspace{width:194px}
+}
+@media(orientation:portrait) and (max-width:500px){
+ .game-viewport>.tt6-table-slot{bottom:126px}
+ .game-viewport>.tt6-workspace{height:126px}
+}
+@media(max-height:430px) and (max-width:599px){
+ .game-viewport>.tt6-table-slot{bottom:95px}
+ .game-viewport>.tt6-workspace{height:95px}
+}
+/* Contextual card-action buttons now live in the reserved workspace; keep the
+   original direct card/target gestures available on the tabletop. */
+.game-viewport .tt2-context,.game-viewport .tt6-context{display:none!important}

@@ -1,7 +1,7 @@
 /* Refinement Phase 4: one viewport-aware layout system for both tabletop modes.
    Shape and pressure are chosen by tabletop/fit.js from usable dimensions.
    No gameplay element is removed or conditionally hidden here. */
-.game-viewport > .tt2-root[data-tt4-shape] {
+.game-viewport .tt2-root[data-tt4-shape] {
   --tt2-gap: var(--tt4-gap, 7px);
   --tt2-card: var(--tt4-card, 70px);
   --tt2-mini: var(--tt4-mini, 40px);

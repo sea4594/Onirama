@@ -1,4 +1,5 @@
 import {createDeck,COLORS,expectedCards} from './cards.js';
+import {pileInventory} from './pile-inventory.js';
 import {shuffle} from './random.js';
 import {validateConfig,normalizeSave,RULESET_VERSION} from './config.js';
 import {enqueueEffects,resolveEffectDecision} from './effects.js';
@@ -396,7 +397,7 @@ export function act(previous,command){
  throw Error('Unsupported pending decision');
 }
 export function viewFor(s,seat=null){const c=structuredClone(normalizeSave(s));delete c.rng;delete c.effects;delete c.continuations;delete c.events;delete c.interrupts;
- c.deckCount=c.deck.length;delete c.deck;
+ c.pileInventory=pileInventory(s);c.deckCount=c.deck.length;delete c.deck;
  c.objectives=objectives(s);
  // Public expansion state only: never expose pending hidden decks, removed-card identities, or future goals before revealed.
  c.expansion={};

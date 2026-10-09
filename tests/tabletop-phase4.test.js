@@ -66,7 +66,7 @@ test('all prior inline decision placements removed and book spells work while an
  assert.doesNotMatch(appSource,/\$\{expansionBoard\(g,canAct\)\}\$\{decision\(g,canAct\)\}/);
  assert.match(appSource,/g\.phase==='decision'&&spellOpen&&g\.expansion\?\.book/);
  assert.match(appSource,/data-action="openSpells"|btn\('Cast spell','openSpells'/);
- assert.match(appSource,/gameDialog\(state\.game,state\.room\)/);
+ assert.match(appSource,/gameWorkspace\(state\.game,state\.room\)/);
  assert.match(readFileSync('public/index.html','utf8'),/tabletop\/dialogs\.css/);
 });
 test('dialogs trap focus and respect small portrait and short landscape viewports',()=>{

@@ -113,6 +113,8 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     pointer={id:e.pointerId,card:c,cardId:c.dataset.ttCard,x:e.clientX,y:e.clientY,offsetX:e.clientX-bounds.left,offsetY:e.clientY-bounds.top,dragging:false};
   }
   function onClick(e){
+    // Pile-inspection buttons live inside discard drop targets; inspection must never discard.
+    if(e.target.closest?.('[data-action^="inspectPile:"]'))return;
     if(suppressClick){e.preventDefault();e.stopImmediatePropagation();suppressClick=false;return;}
     const t=e.target.closest?.('[data-tt-drop]');
     if(t&&board()?.contains(t)){
@@ -174,6 +176,18 @@ export function gapAtX(list,x){
   const at=items.findIndex(item=>x<item.getBoundingClientRect().left+item.getBoundingClientRect().width/2);
   return at===-1?items.length:at;
 }
+export function gapAtPoint(list,x,y){
+ const items=[...(list?.querySelectorAll?.(':scope > [data-tt-order-id]')||[])];
+ if(!items.length)return null;
+ const rows=[];
+ for(let i=0;i<items.length;i++){
+  const box=items[i].getBoundingClientRect(),row=rows.find(row=>Math.abs(row.top-box.top)<box.height*.45);
+  if(row)row.cards.push({index:i,box});else rows.push({top:box.top,bottom:box.bottom,cards:[{index:i,box}]});
+ }
+ const row=rows.reduce((best,row)=>Math.abs(y-(row.top+row.bottom)/2)<Math.abs(y-(best.top+best.bottom)/2)?row:best,rows[0]);
+ for(const c of row.cards)if(x<c.box.left+c.box.width/2)return c.index;
+ return row.cards.at(-1).index+1;
+}
 export function createDecisionReorder({root,canReorder,onReorder}){
   let press=null,ghost=null,highlight=null,tap=null,suppress=false;
   const group=kind=>[...root.querySelectorAll('[data-tt-order-group]')].find(l=>l.dataset.ttOrderGroup===kind);
@@ -190,7 +204,7 @@ export function createDecisionReorder({root,canReorder,onReorder}){
     const rect=list.getBoundingClientRect();if(y<rect.top-45||y>rect.bottom+45||x<rect.left-42||x>rect.right+42)return null;
     if(x<rect.left+30)list.scrollLeft-=11;
     if(x>rect.right-30)list.scrollLeft+=11;
-    return {list,index:gapAtX(list,x)};
+    return {list,index:gapAtPoint(list,x,y)};
   }
   function down(e){
     if(e.button!==0&&e.pointerType==='mouse')return;

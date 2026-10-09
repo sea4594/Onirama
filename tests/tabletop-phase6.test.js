@@ -67,7 +67,7 @@ test('both co-op seats can complete drafts, play actions, and conserve all card 
 });
 test('Firebase source, existing command dispatcher, dialog route and coop CSS remain part of build',()=>{
   const app=readFileSync('public/app.js','utf8');assert.match(app,/renderCooperativeTabletop/);assert.match(app,/cooperativeLegalTargets/);assert.match(app,/firebase\.firebaseAction/);
-  assert.match(app,/swapDraft=\{cardId:id\}/);assert.match(app,/gameDialog\(state\.game,state\.room\)/);
+  assert.match(app,/swapDraft=\{cardId:id\}/);assert.match(app,/gameWorkspace\(state\.game,state\.room\)/);
   assert.match(readFileSync('public/index.html','utf8'),/tabletop\/coop\.css/);
   assert.match(readFileSync('public/tabletop/coop.css','utf8'),/orientation:landscape/);
 });
