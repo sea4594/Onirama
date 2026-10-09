@@ -24,7 +24,7 @@ test('same-symbol play is disabled; discarding remains legal even with same symb
  assert.deepEqual(targetState(g,card.id),{play:false,discard:true});
  let html=renderSoloTabletop(g,{selectedId:card.id});assert.match(html,/data-tt-drop="play"/);assert.match(html,/data-tt-drop="discard"/);
  assert.match(html,/class="tt3-zone-action"[^>]* disabled/);
- assert.match(html,/class="tt3-zone-action tt3-discard-action"[^>]*>↳/);
+ assert.match(html,/class="tt3-zone-action tt3-discard-action"[^>]*><svg class="ui-icon"/);
 });
 test('stale, inactive, decision, opponent and invalid card actions return no targets',()=>{
  const g=fixture(52),id=g.players[0].hand[0].id;

@@ -1,6 +1,6 @@
 /* Phase 1: scoped design language for the replacement tabletop, independent of legacy panels. */
 :root{
-  --tt-felt:#1c3430;--tt-felt-edge:#101f23;--tt-surface:#f1e8d8;--tt-ink:#202c2b;
+  --tt-felt:var(--table-felt,#1c3430);--tt-felt-edge:var(--table-felt-edge,#101f23);--tt-surface:var(--table-paper,#f1e8d8);--tt-ink:var(--table-ink,#202c2b);
   --tt-gold:#c5ab70;--tt-line:rgba(232,224,200,.25);--tt-shadow:0 5px 15px #0004;
   --tt-radius:10px;--tt-control:44px;--tt-ease:150ms ease;
 }

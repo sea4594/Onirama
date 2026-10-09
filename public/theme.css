@@ -1,0 +1,82 @@
+/* One design system for every screen. Themes change the same semantic tokens;
+   gameplay card colors retain their rule-identifying red/blue/green/brown hues. */
+:root,html[data-theme="forest"]{
+ color-scheme:dark;
+ --ui-bg:#10241f;--ui-panel:#1c3730;--ui-soft:#2b4a40;--ui-text:#f1ead9;--ui-muted:#c0d1c3;--ui-accent:#e7cb91;--ui-border:#577466;
+ --table-felt:#1c3430;--table-felt-edge:#0e201e;--table-felt-light:#325349;--table-felt-mid:#182f2b;
+ --table-text:#f6edda;--table-muted:#c9d8ce;--table-gold:#e6d3a5;--table-paper:#e8dac1;--table-ink:#24352d;
+ --table-zone:#0717122d;--table-line:#f0eee331;--table-gold-line:#e9daba66;--table-hover:#f6ebd524;
+ --card-back-a:#426a60;--card-back-b:#294b48;--card-back-shadow:#23413b;
+ --overlay-panel:#f2f1e5;--overlay-soft:#dfe8d7;--overlay-soft-hover:#c7d9c2;--overlay-text:#233a31;--overlay-muted:#516657;--overlay-border:#b3c6af;--overlay-primary:#365d4e;--overlay-primary-hover:#436d59;--overlay-input:#fff;--scrim-color:#091a17b3;
+}
+html[data-theme="moonlit"]{
+ --ui-bg:#101d2a;--ui-panel:#233447;--ui-soft:#354b60;--ui-text:#f1eae0;--ui-muted:#c4d0dc;--ui-accent:#dccba6;--ui-border:#62768b;
+ --table-felt:#273849;--table-felt-edge:#101e2c;--table-felt-light:#405669;--table-felt-mid:#243849;
+ --table-zone:#0b1b3040;--table-line:#e7e4e438;--table-gold-line:#e6cda980;--table-hover:#e7d8c124;
+ --card-back-a:#586c85;--card-back-b:#344960;--card-back-shadow:#293d52;
+ --overlay-panel:#f0eef0;--overlay-soft:#dfe5eb;--overlay-soft-hover:#c8d3dd;--overlay-text:#273646;--overlay-muted:#516276;--overlay-border:#b6c4d0;--overlay-primary:#34516e;--overlay-primary-hover:#456888;--scrim-color:#0c1529bf;
+}
+html[data-theme="copper"]{
+ --ui-bg:#271e19;--ui-panel:#3e3028;--ui-soft:#594435;--ui-text:#f9ecda;--ui-muted:#dacaba;--ui-accent:#e6bf83;--ui-border:#846b54;
+ --table-felt:#3d2e25;--table-felt-edge:#241813;--table-felt-light:#6b4d38;--table-felt-mid:#3b2b22;
+ --table-zone:#21100940;--table-line:#f3e0c638;--table-gold-line:#f0d5a577;--table-hover:#f1d6aa24;
+ --card-back-a:#8a6046;--card-back-b:#583c2b;--card-back-shadow:#422b21;
+ --overlay-panel:#f7f0e5;--overlay-soft:#ebddca;--overlay-soft-hover:#dfc8ad;--overlay-text:#423123;--overlay-muted:#685643;--overlay-border:#cdb99f;--overlay-primary:#794d31;--overlay-primary-hover:#906040;--scrim-color:#23150dbb;
+}
+html[data-theme="lagoon"]{
+ --ui-bg:#0d2227;--ui-panel:#1c3c43;--ui-soft:#2a5259;--ui-text:#ecf4e8;--ui-muted:#bcd6d2;--ui-accent:#d5d9a0;--ui-border:#59818a;
+ --table-felt:#1a4245;--table-felt-edge:#0a252b;--table-felt-light:#31646a;--table-felt-mid:#194047;
+ --table-zone:#09262d48;--table-line:#e0eeda38;--table-gold-line:#e4e1a476;--table-hover:#e1e8ad25;
+ --card-back-a:#397983;--card-back-b:#24515b;--card-back-shadow:#1b3f48;
+ --overlay-panel:#ecf3ee;--overlay-soft:#d6e8df;--overlay-soft-hover:#bddace;--overlay-text:#214044;--overlay-muted:#4b6869;--overlay-border:#b1d0cb;--overlay-primary:#2a6468;--overlay-primary-hover:#397b7b;--scrim-color:#061f23bd;
+}
+html[data-theme="heather"]{
+ --ui-bg:#201b29;--ui-panel:#3b324b;--ui-soft:#514662;--ui-text:#f4eaf4;--ui-muted:#d6c7df;--ui-accent:#e2c4b1;--ui-border:#7b6689;
+ --table-felt:#3d354c;--table-felt-edge:#231d31;--table-felt-light:#62526f;--table-felt-mid:#3b304b;
+ --table-zone:#180f2545;--table-line:#f3e1e53b;--table-gold-line:#efd4c07b;--table-hover:#f2d6dd21;
+ --card-back-a:#78638e;--card-back-b:#4e3d66;--card-back-shadow:#392b50;
+ --overlay-panel:#f5edf2;--overlay-soft:#e9dfe9;--overlay-soft-hover:#dbc9de;--overlay-text:#403149;--overlay-muted:#6c5671;--overlay-border:#cebbce;--overlay-primary:#665078;--overlay-primary-hover:#7e638f;--scrim-color:#1c1429bd;
+}
+html[data-theme="sandstone"]{
+ --ui-bg:#29271f;--ui-panel:#424235;--ui-soft:#555847;--ui-text:#f7f0df;--ui-muted:#d6d3bc;--ui-accent:#e8ce8e;--ui-border:#7d8067;
+ --table-felt:#454b3a;--table-felt-edge:#292e25;--table-felt-light:#68765b;--table-felt-mid:#434c3b;
+ --table-zone:#171e1440;--table-line:#f7e9c83b;--table-gold-line:#edd4a57b;--table-hover:#e6dbaa23;
+ --card-back-a:#7a8663;--card-back-b:#525d46;--card-back-shadow:#384634;
+ --overlay-panel:#f6f0e2;--overlay-soft:#e6e3ce;--overlay-soft-hover:#d3d4b7;--overlay-text:#3b4030;--overlay-muted:#65684f;--overlay-border:#c5c9af;--overlay-primary:#646e4c;--overlay-primary-hover:#788659;--scrim-color:#222618ba;
+}
+:root{--table-background:radial-gradient(ellipse at 40% 24%,var(--table-felt-light),var(--table-felt-mid) 70%,var(--table-felt-edge))}
+/* Shared language for all non-game routes, matching the tabletop's felt, parchment, and brass. */
+body{background:var(--table-background)}
+.shell-card{box-shadow:0 6px 18px #0003}
+.shell-emblem span{background:var(--ui-panel);box-shadow:0 5px 13px #0004}
+.shell-nav{box-shadow:0 2px 12px #0003}
+.bottom-nav{box-shadow:0 -4px 16px #0003}
+.shell-stat,.shell-rule{background:var(--ui-panel)}
+.shell-status{color:var(--ui-muted)}
+.shell-room-code{color:var(--ui-text)}
+/* Identical paper/card-back materials follow the active felt palette. */
+.tt2-deck-back{background:repeating-linear-gradient(45deg,var(--card-back-a),var(--card-back-a) 6px,var(--card-back-b) 6px,var(--card-back-b) 12px)}
+.tt6-card-back{background:repeating-linear-gradient(135deg,var(--card-back-a),var(--card-back-a) 5px,var(--card-back-b) 5px,var(--card-back-b) 10px)}
+.tt2-root .tt2-pill{background:var(--table-gold);color:var(--table-ink)}
+.tt2-zone,.tt6-player,.tt6-hand-block,.tt6-piles,.tt6-draft{border-color:var(--table-line);background:var(--table-zone)}
+.tt5-zone{border-color:var(--table-line)}
+.game-menu-dialog button.primary{color:#fff}
+.game-menu-dialog .game-menu-home{color:var(--overlay-primary)}
+/* Non-emoji inline SVG icon system; UI icon scale follows the surrounding font. */
+.ui-icon{display:inline-block;width:1.2em;height:1.2em;flex:none;vertical-align:-.2em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bottom-icon .ui-icon{width:23px;height:23px}
+.shell-icon .ui-icon,.shell-seat-icon .ui-icon{width:20px;height:20px}
+.shell-nav .ui-icon,.game-menu-trigger .ui-icon,.tt2-rule-link .ui-icon,.tt4-game-nav .ui-icon{width:18px;height:18px}
+.tt4-game-nav .ui-icon{vertical-align:middle}
+.game-menu-close .ui-icon{width:20px;height:20px}
+.brand::before{content:none}
+.brand{display:inline-flex;align-items:center;gap:8px}
+.brand .ui-icon{width:18px;height:18px}
+/* Card glyphs are illustrated vector symbols, not platform-dependent emoji fonts. */
+.card .symbol:has(.ui-icon){display:grid;place-items:center}
+.card .symbol .ui-icon{width:1em;height:1em;stroke-width:1.6}
+.card.tiny .symbol .ui-icon{min-width:14px;min-height:14px}
+.tt2-deck-back .ui-icon,.tt6-card-back .ui-icon{width:55%;height:55%;stroke-width:1.3;color:var(--table-gold)}
+.tt5-object-icon .ui-icon,.tt5-mirror-symbol .ui-icon,.tt5-pm-face .ui-icon{width:1em;height:1em}
+/* The same focus/selection language works on all themed surfaces. */
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline-color:var(--ui-accent)}

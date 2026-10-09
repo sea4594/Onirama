@@ -1,16 +1,17 @@
+import {icon,cardSymbol} from '../icons.js';
 import {renderCard,htmlEscape,CARD_COLORS} from './cards.js';
 import {renderExpansionTabletop} from './expansions.js';
 import {cooperativeLegalTargets} from './interactions.js';
 
 const esc=htmlEscape;
 const button=(label,command,disabled=false,title=label)=>`<button type="button" class="tt2-action" data-action="${esc(command)}" title="${esc(title)}" aria-label="${esc(title)}" ${disabled?'disabled':''}>${label}</button>`;
-const preview=(c)=>c.kind==='hidden'?'<div class="tt6-card-back" aria-label="Face-down private card"><span aria-hidden="true">✧</span></div>':renderCard(c,{tiny:true});
-const stack=(cards)=>cards.length?cards.map(preview).join(''):'<span class="tt6-empty" aria-hidden="true">◇</span>';
+const preview=(c)=>c.kind==='hidden'?`<div class="tt6-card-back" aria-label="Face-down private card"><span aria-hidden="true">${icon('sparkle')}</span></div>`:renderCard(c,{tiny:true});
+const stack=(cards)=>cards.length?cards.map(preview).join(''):`<span class="tt6-empty" aria-hidden="true">${icon('diamond')}</span>`;
 function doorSpots(player,config){
   const slots=config?.expansions?.includes('glyphs')?3:2;
   return [...CARD_COLORS,...(config?.expansions?.includes('oniverse')?['wild']:[])].map(color=>{
     const owned=player.doors.filter(c=>c.color===color),needed=color==='wild'?1:slots;
-    return `<div class="tt6-door-color ${color}" aria-label="${color}: ${owned.length} of ${needed} Doors"><div class="tt6-door-cards">${Array.from({length:needed},(_,i)=>owned[i]?renderCard(owned[i],{tiny:true}):`<span class="tt6-door-blank" aria-label="Empty ${color} Door slot">◇</span>`).join('')}</div><span class="tt6-color-label">${color==='wild'?'Oniverse':color}</span></div>`;
+    return `<div class="tt6-door-color ${color}" aria-label="${color}: ${owned.length} of ${needed} Doors"><div class="tt6-door-cards">${Array.from({length:needed},(_,i)=>owned[i]?renderCard(owned[i],{tiny:true}):`<span class="tt6-door-blank" aria-label="Empty ${color} Door slot">${icon('diamond')}</span>`).join('')}</div><span class="tt6-color-label">${color==='wild'?'Oniverse':color}</span></div>`;
   }).join('');
 }
 export function cooperativeTabletopModel(g,seat,{selectedId=null,canAct=true}={}){
@@ -26,13 +27,13 @@ function playerArea(p,seat,isTurn,config,canDrop=false){
   return `<section class="tt6-player ${isTurn?'tt6-current':''}" data-tt6-player="${seat}" aria-label="${esc(p.name)}'s play area">
     <div class="tt6-player-heading"><strong>${esc(p.name)}</strong><span class="tt6-turn-dot" title="${isTurn?'Taking turn':'Waiting'}" aria-label="${isTurn?'Taking turn':'Waiting'}"></span></div>
     <div class="tt6-player-fields"><div class="tt6-player-doors"><div class="tt6-region-heading">Doors <b>${p.doors.length}</b></div><div class="tt6-doors-row">${doorSpots(p,config)}</div></div>
-      <div class="tt6-player-labyrinth ${canDrop?'tt6-active-labyrinth':''}" ${canDrop?'data-tt-drop="play"':''} aria-label="${esc(p.name)}'s Labyrinth"><div class="tt6-region-heading">Labyrinth <b>${p.labyrinth.length}</b></div><div class="tt6-labyrinth-cards" data-tabletop-scroll="labyrinth-${seat}">${stack(p.labyrinth)}</div>${canDrop?`<button type="button" class="tt3-zone-action" data-tt-drop="play" aria-label="Play selected Location" disabled>↳</button>`:''}</div></div>
+      <div class="tt6-player-labyrinth ${canDrop?'tt6-active-labyrinth':''}" ${canDrop?'data-tt-drop="play"':''} aria-label="${esc(p.name)}'s Labyrinth"><div class="tt6-region-heading">Labyrinth <b>${p.labyrinth.length}</b></div><div class="tt6-labyrinth-cards" data-tabletop-scroll="labyrinth-${seat}">${stack(p.labyrinth)}</div>${canDrop?`<button type="button" class="tt3-zone-action" data-tt-drop="play" aria-label="Play selected Location" disabled>${icon('enter')}</button>`:''}</div></div>
   </section>`;
 }
 function handArea(cards,label,{active=false,selectedId='',privateBacks=false,shared=false}={}){
-  return `<div class="tt6-hand-block ${shared?'tt6-shared-block':''}" aria-label="${esc(label)}"><div class="tt6-region-heading">${esc(label)} <b>${cards.length}</b></div><div class="tt6-hand-cards">${cards.map(c=>`<span class="tt6-card-wrap">${privateBacks||c.kind==='hidden'?preview({kind:'hidden'}):renderCard(c,{select:active,interactive:active,selectedId})}</span>`).join('')||'<span class="tt6-empty">◇</span>'}</div></div>`;
+  return `<div class="tt6-hand-block ${shared?'tt6-shared-block':''}" aria-label="${esc(label)}"><div class="tt6-region-heading">${esc(label)} <b>${cards.length}</b></div><div class="tt6-hand-cards">${cards.map(c=>`<span class="tt6-card-wrap">${privateBacks||c.kind==='hidden'?preview({kind:'hidden'}):renderCard(c,{select:active,interactive:active,selectedId})}</span>`).join('')||`<span class="tt6-empty">${icon('diamond')}</span>`}</div></div>`;
 }
-function piles(g,m){return `<section class="tt6-piles" aria-label="Card piles"><div class="tt6-pile" aria-label="Draw deck, ${m.deckCount} cards"><div class="tt2-deck-back" aria-hidden="true">✧</div><small>Deck</small><b>${m.deckCount}</b></div><div class="tt6-pile" data-tt-drop="discard" aria-label="Discard pile, ${m.discard.length} cards"><div class="tt6-pile-face">${m.discard.length?renderCard(m.discard.at(-1),{tiny:true}):'◇'}</div><small>Discard</small><b>${m.discard.length}</b><button class="tt3-zone-action tt3-discard-action" type="button" data-tt-drop="discard" aria-label="Discard selected card" disabled>↳</button></div><div class="tt6-pile" aria-label="Limbo, ${m.limbo.length} cards"><div class="tt6-pile-face">${m.limbo.length?renderCard(m.limbo.at(-1),{tiny:true}):'◇'}</div><small>Limbo</small><b>${m.limbo.length}</b></div></section>`;}
+function piles(g,m){return `<section class="tt6-piles" aria-label="Card piles"><div class="tt6-pile" aria-label="Draw deck, ${m.deckCount} cards"><div class="tt2-deck-back" aria-hidden="true">${icon('sparkle')}</div><small>Deck</small><b>${m.deckCount}</b></div><div class="tt6-pile" data-tt-drop="discard" aria-label="Discard pile, ${m.discard.length} cards"><div class="tt6-pile-face">${m.discard.length?renderCard(m.discard.at(-1),{tiny:true}):icon('diamond')}</div><small>Discard</small><b>${m.discard.length}</b><button class="tt3-zone-action tt3-discard-action" type="button" data-tt-drop="discard" aria-label="Discard selected card" disabled>${icon('enter')}</button></div><div class="tt6-pile" aria-label="Limbo, ${m.limbo.length} cards"><div class="tt6-pile-face">${m.limbo.length?renderCard(m.limbo.at(-1),{tiny:true}):icon('diamond')}</div><small>Limbo</small><b>${m.limbo.length}</b></div></section>`;}
 export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,connected=true}={}){
   const m=cooperativeTabletopModel(g,seat,{selectedId,canAct}),opponent=1-seat;
   const canSelect=m.active&&!m.isDraft;
@@ -44,7 +45,7 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
   const actions=canSelect?`<div class="tt6-context" aria-label="Selected card actions">${selected?`${selected.kind==='tower'?`${button('←','towerLeft',!m.legal.includes('towerLeft'),'Place Tower left')}${button('→','towerRight',!m.legal.includes('towerRight'),'Place Tower right')}`:button('Play','play',!m.legal.includes('play'))}${button('Discard','discard',!m.legal.includes('discard'))}`:''}${g.expansion?.crossroads?button('Escape','escape'):''}</div>`:'';
   const doorsAll=g.players.reduce((n,p)=>n+p.doors.length,0);
   const content=`<div class="tt6-root tt2-root ${g.config?.expansions?.length?'tt5-has-expansions':''}" data-tabletop-coop="true" data-phase="${esc(g.phase)}" data-selected-card="${esc(selected?.id||'')}" data-tt6-seat="${seat}">
-    <div class="tt6-top"><span class="tt2-game-name">CO-OP</span><span class="tt6-turn" aria-live="polite">${g.status!=='active'?(g.status==='won'?'Victory':'Defeat'):m.isDraft?'Draft':`Turn ${g.turn} · ${esc(g.players[g.active].name)}`}</span><span class="tt6-connection ${connected?'':'tt6-offline'}" title="${connected?'Connected':'Reconnecting'}">●</span><span class="game-top-actions"><button type="button" class="game-menu-trigger" data-action="openGamePause" aria-label="Pause menu" title="Pause">Ⅱ</button><button type="button" class="tt2-rule-link" data-action="openGameRules" aria-label="Game rules" title="Rules">?</button></span></div>
+    <div class="tt6-top"><span class="tt2-game-name">CO-OP</span><span class="tt6-turn" aria-live="polite">${g.status!=='active'?(g.status==='won'?'Victory':'Defeat'):m.isDraft?'Draft':`Turn ${g.turn} · ${esc(g.players[g.active].name)}`}</span><span class="tt6-connection ${connected?'':'tt6-offline'}" title="${connected?'Connected':'Reconnecting'}">●</span><span class="game-top-actions"><button type="button" class="game-menu-trigger" data-action="openGamePause" aria-label="Pause menu" title="Pause">${icon('pause')}</button><button type="button" class="tt2-rule-link" data-action="openGameRules" aria-label="Game rules" title="Rules">${icon('help')}</button></span></div>
     ${!connected?`<div class="tt6-disconnected" role="status">Connection interrupted ${button('Retry','retryConnection')}</div>`:''}
     <div class="tt6-grid">
       <div class="tt6-opponent">${playerArea(m.partner,opponent,g.active===opponent,g.config,false)}${partner}</div>

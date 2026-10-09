@@ -1,3 +1,4 @@
+import {icon} from '../public/icons.js';
 import {renderCard,renderDoors} from '../public/tabletop/cards.js';
 import {applyTabletopMetrics} from '../public/tabletop/layout.js';
 import test from 'node:test';
@@ -33,7 +34,7 @@ test('Settings shows the exact commit and an official GitHub link; local fallbac
  const source=readFileSync('public/app.js','utf8').replace(/^import [^\n]+$/gm,'');
  const ui=commit=>{
   const app={innerHTML:'',addEventListener(){}},storage=new Map();
-  const ctx=vm.createContext({window:{ONIRAMA_BUILD_COMMIT:commit},document:{documentElement:{dataset:{}},querySelector:id=>id==='#app'?app:null},localStorage:{getItem:key=>storage.get(key)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},location:{origin:'https://sea4594.github.io',hostname:'sea4594.github.io',hash:'#/settings'},addEventListener(){},navigator:{},console,renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>false}});
+  const ctx=vm.createContext({window:{ONIRAMA_BUILD_COMMIT:commit},document:{documentElement:{dataset:{}},querySelector:id=>id==='#app'?app:null},localStorage:{getItem:key=>storage.get(key)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},location:{origin:'https://sea4594.github.io',hostname:'sea4594.github.io',hash:'#/settings'},addEventListener(){},navigator:{},console,icon,renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>false}});
   vm.runInContext(source,ctx);return app.innerHTML;
  };
  const deployed=ui(sha);assert.match(deployed,/Current commit:/);assert.ok(deployed.includes(sha));assert.ok(deployed.includes(`https://github.com/sea4594/Onirama/commit/${sha}`));

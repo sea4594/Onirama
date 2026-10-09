@@ -7,7 +7,7 @@ import {renderGameDialog} from '../public/tabletop/dialogs.js';
 const dir=new URL('../docs/ui-phase8-baselines/',import.meta.url);mkdirSync(dir,{recursive:true});
 const groups={base:[],four:['book','glyphs','dreamcatchers','towers'],all:['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx'],hard:['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx'],incubus:['incubus']};
 const variants={hard:{book:'hard',dreamcatchers:'hard',towers:'hard',premonitions:'extreme',crossroads:'hard',mirrors:'hard'},incubus:{incubus:'true'}};
-const styles=['styles.css','shell.css','tabletop/tokens.css','tabletop/layout.css','tabletop/solo.css','tabletop/expansions.css','tabletop/coop.css','tabletop/interactions.css','tabletop/dialogs.css'];
+const styles=['styles.css','shell.css','tabletop/tokens.css','tabletop/layout.css','tabletop/solo.css','tabletop/expansions.css','tabletop/coop.css','tabletop/interactions.css','tabletop/dialogs.css','game-shell.css','theme.css'];
 const css=styles.map(s=>`<link rel="stylesheet" href="../../public/${s}">`).join('');
 const html=(body,state=null,seat=0)=>`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${css}</head><body><main class="page">${body}</main>${state?`<script type="application/json" id="qa-state">${JSON.stringify({state,seat}).replaceAll('<','\\u003c')}</script>`:''}</body></html>`;
 for(const [variant,expansions] of Object.entries(groups))for(const mode of ['solo','coop']){

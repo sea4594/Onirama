@@ -1,3 +1,4 @@
+import {icon} from '../public/icons.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -6,7 +7,7 @@ import {renderCard,renderDoors} from '../public/tabletop/cards.js';
 import {applyTabletopMetrics} from '../public/tabletop/layout.js';
 import * as guest from '../public/guest-data.js';
 const src=readFileSync('public/app.js','utf8').replace(/^import [^\n]+$/gm,'');
-function screen(route){const data=new Map(),app={innerHTML:'',addEventListener(){}},location={origin:'https://sea4594.github.io',hostname:'sea4594.github.io',pathname:'/Onirama/',search:'',hash:route};const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};const ctx=vm.createContext({app,window:{ONIRAMA_BUILD_COMMIT:'c'.repeat(40)},location,localStorage:storage,document:{documentElement:{dataset:{}},querySelector:q=>q==='#app'?app:null},addEventListener(){},console,navigator:{},renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>true}});vm.runInContext(src,ctx);return {app,ctx,location,storage};}
+function screen(route){const data=new Map(),app={innerHTML:'',addEventListener(){}},location={origin:'https://sea4594.github.io',hostname:'sea4594.github.io',pathname:'/Onirama/',search:'',hash:route};const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};const ctx=vm.createContext({app,window:{ONIRAMA_BUILD_COMMIT:'c'.repeat(40)},location,localStorage:storage,document:{documentElement:{dataset:{}},querySelector:q=>q==='#app'?app:null},addEventListener(){},console,icon,navigator:{},renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>true}});vm.runInContext(src,ctx);return {app,ctx,location,storage};}
 function go(o,hash){o.location.hash=hash;vm.runInContext('render()',o.ctx);return o.app.innerHTML;}
 test('minimal home shows direct actions rather than redundant expansion catalog',()=>{const o=screen('#/');const html=o.app.innerHTML;for(const a of ['soloStart','setup','tutorial','history'])assert.ok(html.includes(`data-action="${a}"`));assert.ok(!html.includes('expansion-row'));assert.ok(!html.includes('The doors are waiting'));assert.ok(!html.includes('Every changing'));});
 test('three-tab navigation and join-by-code route remain available',()=>{const o=screen('#/multiplayer');for(const a of ['coopStart','join'])assert.ok(o.app.innerHTML.includes(`data-action="${a}"`));assert.ok(o.app.innerHTML.includes('id="roomcode"'));const html=go(o,'#/join?code=AB12CD34');assert.ok(html.includes('value="AB12CD34"'));assert.ok(html.includes('data-action="join"'));});

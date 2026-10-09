@@ -1,3 +1,4 @@
+import {icon,cardSymbol} from '../icons.js';
 /** Temporary decision surfaces. Never invents or applies game commands. */
 export const PENDING_DECISIONS = Object.freeze([
   'sphinxName','sphinxResolve','diver','confusion','mirrorReward',
@@ -30,7 +31,7 @@ export function renderGameDialog({type,html,key,mandatory=false}){
   return `<div class="tt4-overlay" data-tt4-overlay="${mandatory?'required':'optional'}" data-tt4-key="${escapeAttribute(key||type)}">
     <div class="tt4-scrim" aria-hidden="true"></div>
     <div class="tt4-dialog" role="dialog" aria-modal="true" aria-label="${escapeAttribute(label)}" tabindex="-1" data-tt4-dialog>
-      <div class="tt4-head"><span class="tt4-label">${escapeAttribute(label)}</span><span class="tt4-game-controls"><button type="button" data-action="openGamePause" class="tt4-game-nav" aria-label="Pause menu" title="Pause">Ⅱ</button><button type="button" data-action="openGameRules" class="tt4-game-nav" aria-label="Game rules" title="Rules">?</button></span>${mandatory?'<span class="tt4-required" aria-label="Mandatory decision">●</span>':'<button type="button" class="tt4-close" data-action="dialogClose" aria-label="Close dialog" title="Close">×</button>'}</div>
+      <div class="tt4-head"><span class="tt4-label">${escapeAttribute(label)}</span><span class="tt4-game-controls"><button type="button" data-action="openGamePause" class="tt4-game-nav" aria-label="Pause menu" title="Pause">${icon('pause')}</button><button type="button" data-action="openGameRules" class="tt4-game-nav" aria-label="Game rules" title="Rules">${icon('help')}</button></span>${mandatory?'<span class="tt4-required" aria-label="Mandatory decision">●</span>':`<button type="button" class="tt4-close" data-action="dialogClose" aria-label="Close dialog" title="Close">${icon('close')}</button>`}</div>
       <div class="tt4-content">${html}</div>
     </div>
   </div>`;

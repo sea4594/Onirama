@@ -91,18 +91,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}
 }
-/* Phase 3: BibleGuessr-inspired three primary tabs and familiar theme palette.
-   These are original Onirama components, not bundled BibleGuessr assets. */
-html[data-theme="ocean"][data-mode="light"]{--ui-bg:#edf2f7;--ui-panel:#ffffff;--ui-soft:#d9e2ec;--ui-text:#1f2f3d;--ui-muted:#455a6f;--ui-accent:#3f586e;--ui-border:#cad5e0}
-html[data-theme="ocean"][data-mode="dark"]{--ui-bg:#151d25;--ui-panel:#2c3a47;--ui-soft:#475f73;--ui-text:#f1f6fb;--ui-muted:#c5d3e0;--ui-accent:#93a7bf;--ui-border:#536478}
-html[data-theme="bw"][data-mode="light"]{--ui-bg:#f2f2f2;--ui-panel:#fff;--ui-soft:#f8f8f8;--ui-text:#1f1f1f;--ui-muted:#656565;--ui-accent:#404040;--ui-border:#d6d6d6}
-html[data-theme="bw"][data-mode="dark"]{--ui-bg:#1b1b1b;--ui-panel:#2a2a2a;--ui-soft:#343434;--ui-text:#f8f8f8;--ui-muted:#c1c1c1;--ui-accent:#d7d7d7;--ui-border:#505050}
-html[data-theme="forest"][data-mode="light"]{--ui-bg:#eef2ed;--ui-panel:#fff;--ui-soft:#dfe6dd;--ui-text:#1f2c1e;--ui-muted:#3f533f;--ui-accent:#4d6350;--ui-border:#cad6c9}
-html[data-theme="forest"][data-mode="dark"]{--ui-bg:#171d16;--ui-panel:#303a2e;--ui-soft:#5e6e5b;--ui-text:#f3f7f2;--ui-muted:#c9d2c7;--ui-accent:#93a390;--ui-border:#566453}
-html[data-theme="clay"][data-mode="light"]{--ui-bg:#f5f1ee;--ui-panel:#fff;--ui-soft:#e8dfda;--ui-text:#433630;--ui-muted:#5e4f48;--ui-accent:#9a7f70;--ui-border:#ddd0c7}
-html[data-theme="clay"][data-mode="dark"]{--ui-bg:#1d1918;--ui-panel:#4f453f;--ui-soft:#65574f;--ui-text:#faf3ef;--ui-muted:#e9ddd7;--ui-accent:#e8dfda;--ui-border:#73645a}
-html[data-theme="berry"][data-mode="light"]{--ui-bg:#f8f2f5;--ui-panel:#fff;--ui-soft:#e9d6df;--ui-text:#4a2f3f;--ui-muted:#664857;--ui-accent:#8a5870;--ui-border:#e2cbd7}
-html[data-theme="berry"][data-mode="dark"]{--ui-bg:#1a1419;--ui-panel:#3f2e3a;--ui-soft:#614255;--ui-text:#fff6fb;--ui-muted:#f4e3ec;--ui-accent:#debfce;--ui-border:#755668}
+/* UI components use the shared tabletop tokens defined in theme.css. */
 html{background:var(--ui-bg);color:var(--ui-text)}
 body{background:var(--ui-bg);color:var(--ui-text)}
 .nav{background:var(--ui-panel);border-color:var(--ui-border);padding:12px max(16px,calc((100vw - 1100px)/2));box-shadow:0 2px 12px #0001}

@@ -1,3 +1,4 @@
+import {icon} from '../public/icons.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -12,7 +13,7 @@ const appSource=readFileSync('public/app.js','utf8'),css=readFileSync('public/ta
 function uiContext(){
  const store=new Map(),app={innerHTML:'',addEventListener(){},querySelector(){return null}},localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
  const document={documentElement:{dataset:{}},querySelector:s=>s==='#app'?app:null};
- const ctx=vm.createContext({document,localStorage,location:{origin:'http://localhost',hostname:'localhost',hash:'#/'},addEventListener(){},navigator:{},confirm:()=>false,console,renderCard,renderDoors,renderSoloTabletop,renderGameDialog,decisionDialogKey,createDialogController,applyTabletopMetrics(){},...guest,firebase:{firebaseConfigured:()=>false}});
+ const ctx=vm.createContext({document,localStorage,location:{origin:'http://localhost',hostname:'localhost',hash:'#/'},addEventListener(){},navigator:{},confirm:()=>false,console,icon,renderCard,renderDoors,renderSoloTabletop,renderGameDialog,decisionDialogKey,createDialogController,applyTabletopMetrics(){},...guest,firebase:{firebaseConfigured:()=>false}});
  vm.runInContext(appSource.replace(/^import [^\n]+$/gm,''),ctx);return ctx;
 }
 function fixture(){return viewFor(newGame({mode:'solo',seed:731,config:{expansions:all,difficulties:{}}}),0);}
