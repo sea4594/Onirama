@@ -146,3 +146,9 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 ## Firebase configuration (0.12.1)
 
 Onirama uses the six public Firebase web-app settings for project `onirama-5124e` directly from `public/runtime-config.js` in both local development and GitHub Pages. No `ONIRAMA_FIREBASE_*` GitHub Actions variables are needed. Enable Anonymous Auth and publish `firestore.rules` in the Firebase Console; see [docs/FIREBASE_MULTIPLAYER.md](docs/FIREBASE_MULTIPLAYER.md).
+
+## UI redesign · Phase 1 foundation (v0.13.0)
+- The current playable board and game mechanics are unchanged.
+- New reusable card component, complete tabletop zone registry, and responsive layout planner are in `public/tabletop/`.
+- Preview a **non-playable** tabletop layout study at `/tabletop-preview.html` (choose solo/co-op and expansion density).
+- See `docs/UI_REDESIGN_AUDIT.md` and `docs/ui-baselines/` for the migration contract and visual baselines. Phase 2 begins replacing the actual game board.

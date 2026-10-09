@@ -50,3 +50,14 @@ Suggested normalized effects: `move`, `reveal`, `inspect`, `draw`, `shuffle`, `g
 ## Phase 12 — Firebase multiplayer migration (supersedes paid backend plan)
 
 The BibleGuessr reference project uses Firebase anonymous browser auth, Firestore transactions and realtime subscriptions. Onirama now uses the same free-tier architecture for GitHub Pages multiplayer, with a unique 8-character room code, two seat UIDs, simultaneous-state version checks and real-time board updates. The optional Node backend is retained only for legacy local testing. Firebase project/rules and GitHub variables must be configured manually. This does not provide a server-verifiable hidden-information or anti-cheat guarantee; see `FIREBASE_MULTIPLAYER.md`.
+
+## UI rebuild (separate from rules-engine delivery)
+- UI Phase 1: audit, component extraction, responsive layout blueprint, baseline QA (v0.13.0).
+- UI Phase 2: replace solo base-game board with visible card zones and responsive tabletop.
+- UI Phase 3: click/tap + drag/drop controller with legal target validation and keyboard fallback.
+- UI Phase 4: overlay/temporary dialog architecture for all pending decisions.
+- UI Phase 5: integrate each boxed and promo expansion, including difficulty and dense layouts.
+- UI Phase 6: coherent cooperative two-player tabletop, drafting and Firebase reconnect.
+- UI Phase 7: simplify non-gameplay pages and shared navigation.
+- UI Phase 8: browser visual/interaction matrix, all modes and expansion densities.
+- UI Phase 9: remove legacy UI, run full regression gate and release.

@@ -1,3 +1,5 @@
+import {renderCard,renderDoors} from '../public/tabletop/cards.js';
+import {applyTabletopMetrics} from '../public/tabletop/layout.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -9,7 +11,7 @@ import {hasAlignment} from '../engine/modules.js';
 import * as guest from '../public/guest-data.js';
 const make=(expansions=[],difficulties={},mode='solo',seed=212)=>newGame({mode,seed,config:{expansions,difficulties}});
 function move(s,from,matcher,to){const a=from.findIndex(matcher);assert.ok(a>=0,'Expected card in source zone');const [c]=from.splice(a,1);to.push(c);return c;}
-function mockUI(){const storage=new Map(),app={innerHTML:'',addEventListener(){}},document={documentElement:{dataset:{}},querySelector:x=>x==='#app'?app:null},localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};const location={origin:'http://localhost',hostname:'localhost',hash:'#/'};const ctx=vm.createContext({document,localStorage,location,addEventListener(){},navigator:{},confirm(){throw Error('Blocking confirm is not permitted')},prompt(){throw Error('Blocking prompt is not permitted')},console,...guest,firebase:{firebaseConfigured:()=>false}});vm.runInContext(readFileSync('public/app.js','utf8').replace(/^import .* from '\.\/guest-data\.js';\s*/,'').replace(/^import \* as firebase from '\.\/firebase-room\.js';\s*/m,''),ctx);return {ctx,app};}
+function mockUI(){const storage=new Map(),app={innerHTML:'',addEventListener(){}},document={documentElement:{dataset:{}},querySelector:x=>x==='#app'?app:null},localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};const location={origin:'http://localhost',hostname:'localhost',hash:'#/'};const ctx=vm.createContext({document,localStorage,location,addEventListener(){},navigator:{},confirm(){throw Error('Blocking confirm is not permitted')},prompt(){throw Error('Blocking prompt is not permitted')},console,renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>false}});vm.runInContext(readFileSync('public/app.js','utf8').replace(/^import [^\n]+$/gm,''),ctx);return {ctx,app};}
 
 test('Official difficult variants are accepted only when enabled; Incubus remains standalone',()=>{
  const cases=[['book','hard'],['dreamcatchers','hard'],['towers','hard'],['premonitions','hard'],['premonitions','extreme'],['crossroads','hard'],['mirrors','hard'],['incubus','easy'],['incubus','apprentice'],['incubus','true']];

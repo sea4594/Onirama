@@ -1,0 +1,23 @@
+/* Phase 1 preview/foundation only. Existing .game-layout styling remains untouched. */
+.tt-preview-shell{min-height:100dvh;margin:0;background:var(--tt-felt-edge);color:#f8eed8;font:500 14px/1.45 system-ui,sans-serif}
+.tt-preview-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 16px;background:#132824;border-bottom:1px solid var(--tt-line)}
+.tt-preview-toolbar label{display:inline-flex;align-items:center;gap:6px}.tt-preview-toolbar select{background:#233e37;color:#fff;border:1px solid var(--tt-line);border-radius:7px;padding:8px;min-height:var(--tt-control)}
+.tt-preview-help{color:#c5d1c7;font-size:12px}.tt-table{--tabletop-gap:8px;--tabletop-card-width:74px;--tabletop-compact-width:44px;box-sizing:border-box;min-height:calc(100dvh - 85px);display:grid;gap:var(--tabletop-gap);padding:var(--tabletop-gap);background:radial-gradient(ellipse at 50% 45%,#2b5045,var(--tt-felt));grid-template-columns:minmax(0,1fr);align-content:start}
+.tt-zone{min-width:0;min-height:60px;position:relative;border:1px solid var(--tt-line);border-radius:var(--tt-radius);padding:7px;overflow:hidden;background:#ffffff07}
+.tt-zone[data-region="core"]{background:#040f102e}
+.tt-zone[data-region="expansions"]{background:#ebcc8610}
+.tt-label{font-size:11px;letter-spacing:.075em;text-transform:uppercase;color:#e3dfc5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+.tt-card-row{display:flex;align-items:center;gap:4px;max-width:100%;overflow:hidden}
+.tt-card{width:var(--tabletop-compact-width);height:calc(var(--tabletop-compact-width)*1.45);border-radius:5px;border:2px solid #e6d6b8;background:linear-gradient(140deg,#f0e8d5,#bca784);color:#263333;box-shadow:var(--tt-shadow);flex:none;display:grid;place-items:center;font-size:19px}
+.tt-card:nth-child(2){background:linear-gradient(145deg,#6783a2,#263f68);color:white}
+.tt-card:nth-child(3){background:linear-gradient(145deg,#75a080,#345b50);color:white}
+.tt-count{position:absolute;right:8px;bottom:6px;font-size:12px;color:#cbd6ca}
+.tt-inspect{position:absolute;right:7px;top:5px;font-size:12px;opacity:.65}
+.tt-board-primary,.tt-board-secondary{display:contents}
+.tt-table[data-tabletop-layout^="landscape"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:1100px) and (orientation:landscape){.tt-table{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+.tt-table[data-tabletop-density="dense"] .tt-zone{padding:5px;min-height:51px}
+.tt-table[data-tabletop-density="dense"] .tt-card{width:35px;height:51px}
+.tt-table[data-tabletop-layout="portrait-dense"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:620px){.tt-table{gap:5px;padding:5px}.tt-zone{min-height:48px;padding:5px}.tt-label{font-size:10px}.tt-card{width:31px;height:44px}.tt-preview-toolbar{padding:8px}.tt-preview-help{display:none}}
+/* A separate expandable card inspector will be built in Phase 3; all zones already remain visible. */
