@@ -33,13 +33,12 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 `npm start` remains an optional legacy local Node server for development; it is **not used by GitHub Pages** once Firebase is configured. The Firebase client intentionally uses its own Firestore storage, so old Node-hosted rooms are not migrated.
 
-## UI redesign progress (v0.19.0)
+## UI redesign — Phases 1–9 delivered (v0.21.0)
 
-- **UI Phases 1–4:** shared card/layout primitives, base solo tabletop, drag/tap/keyboard controls, and all 23 mandatory decision overlays.
-- **UI Phase 5:** all nine combinable expansion areas plus Little Incubus integrated into the solo tabletop.
-- **UI Phase 6:** two-player tabletop, private/shared hands, draft, Doors, Labyrinths and Firebase-compatible actions.
-- **UI Phase 7:** redesigned minimal home, multiplayer, room lobby, join, expansion setup, Settings, tutorial, history, Rules and roadmap; see [UI Phase 7](docs/UI_PHASE7_MINIMAL_SHELL.md).
-- **Remaining UI Phases 8–9:** real-device/live Firebase QA, complete visual/interaction audit, old UI removal and final release.
+- One responsive solo/cooperative tabletop, physical expansion zones, legal drag/tap/keyboard gestures and contextual decision overlays.
+- The minimalist home/setup/multiplayer/settings UI, themes, local history, saved setups and commit indicator are retained.
+- Phase 9 removed the unreachable legacy gameplay renderer and deprecated CSS, restored keyboard focus across card-decision rerenders, and extended regression testing. See [Phase 9 release audit](docs/UI_PHASE9_RELEASE.md).
+- The **local** Node release gate and offline Chromium responsive/interaction checks pass. Live Firebase sessions on two actual devices and OS/browser-specific accessibility remain **manual acceptance gates**, not automatically certified.
 
 ## What works today
 

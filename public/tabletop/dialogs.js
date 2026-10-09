@@ -42,13 +42,33 @@ export function createDialogController({root,onDismiss}){
   const dialog=()=>root.querySelector?.('[data-tt4-dialog]');
   const overlay=()=>root.querySelector?.('[data-tt4-overlay]');
   const tabbable=()=>[...(dialog()?.querySelectorAll?.('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')||[])].filter(el=>!el.hidden&&el.getAttribute?.('aria-hidden')!=='true');
-  function sync(){
+  // Capture a stable descriptor BEFORE app.innerHTML replaces the current controls.
+  // Remember the exact card/checkbox/field rather than returning focus to <body>.
+  const focusKeys=['data-action','data-pick','data-mirror-pair','data-mirror-choice','data-spell-choice','data-tt-card','id'];
+  function describe(el){
+    if(!el||!root.contains?.(el))return null;
+    const name=focusKeys.find(k=>k==='id'?!!el.id:el.hasAttribute?.(k));
+    return name?{name,value:name==='id'?el.id:el.getAttribute(name),modal:!!el.closest?.('[data-tt4-dialog]')}:{modal:!!el.closest?.('[data-tt4-dialog]')};
+  }
+  function recover(info){
+    if(!info?.name)return null;
+    return [...(root.querySelectorAll?.('[data-tt4-dialog] button,[data-tt4-dialog] input,[data-tt4-dialog] select,[data-tt4-dialog] textarea,[data-action],[data-pick],[id]')||[])].find(el=>(info.name==='id'?el.id:el.getAttribute?.(info.name))===info.value&&(!info.modal||dialog()?.contains?.(el)))||null;
+  }
+  const capture=()=>describe(typeof document==='undefined'?null:document.activeElement);
+  function sync(before){
     const over=overlay(),key=over?.dataset.tt4Key||'';
-    // Do not remove the decision from the DOM if the current player disconnects.
     for(const node of root.querySelectorAll?.('.nav,.page,.bottom-nav')||[]){if(over)node.setAttribute?.('inert','');else node.removeAttribute?.('inert');}
     if(typeof document!=='undefined')document.documentElement?.classList?.toggle?.('tt4-dialog-open',!!over);
-    if(key&&key!==previousKey){returnFocus=document.activeElement;const target=tabbable()[0]||dialog();target?.focus?.({preventScroll:true});}
-    else if(!key&&previousKey){if(returnFocus?.isConnected)returnFocus.focus?.({preventScroll:true});returnFocus=null;}
+    if(key){
+      if(!previousKey&&before&&!before.modal)returnFocus=before;
+      // Restore the current selection within a rerendered decision, otherwise put
+      // keyboard focus on the first actionable control in the new dialog.
+      const restored=key===previousKey&&before?.modal?recover(before):null;
+      (restored||tabbable()[0]||dialog())?.focus?.({preventScroll:true});
+    }else if(previousKey){
+      (recover(returnFocus)||root.querySelector?.('main [data-action],main a,main button,main input')||root.querySelector?.('#main-content'))?.focus?.({preventScroll:true});
+      returnFocus=null;
+    }
     previousKey=key;
   }
   root.addEventListener?.('keydown',e=>{
@@ -62,5 +82,5 @@ export function createDialogController({root,onDismiss}){
     if(e.shiftKey&&(document.activeElement===first||!dialog()?.contains?.(document.activeElement))){e.preventDefault();last.focus();}
     else if(!e.shiftKey&&(document.activeElement===last||!dialog()?.contains?.(document.activeElement))){e.preventDefault();first.focus();}
   });
-  return {sync};
+  return {capture,sync};
 }

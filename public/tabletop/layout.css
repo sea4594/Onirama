@@ -1,4 +1,4 @@
-/* Phase 1 preview/foundation only. Existing .game-layout styling remains untouched. */
+/* Standalone responsive layout studies. The live game uses the tabletop boards. */
 .tt-preview-shell{min-height:100dvh;margin:0;background:var(--tt-felt-edge);color:#f8eed8;font:500 14px/1.45 system-ui,sans-serif}
 .tt-preview-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 16px;background:#132824;border-bottom:1px solid var(--tt-line)}
 .tt-preview-toolbar label{display:inline-flex;align-items:center;gap:6px}.tt-preview-toolbar select{background:#233e37;color:#fff;border:1px solid var(--tt-line);border-radius:7px;padding:8px;min-height:var(--tt-control)}
