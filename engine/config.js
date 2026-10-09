@@ -1,4 +1,4 @@
-export const RULESET_VERSION='phase7-1';
+export const RULESET_VERSION='phase10-audit1';
 export const EXPANSION_CATALOG=Object.freeze([
  {id:'book',name:'The Book of Steps Lost and Found',phase:4,available:true},
  {id:'glyphs',name:'The Glyphs',phase:4,available:true},
@@ -33,7 +33,7 @@ export function validateConfig(raw=BASE_CONFIG){
 }
 export function normalizeSave(s){
  if(!s||typeof s!=='object')throw Error('Invalid saved game');
- if(s.schema===3){validateConfig(s.config);if(['phase6-1','phase5-1','phase4-1','base-2'].includes(s.rulesVersion)){const n=structuredClone(s);for(const p of n.players||[])if(!Array.isArray(p.series))p.series=p.labyrinth.slice(-Math.min(2,p.streak||0)).map(c=>({id:c.id,color:c.color}));if(n.moduleState?.mirrors){n.moduleState.mirrors.zones.queuedDoors??=[];}n.rulesVersion=RULESET_VERSION;return n;}return s;}
+ if(s.schema===3){validateConfig(s.config);if(['phase7-1','phase6-1','phase5-1','phase4-1','base-2'].includes(s.rulesVersion)){const n=structuredClone(s);for(const p of n.players||[])if(!Array.isArray(p.series))p.series=p.labyrinth.slice(-Math.min(2,p.streak||0)).map(c=>({id:c.id,color:c.color}));if(n.moduleState?.mirrors){n.moduleState.mirrors.zones.queuedDoors??=[];}n.rulesVersion=RULESET_VERSION;return n;}return s;}
  if(s.schema===2){validateConfig(s.config);return {...s,schema:3,rulesVersion:'base-2',interrupts:[]};}
  if(s.schema!==1)throw Error('Unsupported saved game schema');
  return {...s,schema:3,rulesVersion:'base-2',config:validateConfig(),moduleState:{},effects:[],continuations:[],events:[],interrupts:[]};

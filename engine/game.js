@@ -186,7 +186,7 @@ function spellCosts(s){return s.config.difficulties.book==='hard'?{paradox:6,par
 function castSpell(s,cmd){need(has(s,'book'),'Book of Steps is not enabled');need(['paradox','parallel','punishment'].includes(cmd.spell),'Unknown spell');
  const cost=spellCosts(s)[cmd.spell];const ids=cmd.costIds;need(Array.isArray(ids)&&ids.length===cost&&new Set(ids).size===cost,'Select exactly the required number of discarded cards');
  need(ids.every(id=>s.discard.some(c=>c.id===id)),'Payment must be from the discard pile');
- if(cmd.spell==='punishment')need(s.pending?.type==='nightmare'&&s.phase==='decision','Punishment only cancels a Nightmare just drawn');
+ if(cmd.spell==='punishment')need(s.pending?.type==='nightmare'&&!s.pending.incubus&&s.pending.card?.kind==='nightmare'&&s.phase==='decision','Punishment cancels a Nightmare just drawn, not an Incubus anticipation penalty');
  if(cmd.spell==='parallel'){need(Number.isInteger(cmd.first)&&Number.isInteger(cmd.second)&&cmd.first!==cmd.second&&cmd.first>=0&&cmd.second>=0&&cmd.first<goals(s).length&&cmd.second<goals(s).length,'Select two different Goals');}
  if(cmd.spell==='paradox')need(s.deck.length>0,'Deck is empty');
  const removed=book(s).zones.removed;for(const id of ids)removed.push(s.discard.splice(s.discard.findIndex(c=>c.id===id),1)[0]);
@@ -196,7 +196,7 @@ function castSpell(s,cmd){need(has(s,'book'),'Book of Steps is not enabled');nee
  // Suspend even a nested decision. Suspended physical cards remain tracked.
  s.interrupts.push({phase:s.phase,pending:s.pending});s.pending={type:'spellPeek',cards:takeLook(s,5,'bottom')};s.phase='decision';
 }
-function edgesConflict(left,right){return left!=null&&right!=null&&left===right;}
+function edgesConflict(left,right){const icons=v=>Array.isArray(v)?v:typeof v==='string'?v.split(/[+|,/ ]+/).filter(Boolean):[];return icons(left).some(x=>icons(right).includes(x));}
 function playTower(s,cmd){const found=spots(s).find(x=>x.id===cmd.id);need(found?.card.kind==='tower','Choose a Tower');need(cmd.side==='left'||cmd.side==='right','Choose left or right');const a=tower(s),c=found.card;
  if(a.length){const neighbor=cmd.side==='left'?a[0]:a.at(-1);need(!edgesConflict(...(cmd.side==='left'?[c.right,neighbor.left]:[neighbor.right,c.left])),'Tower edge symbols cannot match');}
  takeSpot(s,cmd.id);if(cmd.side==='left')a.unshift(c);else a.push(c);note(s,`Played ${c.color} Tower on the ${cmd.side}.`);if(checkWin(s))return;completeAction(s);
@@ -205,7 +205,11 @@ function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromati
  if(has(s,'dreamcatchers'))for(const i of catcherIds(s))targets.push(...stacks(s)['catch'+i].filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'catch'+i})));
  return targets;
 }
-function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(d.color!==color&&d.color!=='wild')spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');if(s.status==='active'&&o.source==='deck')shuffleAfterSearch(s,freeId);}
+function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(o.source!=='deck'&&freeId!==undefined&&freeId!==null){
+  need(o.source!=='catch'+freeId,'Cannot free the Dreamcatcher holding the selected Door');
+  freeCatcher(s,freeId);
+ }
+ if(d.color!==color&&d.color!=='wild')spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');if(s.status==='active'&&o.source==='deck')shuffleAfterSearch(s,freeId);}
 // Phase 6: promo and appendix effects share the base draw, Door and Nightmare transitions.
 const MIRROR_NAMES=['red','blue','green','brown','sun','moon','key','glyph','rainbow'];
 function mirrorEnabled(s,name){return MIRROR_NAMES.includes(name)&&(name!=='glyph'||has(s,'glyphs'))&&(name!=='rainbow'||s.config.difficulties.mirrors==='hard');}

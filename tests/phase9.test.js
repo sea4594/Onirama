@@ -32,7 +32,7 @@ test('Production API: CORS preflight, forbidden origins, authentication, stale a
   const opt=await fetch(base+'/api/join',{method:'OPTIONS',headers:{Origin:PAGES,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,content-type'}});
   assert.equal(opt.status,204);assert.equal(opt.headers.get('access-control-allow-origin'),PAGES);
   const forbidden=await request(base,'/api/catalog','GET',null,null,'https://evil.example');assert.equal(forbidden.status,403);
-  const health=await request(base,'/api/health');assert.deepEqual(health.data,{ok:true,version:'0.9.0'});
+  const health=await request(base,'/api/health');assert.deepEqual(health.data,{ok:true,version:'0.10.0'});
   const room=await request(base,'/api/rooms','POST',{name:'Host'},null,PAGES);
   assert.equal(room.status,201);assert.equal(room.headers.get('access-control-allow-origin'),PAGES);
   const id=room.data.room.id,key=room.data.token;

@@ -84,7 +84,7 @@ async function body(req){
 }
 function endpoint(req,res,url,data){
   const segments=url.pathname.split('/').filter(Boolean);
-  if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{ok:true,version:'0.9.0'});
+  if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{ok:true,version:'0.10.0'});
   if(req.method==='GET'&&url.pathname==='/api/catalog')return json(res,200,{expansions:EXPANSION_CATALOG});
   if(req.method==='POST'&&url.pathname==='/api/solo')return json(res,201,create('solo',data.name,data.config));
   if(req.method==='POST'&&url.pathname==='/api/rooms')return json(res,201,create('coop',data.name,data.config));

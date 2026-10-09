@@ -19,7 +19,7 @@ A `render.yaml` blueprint is included for Render's paid `starter` instance with 
 
 **Single-instance restriction:** File-backed transactions are atomic on one local filesystem, but this is **not** a distributed database. Do not run two replicas/workers sharing `sessions.json`. No automatically provisioned backend, cloud database, or backup service is included in this repository.
 
-Verify `https://YOUR-SERVER-DOMAIN/api/health` returns `{"ok":true,"version":"0.9.0"}`. Require HTTPS; never embed a plain HTTP backend on a Pages HTTPS site.
+Verify `https://YOUR-SERVER-DOMAIN/api/health` returns `{"ok":true,"version":"0.10.0"}`. Require HTTPS; never embed a plain HTTP backend on a Pages HTTPS site.
 
 ## 3. Connect GitHub Pages
 

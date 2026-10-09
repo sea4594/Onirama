@@ -45,7 +45,7 @@ A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, brows
 - Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, expansion and Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
-**Important limitations:** No public deployment hardening, matchmaking, sophisticated visual card art, tutorial walkthroughs, guest history/stats, or complete expansion adjudications. Room state is stored using a small synchronous JSON store, suitable for testing, not a scaled production service. Accounts and login are explicitly out of scope permanently; all gameplay is guest-based. Same-device multiplayer requires separate browser profiles (one localStorage session per browser origin).
+**Important limitations:** Some expansion adjudications and Tower card markings are not yet publisher-verified. A hosted persistent backend is still required for live multiplayer and is designed for one server instance, not horizontal scaling; deployment and real-device QA remain outstanding. The guided tutorial, history, statistics, and saved setups are guest-only and browser-local. No accounts or login will be implemented. Same-device multiplayer requires separate browser profiles.
 
 ## Architecture
 
@@ -124,3 +124,10 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - `render.yaml`: optional paid Render Blueprint with a persistent disk. Actual provider setup and the GitHub Actions variable must be completed by the repo owner before multiplayer becomes live on Pages.
 - Detailed instructions: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Future work: [docs/PHASE9_RELEASE.md](docs/PHASE9_RELEASE.md).
 - **No accounts or login**, and no account features are planned. Local solo games and settings remain browser-local.
+
+## Phase 10 — Rules and interaction audit
+
+- Extended deterministic tests for all configured difficulty branches, conservation, Dreamcatcher searches during Door claims, Tower dual-symbol edge restrictions, Nightmare false destruction, Book Goals, multiplayer hidden data, pending decisions, and older saves.
+- Added in-board selections for Mirror pairs, Cyclobot exchange, cooperative discard/swaps and Confusion card ordering. Corrected Tower-removal visual legality checks and catcher freeing safeguards.
+- The full release gate now includes the GitHub Pages production build. See [the detailed Phase 10 matrix](docs/PHASE10_RULES_MATRIX.md) for the full action/decision inventory and source-status of remaining exceptions.
+- **Not a claim of perfect publisher fidelity:** all 12 printed Tower card edges, ambiguous cooperative expansion ownership, Rainbow/Crossroad interaction, and some partial-deck combinations still need authoritative verification.

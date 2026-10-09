@@ -98,3 +98,9 @@ For every unclear case, log: an ID, precise scenario, applicable expansion combi
 **Source status:** The official expansion PDF was indexed for the Tower search, False Destruction, and Alignment rules. The source confirms those general effects, not exact printed data for each Tower card. Where the full scanned PDF or primary photos were unavailable, no printed card details were invented.
 
 **Outstanding Phase 7 acceptance items:** exact printed Tower layouts; publisher-backed decisions for ambiguous co-op interactions, difficult Rainbow wildcards, and scarce-card edge cases; end-to-end tests for every distinct action type. These remain blockers to claiming official-rule completeness, although the hotfix itself can be released as a tested correctness improvement.
+
+## Phase 10: targeted rules and interface verification
+
+See [Phase 10 matrix](PHASE10_RULES_MATRIX.md) for the 23 mandatory decision types, normal and hard variants, effect precedence, and testing matrix. Phase 10 fixes UI choices that were previously delegated to blocking browser prompts; Tower removal now observes dual-symbol edge collisions; search/claim into occupied Dreamcatchers supports freeing a different catcher without destroying the targeted Door.
+
+**Outstanding publisher verification:** Card inventory for all 12 Tower edges is unavailable; their game-card metadata is still **provisional**. Other remaining cases are documented under `COOP-OWN`, `RAINBOW-WILD`, `SCARCITY`, and `PROMO-EDGE`; current behaviors in those cases are *application adjudications*, not publisher-certified rules. The release gate tests safety and conservation, not proofs of source fidelity.
