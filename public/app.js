@@ -165,7 +165,7 @@ function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
   return `<section class="decision stack"><h2>Prophecy</h2><p>Choose exactly one card to discard. Reorder the others from top to bottom, then confirm.</p><div class="cards tt3-order-list" data-tt-order-group="prophecy">${prophecyOrder.map((id,index)=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag to reorder">${card(c,{tiny:false})}</div>${btn(prophecyDiscard===id?'✓ Discard':'Discard',`prophecyDiscard:${id}`,'mini')}${btn('↑',`prophecyUp:${id}`,'mini')}${btn('↓',`prophecyDown:${id}`,'mini')}</div>`;}).join('')}</div><div class="muted small">Leftmost card will be drawn first.</div>${btn('Confirm Prophecy','prophecyConfirm',prophecyDiscard?'primary':'')}</section>`;
 }
 function board(g,room){
-  if(g.mode==='solo'&&!(g.config?.expansions||[]).length){
+  if(g.mode==='solo'){
     return renderSoloTabletop(g,{selectedId:selected,canAct:room.seat===g.active});
   }
   const canAct=room.seat===g.active,player=g.players[g.active],my=g.players[room.seat],isDraft=g.phase==='draft';
@@ -237,7 +237,7 @@ function render(){const focused=document.activeElement;const focusKind=['action'
   if(page==='#/setup')content=setup();else if(page==='#/join'||roomCodeFromHash())content=joinPage();else if(page==='#/rules')content=rules();else if(page==='#/roadmap')content=roadmap();else if(page==='#/multiplayer')content=multiplayer();else if(page==='#/settings')content=settings();else if(page==='#/history')content=historyPage();else if(page==='#/tutorial')content=tutorial();else if(page==='#/game')content=!state?'<div class="loading">Loading the dream…</div>':state.room.started?board(state.game,state.room):lobby(state.room);else content=home();
   app.innerHTML=nav()+`<main class="page" id="main-content" tabindex="-1">${error?`<div class="notice error" role="alert">${escape(error)} <button class="mini ghost" data-action="clearError">Dismiss</button></div>`:''}${content}</main>`+bottomNav()+(typeof renderGameDialog==='function'&&state?.room?.started&&page==='#/game'?gameDialog(state.game,state.room):'');
   if(page==='#/game'&&state?.room.started){
-    applyTabletopMetrics(app.querySelector?.('.game-layout'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
+    applyTabletopMetrics(app.querySelector?.('.tt2-root,.game-layout'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     const labyrinth=app.querySelector?.('[data-tabletop-scroll="labyrinth"]');
     if(labyrinth)labyrinth.scrollLeft=labyrinth.scrollWidth;
   }
@@ -329,7 +329,7 @@ async function handle(actionName){
   if(actionName==='towerLeft'||actionName==='towerRight'){if(!selected)return setError('Choose a Tower.');return action({type:'playTower',id:selected,side:actionName==='towerLeft'?'left':'right'});}
   if(actionName==='play'||actionName==='discard'){
     if(!selected)return setError('Select a card first.');
-    const c=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])].find(x=>x.id===selected);
+    const c=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[]),...(g.mode==='solo'?g.expansion?.oniverse?.treasure||[]:[])].find(x=>x.id===selected);
     if(!c)return setError('Selected card is not available.');
     if(actionName==='play'&&g.players[g.active].labyrinth.at(-1)?.symbol===c.symbol)return setError('The next Location needs a different symbol.');
     const command={type:actionName,id:selected};
@@ -370,6 +370,7 @@ function installTabletopController(){
     onCommand:(type,id)=>{
       if(page!=='#/game'||busy||!state?.game)return;
       if(!soloLegalTargets(state.game,id,state.room?.seat).includes(type))return;
+      if(type==='towerLeft'||type==='towerRight')return action({type:'playTower',id,side:type==='towerLeft'?'left':'right'});
       return action({type,id});
     }
   });
@@ -397,4 +398,4 @@ document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session
 render();installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
-addEventListener('resize',()=>{if(page==='#/game'&&state?.room.started)applyTabletopMetrics(app.querySelector?.('.game-layout'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});});
+addEventListener('resize',()=>{if(page==='#/game'&&state?.room.started)applyTabletopMetrics(app.querySelector?.('.tt2-root,.game-layout'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});});

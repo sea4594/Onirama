@@ -3,11 +3,19 @@
  */
 export function soloLegalTargets(g, cardId, seat=0){
   if(!g||g.mode!=='solo'||g.status!=='active'||g.phase!=='action'||seat!==g.active)return [];
-  const c=g.players?.[0]?.hand?.find(card=>card.id===cardId);
-  if(!c||c.kind!=='location')return [];
+  const available=[...(g.players?.[0]?.hand||[]),...(g.expansion?.oniverse?.treasure||[])];
+  const c=available.find(card=>card.id===cardId);
+  if(!c||c.kind==='deadEnd')return [];
+  if(c.kind==='tower'){
+    const alignment=g.expansion?.towers?.alignment||[];
+    const intersects=(a,b)=>{const split=v=>Array.isArray(v)?v:typeof v==='string'?v.split(/[+|,/ ]+/).filter(Boolean):[];return split(a).some(s=>split(b).includes(s));};
+    return [...(!alignment.length||!intersects(c.right,alignment[0].left)?['towerLeft']:[]),...(!alignment.length||!intersects(alignment.at(-1).right,c.left)?['towerRight']:[]),'discard'];
+  }
+  if(c.kind!=='location')return [];
   const previous=g.players[0].labyrinth?.at(-1);
   return [...(previous?.symbol!==c.symbol?['play']:[]),'discard'];
 }
+
 export function targetState(g, cardId, seat=0){
   const legal=soloLegalTargets(g,cardId,seat);
   return {play:legal.includes('play'),discard:legal.includes('discard')};

@@ -171,3 +171,7 @@ The responsive **solo base-game tabletop** now supports pointer drag from hand t
 Existing ordered-card decision controls (Prophecy, Happy Dream, Sphinx/Diver, Tower inspection, Denizen inspection, spell inspection, Incantation and Confusion) additionally support dragging revealed cards into a different position; the preexisting arrow controls are retained as accessible alternatives. None of these gestures changes game state until the user confirms the decision. Expansion-enabled and cooperative full-tabletop redesigns remain scheduled for UI Phases 5 and 6; their existing buttons and decisions continue to work.
 
 See `docs/UI_PHASE3_INTERACTIONS.md` and `docs/ui-phase3-baselines/` for the interaction contract and responsive Chromium screenshots.
+
+## UI Phase 5 — expansion tabletop (v0.17.0)
+
+All solo expansions use the compact physical tabletop, including Goals, Tower Alignment, Dreamcatchers, Premonitions, Denizens, Mirrors, special Door slots and Incubus. Card abilities use the existing engine and decision overlays. See `docs/UI_PHASE5_EXPANSION_TABLETOP.md`. Cooperative boards remain on the original layout until UI Phase 6.

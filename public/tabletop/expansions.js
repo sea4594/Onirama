@@ -1,0 +1,37 @@
+/* Phase 5: a visual projection of every off-deck expansion component.
+ * Controls reuse app.js's existing data-action commands; no rules are computed here. */
+import {renderCard,htmlEscape,CARD_COLORS} from './cards.js';
+
+const esc=htmlEscape;
+const action=(label,command,{disabled=false,title=label}={})=>`<button type="button" class="tt5-action" data-action="${esc(command)}" title="${esc(title)}" aria-label="${esc(title)}" ${disabled?'disabled':''}>${esc(label)}</button>`;
+const symbol={red:'◆',blue:'◆',green:'◆',brown:'◆',sun:'☀',moon:'☾',key:'⚿',glyph:'✧',rainbow:'◈'};
+const premonitionText={red2:'2 red Doors: discard red Locations',green2:'2 green Doors: return a Nightmare',blue2:'2 blue Doors: discard two Keys',brown2:'2 brown Doors: lose a Door',pair2:'2 matching Doors: lose one',doors5:'5 Doors: reveal two Premonitions',rainbow4:'4 colors: discard Happy Dreams',doors3:'3 Doors: redraw your hand'};
+const tile=(label,body,{className='',id='',title=label}={})=>`<div class="tt5-tile ${className}" ${id?`data-tt-zone="${esc(id)}"`:''} title="${esc(title)}" aria-label="${esc(title)}">${body}<span class="tt5-tile-name">${esc(label)}</span></div>`;
+const zone=(id,label,body,extra='')=>`<section class="tt5-zone tt5-${id}" data-tt-zone="${id}" aria-label="${esc(label)}"><header><span>${esc(label)}</span>${extra}</header><div class="tt5-contents">${body}</div></section>`;
+const preview=(cards,max=2)=>cards?.length?`<span class="tt5-preview">${cards.slice(-max).map(c=>renderCard(c,{tiny:true})).join('')}</span>`:'<span class="tt5-placeholder" aria-hidden="true">◇</span>';
+const count=(a)=>Array.isArray(a)?a.length:0;
+const buttonAllowed=(canAct,phase='action')=>canAct&&phase==='action';
+
+export function expansionTabletopZones(g,{canAct=true}={}){
+  const e=g?.expansion||{},active=buttonAllowed(canAct,g?.phase),zones=[];
+  if(e.book){const b=e.book;zones.push(zone('goals','Steps',b.goals.map((goal,i)=>tile(String(i+1),`<span class="tt5-goal-face ${esc(goal.color)}">${goal.done?'✓':'◇'}</span>`,{className:`tt5-goal ${goal.done?'tt5-completed':''}`,title:`Step ${i+1}: ${goal.color}${goal.done?' (complete)':''}`})).join('')+tile('Spellbook',action('✦','openSpells',{disabled:!canAct||!['action','decision'].includes(g.phase),title:'Open spellbook'}),{className:'tt5-spell',title:`Spellbook, ${b.discardCount||0} discarded cards permanently removed`}),`<span class="tt5-count">${b.goals.filter(x=>x.done).length}/${b.goals.length}</span>`));}
+  if(e.towers){const a=e.towers.alignment||[];const place=(side)=>`<button type="button" class="tt5-tower-target" data-tt-drop="tower${side==='left'?'Left':'Right'}" aria-label="Play selected Tower on ${side}" disabled title="Place Tower on ${side}">+</button>`;
+    zones.push(zone('alignment','Towers',`${place('left')}<div class="tt5-tower-cards">${preview(a,Math.max(1,a.length))}</div>${place('right')}`,e.towers.protected?'<span class="tt5-count" title="Alignment protected">♜</span>':`<span class="tt5-count">${a.length}/4</span>`));}
+  if(e.dreamcatchers){const d=e.dreamcatchers;zones.push(zone('catchers','Dreamcatchers',d.stacks.map((cards,i)=>{
+    const lost=count(cards.filter(c=>c.kind==='lostDream')),available=d.active[i],mayFree=active&&available&&cards.length&&d.failsafes>0;
+    return tile(`${i+1}`,`${preview(cards)}<span class="tt5-stack-count">${cards.length}${lost?' · ✿'+lost:''}</span>${mayFree?action('↻',`freeCatcher:${i}`,{title:`Spend one Failsafe Book to free Dreamcatcher ${i+1}`}):''}`,{className:`tt5-catcher ${available?'':'tt5-inactive'}`,title:`Dreamcatcher ${i+1}: ${available?'available':'removed'}, ${cards.length} cards, ${lost} Lost Dreams`});
+  }).join('')+tile('Books',`<span class="tt5-object-icon">▤</span><span class="tt5-stack-count">${d.failsafes}</span>`,{title:`${d.failsafes} Failsafe Books remain`}),`<span class="tt5-count">✿ ${d.stacks.flat().filter(c=>c.kind==='lostDream').length}/4</span>`));}
+  if(e.premonitions){const p=e.premonitions;zones.push(zone('premonitions','Premonitions',p.faceUp.map(id=>tile('⚠',`<span class="tt5-pm-face" aria-hidden="true">${esc(id==='rainbow4'?'◈':id.match(/red|green|blue|brown/)?.[0]?.[0]?.toUpperCase()||'☾')}</span>`,{title:premonitionText[id]||id,className:`tt5-premonition ${esc(id.match(/^(red|blue|green|brown)/)?.[0]||'')}`})).join('')+tile('Reserve',`<span class="tt5-object-icon">▧</span><span class="tt5-stack-count">${p.reserveCount}</span>`,{title:`${p.reserveCount} unseen Dark Premonitions`}),`<span class="tt5-count">${p.faceUp.length} active</span>`));}
+  if(e.oniverse){const d=e.oniverse;zones.push(zone('denizens','Denizens',d.rallied.map(c=>tile(c.ability,`${renderCard(c,{tiny:true})}${active&&c.owner===g.active&&['architect','cyclobot','squirrel','harpoon','hammer','keeper'].includes(c.ability)?action('↗',`denizen:${c.id}`,{title:`Use ${c.ability} Denizen`}):''}`,{className:'tt5-denizen',title:`Rallied ${c.ability} Denizen` })).join('')+`<div class="tt5-treasure" aria-label="Treasure Keeper stored cards">${d.treasure.map(c=>`<span class="tt5-stored-card">${renderCard(c,{tiny:true,select:active,interactive:active})}</span>`).join('')}</div>`,`<span class="tt5-count">${d.rallied.length}</span>`));}
+  if(e.mirrors){const m=e.mirrors;zones.push(zone('mirrors','Mirrors',Object.entries(m.stacks).map(([name,cards])=>tile(name,`<span class="tt5-mirror-symbol ${esc(name)}">${symbol[name]||'◇'}</span><span class="tt5-stack-count">${m.completed.includes(name)?'✓':`${cards.length}/4`}</span>${cards.length?`<span class="tt5-mirror-held">${preview(cards,2)}</span>`:''}${active&&!m.completed.includes(name)?action('+',`mirrorPlay:${name}`,{title:`Place two Locations beneath ${name} Mirror` }):''}`,{className:`tt5-mirror ${m.completed.includes(name)?'tt5-completed':''}`,title:`${name} Mirror: ${m.completed.includes(name)?'explored':`${cards.length}/4 Locations`}`})).join(''),`<span class="tt5-count">${m.completed.length}/${Object.keys(m.stacks).length}</span>`));}
+  if(e.incubus){const i=e.incubus;zones.push(zone('incubus','Incubus',tile(i.level,`<span class="tt5-object-icon">♟</span>${i.stored.length?preview(i.stored,2):`<span class="tt5-stack-count">0 stored</span>`}${active&&i.level!=='easy'&&!i.stored.length?action('↗','incubusActivate',{title:'Anticipate Nightmare'}):''}`,{className:i.used?'tt5-inactive':'',title:`Little Incubus: ${i.level}; ${i.stored.length} cards stored${i.used?'; used':''}`}),`<span class="tt5-count">${i.used?'✓':'◇'}</span>`));}
+  // Glyphs, Crossroads and Sphinx add cards to the hand, deck and Door row,
+  // but no permanent off-deck components of their own.
+  return zones;
+}
+export function renderExpansionTabletop(g,options={}){
+  const zones=expansionTabletopZones(g,options);
+  if(!zones.length)return '';
+  return `<div class="tt5-expansions" aria-label="Expansion components" data-tt5-count="${zones.length}">${zones.join('')}</div>`;
+}
+export const EXPANSION_TABLETOP_ZONE_IDS=['goals','alignment','catchers','premonitions','denizens','mirrors','incubus'];
