@@ -47,7 +47,7 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 - Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, expansion and Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
-**Important limitations:** Some publisher expansion rulings and Tower symbols remain unverified. A dedicated server is **not required** for ordinary Firebase cooperative play, but Firestore cannot enforce every rule or prevent members inspecting hidden game state in developer tools. Live Firebase rule deployment and two-device QA remain owner tasks. Tutorial, history, statistics and saved setups are browser-local. No user account or login features are planned. Use separate browser profiles for two different players on one device.
+**Important limitations:** Some publisher expansion rulings remain unverified; all 12 Tower faces are now explicitly encoded from the physical cards. A dedicated server is **not required** for ordinary Firebase cooperative play, but Firestore cannot enforce every rule or prevent members inspecting hidden game state in developer tools. Live Firebase rule deployment and two-device QA remain owner tasks. Tutorial, history, statistics and saved setups are browser-local. No user account or login features are planned. Use separate browser profiles for two different players on one device.
 
 ## Architecture
 
@@ -111,7 +111,7 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - Phase 6 saves migrate to the versioned Phase 7 queue layout without deleting games.
 - **61 passing tests:** 1,024 seeded solo/cooperative games spanning all 512 nine-expansion configurations; also targeted timing, card-identity, privacy, migration, and search/freeing tests.
 
-**Not publisher-verified:** The twelve Tower cards' exact left/right printed symbols remain provisional. Rare official cooperative expansion ownership/timing rulings, wildcard handling under Rainbow Mirror, and some scarcity/interrupt cases also remain open. See `docs/RULES_AUDIT.md` for explicit evidence and gaps. Passing the tests does not establish rulebook completeness.
+**Not publisher-verified:** The Tower faces are now transcribed from all twelve physical cards (UI Phase 2). Rare official cooperative expansion ownership/timing rulings, wildcard handling under Rainbow Mirror, and some scarcity/interrupt cases also remain open. See `docs/RULES_AUDIT.md` for explicit evidence and gaps. Passing the tests does not establish rulebook completeness.
 
 ## Phase 8 — Guest experience (no account)
 
@@ -119,7 +119,7 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - **Saved expansion setups:** `New dream → Saved setups` lets you name, load, overwrite, and delete configurations. These are browser-local and independently validate expansion IDs and difficulty values. No profile or login.
 - **Guided tutorial:** seven short steps under Single Player / Settings, linking to the full rules and a base-game starting setup. This is a written walkthrough, not an interactive scripted card scenario.
 - **Accessibility/mobile:** high-contrast and larger-text settings, clear keyboard focus, skip-to-content, screen-reader turn/decision announcements, scalable game panels and mobile horizontal scrolling for card rows.
-- **Intentional limits:** A live backend is still required for multiplayer. Phase 8 stores **summaries**, not deterministic replay files; true replay, localization and automated cross-browser accessibility testing remain separate future work. Printed Tower symbols and some official combination adjudications remain unverified (see `docs/RULES_AUDIT.md`).
+- **Intentional limits:** A live backend is still required for multiplayer. Phase 8 stores **summaries**, not deterministic replay files; true replay, localization and automated cross-browser accessibility testing remain separate future work. Some official combination adjudications remain unverified (see `docs/RULES_AUDIT.md`).
 
 ## Phase 9 — production hosting integration
 
@@ -134,7 +134,7 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - Extended deterministic tests for all configured difficulty branches, conservation, Dreamcatcher searches during Door claims, Tower dual-symbol edge restrictions, Nightmare false destruction, Book Goals, multiplayer hidden data, pending decisions, and older saves.
 - Added in-board selections for Mirror pairs, Cyclobot exchange, cooperative discard/swaps and Confusion card ordering. Corrected Tower-removal visual legality checks and catcher freeing safeguards.
 - The full release gate now includes the GitHub Pages production build. See [the detailed Phase 10 matrix](docs/PHASE10_RULES_MATRIX.md) for the full action/decision inventory and source-status of remaining exceptions.
-- **Not a claim of perfect publisher fidelity:** all 12 printed Tower card edges, ambiguous cooperative expansion ownership, Rainbow/Crossroad interaction, and some partial-deck combinations still need authoritative verification.
+- **Not a claim of perfect publisher fidelity:** ambiguous cooperative expansion ownership, Rainbow/Crossroad interaction, and some partial-deck combinations still need authoritative verification.
 
 ## Phase 11 — hosted release readiness
 
@@ -152,3 +152,8 @@ Onirama uses the six public Firebase web-app settings for project `onirama-5124e
 - New reusable card component, complete tabletop zone registry, and responsive layout planner are in `public/tabletop/`.
 - Preview a **non-playable** tabletop layout study at `/tabletop-preview.html` (choose solo/co-op and expansion density).
 - See `docs/UI_REDESIGN_AUDIT.md` and `docs/ui-baselines/` for the migration contract and visual baselines. Phase 2 begins replacing the actual game board.
+
+
+### UI Phase 2 (v0.14.0)
+
+The live solo **base-game** board now uses the responsive virtual tabletop (`public/tabletop/solo-board.js`, `solo.css`). It shows all physical play zones at once with selectable hand cards and existing legal action commands. Cooperative and expansion-enabled boards remain on their fully functional original renderer until their planned migration phases. Exact printed Tower cards and the complete 192-card inventory are documented in `docs/UI_PHASE2_AND_RULINGS.md`.

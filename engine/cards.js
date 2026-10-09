@@ -1,8 +1,15 @@
-// Unique, original-art card definitions. Printed Tower edge configurations are
-// intentionally isolated here for future publisher-art audit (see RULES_AUDIT).
+// Original-art card definitions. Tower faces verified from the physical 12-card inventory supplied by the owner.
 export const COLORS=['red','blue','green','brown'];
 export const SYMBOLS=['sun','moon','key'];
 export const DENIZENS=['architect','cyclobot','squirrel','harpoon','hammer','chromatic','mirror','keeper'];
+// Each value 3/4/5 is an inspection value printed on its own physical Tower card.
+// Empty string = no symbol printed on that edge; + = both printed symbols.
+export const TOWER_FACES=Object.freeze({
+ red:Object.freeze({3:{left:'sun+moon',right:'moon'},4:{left:'sun',right:'moon'},5:{left:'',right:'moon'}}),
+ blue:Object.freeze({3:{left:'moon',right:'sun+moon'},4:{left:'moon',right:'moon'},5:{left:'moon',right:''}}),
+ green:Object.freeze({3:{left:'sun',right:'sun+moon'},4:{left:'sun',right:'sun'},5:{left:'sun',right:''}}),
+ brown:Object.freeze({3:{left:'sun+moon',right:'sun'},4:{left:'moon',right:'sun'},5:{left:'',right:'sun'}})
+});
 export const LOCATION_COUNTS={red:{sun:9,moon:4,key:3},blue:{sun:8,moon:4,key:3},green:{sun:7,moon:4,key:3},brown:{sun:6,moon:4,key:3}};
 export const EXPANSIONS=[
  {id:'book',name:'The Book of Steps Lost and Found',phase:4},
@@ -27,9 +34,7 @@ export function createDeck(expansions=[]){
  if(expansions.includes('oniverse')){add('door','wild',null,{expansion:'oniverse'});for(const ability of DENIZENS)for(let n=0;n<2;n++)add('denizen',null,null,{ability,expansion:'oniverse'});}
  if(expansions.includes('sphinx')){for(const kind of ['sphinx','diver','confusion'])for(let n=0;n<4;n++)add(kind,null,null,{expansion:'sphinx'});for(let n=0;n<2;n++)add('nightmare',null,null,{expansion:'sphinx'});}
  if(expansions.includes('towers'))for(const color of COLORS)for(const number of [3,4,5]){
-   // Edge patterns must be audited against the specific edition's physical card faces.
-   const left=['red','green'].includes(color)?'sun':'moon';const right=left==='sun'?'moon':'sun';
-   add('tower',color,null,{expansion:'towers',number,left,right});
+   add('tower',color,null,{expansion:'towers',number,...TOWER_FACES[color][number]});
  }
  return cards;
 }

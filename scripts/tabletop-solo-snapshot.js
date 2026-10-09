@@ -1,0 +1,10 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {newGame,viewFor} from '../engine/game.js';
+import {renderSoloTabletop} from '../public/tabletop/solo-board.js';
+const seed=Number(process.argv[2]||4711);
+const game=newGame({mode:'solo',seed,config:{expansions:[],difficulties:{}}});
+const view=viewFor(game,0);
+const selectedId=view.players[0].hand[0]?.id||null;
+const css=['public/styles.css','public/tabletop/tokens.css','public/tabletop/layout.css','public/tabletop/solo.css'].map(file=>readFileSync(file,'utf8')).join('\n');
+const html=`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><header class="nav"><a href="#" class="brand">ONIRAMA</a><div class="nav-right"><a href="#/rules">Rules</a><a href="#/settings">⚙</a></div></header><main class="page">${renderSoloTabletop(view,{selectedId})}</main></body></html>`;
+const output=process.argv[3]||'/mnt/data/onirama-phase2-live-board.html';writeFileSync(output,html);console.log(output);

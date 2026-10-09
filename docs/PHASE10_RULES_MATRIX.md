@@ -94,3 +94,6 @@ This is an **implementation audit and regression index**, not a claim of publish
 - Official-vs-app-adjudicated rule claims must remain differentiated in UI and documentation.
 - Changes to previously persisted game decisions require a documented version migration and fresh card-conservation assertions.
 - Do not remove any remaining open rulings from the audit solely because tests are green.
+
+
+**UI Phase 2 superseding correction:** the physical 12 Tower edge values were provided by the owner and encoded exactly in `engine/cards.js` (`TOWER_FACES`). `TOW-PRINT-12` is closed; see `docs/UI_PHASE2_AND_RULINGS.md` for current source status. Historic notes above reflect Phase 10, not current metadata.

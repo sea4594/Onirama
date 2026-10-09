@@ -3,7 +3,7 @@ const SYMBOLS = Object.freeze({sun:'☀',moon:'☾',key:'⚿',glyph:'✧',tower:
 export const CARD_COLORS=Object.freeze(['red','blue','green','brown']);
 export const htmlEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function cardDescription(c){
-  return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left}/${c.right}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?`Denizen: ${c.ability}`:c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
+  return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left||'blank'}/${c.right||'blank'}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?`Denizen: ${c.ability}`:c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
 }
 export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null}={}){
   const symbol=c.kind==='location'?SYMBOLS[c.symbol]:(SYMBOLS[c.kind]||'◈');

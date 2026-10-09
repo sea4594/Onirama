@@ -104,3 +104,7 @@ For every unclear case, log: an ID, precise scenario, applicable expansion combi
 See [Phase 10 matrix](PHASE10_RULES_MATRIX.md) for the 23 mandatory decision types, normal and hard variants, effect precedence, and testing matrix. Phase 10 fixes UI choices that were previously delegated to blocking browser prompts; Tower removal now observes dual-symbol edge collisions; search/claim into occupied Dreamcatchers supports freeing a different catcher without destroying the targeted Door.
 
 **Outstanding publisher verification:** Card inventory for all 12 Tower edges is unavailable; their game-card metadata is still **provisional**. Other remaining cases are documented under `COOP-OWN`, `RAINBOW-WILD`, `SCARCITY`, and `PROMO-EDGE`; current behaviors in those cases are *application adjudications*, not publisher-certified rules. The release gate tests safety and conservation, not proofs of source fidelity.
+
+## UI Phase 2 correction
+
+**The exact 12 Tower face attributes were supplied by the user and are now verified in `engine/cards.js` with regression tests.** See `docs/UI_PHASE2_AND_RULINGS.md` for the definitive matrix and remaining *explicit* house-rules/adjudications. Earlier “Tower metadata still provisional” notes above are superseded.
