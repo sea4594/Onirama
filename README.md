@@ -29,7 +29,9 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ## Online publishing
 
-A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, browser-only solo edition**, including the rules engine and local saved game. After the hotfix is pushed, choose **GitHub → Settings → Pages → Source → GitHub Actions** once; the site is published at https://sea4594.github.io/Onirama/. GitHub Pages does **not** run Node services. Online multiplayer needs a separately hosted server (Phase 11 activation), while `npm start` runs both frontend and multiplayer locally. See [deployment notes](docs/DEPLOYMENT.md).
+**GitHub Pages hosts both solo and multiplayer. No paid Node server is needed.** Multiplayer now follows BibleGuessr's pattern: Firebase anonymous authentication, Firestore transactional code-based rooms, and real-time listeners. The hosted site runs at https://sea4594.github.io/Onirama/. See the [Firebase setup checklist](docs/FIREBASE_MULTIPLAYER.md) for the one-time no-cost Firebase setup and four required GitHub Actions variables. Single-player runs locally without Firebase; accounts, login and profile synchronization are not implemented.
+
+`npm start` remains an optional legacy local Node server for development; it is **not used by GitHub Pages** once Firebase is configured. The Firebase client intentionally uses its own Firestore storage, so old Node-hosted rooms are not migrated.
 
 ## What works today
 
@@ -40,12 +42,12 @@ A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, brows
 - Base 76-card deck with unique card IDs and reproducible seeded shuffles.
 - Solo base game: legal Labyrinth placement, Door search with choice to skip, Key Prophecy, all four Nightmare penalties, individual draw/refill decisions, Limbo, immediate victory and deck-exhaustion defeat.
 - Official two-player *structure*: eight-card public initial draft, three private cards per player, two face-up shared cards, alternating turns, separate Labyrinths and Doors, optional swap after a discard, and whole-hand redraws.
-- Invite-only cooperative rooms, seat-specific bearer credentials, server-authoritative game state, event stream, reconnection/reload, persistent state, action-version checks.
-- Server-side hidden-hand and hidden-deck filtering. GitHub Pages solo sessions are stored only in the current browser.
+- Invite-only cooperative rooms, Firestore anonymous UIDs, transactional turn/version checks, realtime room subscriptions, browser reload/reconnect, and shared game-state persistence. (The legacy Node service remains for local development.)
+- Seat-filtered hand and deck rendering; GitHub Pages solo sessions are stored only in the current browser. The Firestore document is accessible to both room members, so a technically sophisticated player could inspect the hidden state; see the Firebase guide.
 - Versioned ruleset/config validation, v1/v2→v3 saved-state migration, deterministic effect queue, expansion and Incubus modules, unique card zones, and objective hooks. Illegal combinations are blocked server-side.
 - Node's built-in test runner; no install step. CI checks on GitHub Actions.
 
-**Important limitations:** Some expansion adjudications and Tower card markings are not yet publisher-verified. A hosted persistent backend is still required for live multiplayer and is designed for one server instance, not horizontal scaling; deployment and real-device QA remain outstanding. The guided tutorial, history, statistics, and saved setups are guest-only and browser-local. No accounts or login will be implemented. Same-device multiplayer requires separate browser profiles.
+**Important limitations:** Some publisher expansion rulings and Tower symbols remain unverified. A dedicated server is **not required** for ordinary Firebase cooperative play, but Firestore cannot enforce every rule or prevent members inspecting hidden game state in developer tools. Live Firebase rule deployment and two-device QA remain owner tasks. Tutorial, history, statistics and saved setups are browser-local. No user account or login features are planned. Use separate browser profiles for two different players on one device.
 
 ## Architecture
 
@@ -58,11 +60,13 @@ engine/
   modules.js     Registered rules module hooks and objective collection
   game.js        Deterministic rules engine, state machine, legality, secret filtering
   random.js      Deterministic shuffle
+  firebase-protocol.js  Firebase room transitions and membership/turn validation
 server/
   index.js       Node HTTP/SSE server, auth, persistence, endpoints
 public/
   index.html     Browser entry point
   app.js         Rendering and interactions
+  firebase-room.js Firebase anonymous auth, Firestore transactions and subscriptions
   styles.css     Responsive interface
 
 tests/           Engine invariants, seeded bot simulations, HTTP auth/room tests

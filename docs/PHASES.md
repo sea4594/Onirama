@@ -46,3 +46,7 @@ Suggested normalized effects: `move`, `reveal`, `inspect`, `draw`, `shuffle`, `g
 6. Partial deck actions must follow official procedures, not a generic fallback that silently invents card targets.
 7. Multiplayer expansion zones must have verified ownership: do not silently apply guessed rules to a game labeled 'official'.
 8. Exact replay determinism, crash-safe resumes during nested effects, no card duplication and private information filtering after every step.
+
+## Phase 12 — Firebase multiplayer migration (supersedes paid backend plan)
+
+The BibleGuessr reference project uses Firebase anonymous browser auth, Firestore transactions and realtime subscriptions. Onirama now uses the same free-tier architecture for GitHub Pages multiplayer, with a unique 8-character room code, two seat UIDs, simultaneous-state version checks and real-time board updates. The optional Node backend is retained only for legacy local testing. Firebase project/rules and GitHub variables must be configured manually. This does not provide a server-verifiable hidden-information or anti-cheat guarantee; see `FIREBASE_MULTIPLAYER.md`.

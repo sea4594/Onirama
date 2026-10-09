@@ -141,8 +141,12 @@ const server=http.createServer(async(req,res)=>{
     }
     if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'Method not allowed'});
     const requested=url.pathname==='/'?'/index.html':decodeURIComponent(url.pathname);
-    const file=resolve(root,'.'+requested);
-    if(!file.startsWith(root+sep))return json(res,403,{error:'Forbidden'});
+    // The static Pages build copies engine/ next to public/. Serve the same module paths locally.
+    const fromEngine=requested.startsWith('/engine/');
+    const directory=fromEngine?resolve(root,'../engine'):root;
+    const relative=fromEngine?requested.slice('/engine'.length):requested;
+    const file=resolve(directory,'.'+relative);
+    if(!file.startsWith(directory+sep))return json(res,403,{error:'Forbidden'});
     let content;try{content=readFileSync(file);}catch{return json(res,404,{error:'Not found'});}
     res.writeHead(200,{...headers,'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});
     res.end(req.method==='HEAD'?undefined:content);

@@ -1,4 +1,4 @@
-name: GitHub Pages (solo + configured multiplayer)
+name: GitHub Pages (solo + Firebase multiplayer)
 on:
   push:
     branches: [main]
@@ -22,9 +22,14 @@ jobs:
         with:
           node-version: 22
       - run: npm run release:gate
-      - name: Build standalone site and configure multiplayer API
+      - name: Build standalone site and configure Firebase multiplayer
         env:
-          ONIRAMA_API_ORIGIN: ${{ vars.ONIRAMA_API_ORIGIN }}
+          ONIRAMA_FIREBASE_API_KEY: ${{ vars.ONIRAMA_FIREBASE_API_KEY }}
+          ONIRAMA_FIREBASE_AUTH_DOMAIN: ${{ vars.ONIRAMA_FIREBASE_AUTH_DOMAIN }}
+          ONIRAMA_FIREBASE_PROJECT_ID: ${{ vars.ONIRAMA_FIREBASE_PROJECT_ID }}
+          ONIRAMA_FIREBASE_APP_ID: ${{ vars.ONIRAMA_FIREBASE_APP_ID }}
+          ONIRAMA_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.ONIRAMA_FIREBASE_MESSAGING_SENDER_ID }}
+          ONIRAMA_FIREBASE_STORAGE_BUCKET: ${{ vars.ONIRAMA_FIREBASE_STORAGE_BUCKET }}
         run: npm run build:pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

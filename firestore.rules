@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /oniramaRooms/{code} {
+      function signedIn() { return request.auth != null; }
+      function member() {
+        return signedIn() && (request.auth.uid == resource.data.hostUid || request.auth.uid == resource.data.guestUid);
+      }
+      function openLobby() { return resource.data.guestUid == null && resource.data.game == null; }
+      function nextVersion() { return request.resource.data.version == resource.data.version + 1; }
+      function changedOnly(fields) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields); }
+      function seat() { return request.auth.uid == resource.data.hostUid ? 0 : 1; }
+      function joining() {
+        return openLobby() && request.auth.uid != resource.data.hostUid &&
+          request.resource.data.guestUid == request.auth.uid &&
+          request.resource.data.guestName is string && request.resource.data.guestName.size() <= 40 &&
+          changedOnly(['guestUid','guestName','updatedAt','version']);
+      }
+      function readyChange() {
+        return member() && resource.data.game == null &&
+          changedOnly(['ready','updatedAt','version']) &&
+          request.resource.data.ready.size() == 2 &&
+          request.resource.data.ready[1 - seat()] == resource.data.ready[1 - seat()];
+      }
+      function starting() {
+        return member() && request.auth.uid == resource.data.hostUid &&
+          resource.data.game == null && resource.data.guestUid != null &&
+          resource.data.ready[0] == true && resource.data.ready[1] == true &&
+          request.resource.data.game is map && request.resource.data.game.mode == 'coop' &&
+          changedOnly(['game','updatedAt','version']);
+      }
+      function playing() {
+        return member() && resource.data.game is map &&
+          resource.data.game.status == 'active' && resource.data.game.active == seat() &&
+          request.resource.data.game is map &&
+          changedOnly(['game','updatedAt','version']);
+      }
+      // A code grants access to an unfilled lobby. Once filled, only its two Firebase UIDs can read it.
+      allow get: if signedIn() && (member() || openLobby());
+      allow list: if false;
+      allow create: if signedIn() && code.matches('^[A-F0-9]{8}$') &&
+        request.resource.data.keys().hasOnly(['code','hostUid','guestUid','hostName','guestName','config','ready','game','version','createdAt','updatedAt','expiresAt']) &&
+        request.resource.data.keys().hasAll(['code','hostUid','guestUid','hostName','guestName','config','ready','game','version','createdAt','updatedAt','expiresAt']) &&
+        request.resource.data.code == code && request.resource.data.hostUid == request.auth.uid &&
+        request.resource.data.hostName is string && request.resource.data.hostName.size() <= 40 &&
+        request.resource.data.guestUid == null && request.resource.data.guestName == '' &&
+        request.resource.data.game == null && request.resource.data.version == 0 &&
+        request.resource.data.ready == [false,false] &&
+        request.resource.data.createdAt is int && request.resource.data.expiresAt is int;
+      allow update: if signedIn() && nextVersion() && (joining() || readyChange() || starting() || playing());
+      allow delete: if false;
+    }
+    // Do not open unrelated collections from the BibleGuessr project.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
