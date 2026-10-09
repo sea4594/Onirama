@@ -1,0 +1,46 @@
+/* Phase 4 — one modal surface for every card effect, independent of game rules. */
+html.tt4-dialog-open{overflow:hidden}
+.tt4-overlay{position:fixed;inset:0;z-index:250;display:grid;place-items:center;padding:clamp(10px,2.5vw,28px);isolation:isolate}
+.tt4-scrim{position:absolute;inset:0;background:rgba(10,19,25,.74);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.tt4-dialog{position:relative;display:flex;flex-direction:column;min-width:0;width:min(720px,100%);max-height:min(92dvh,920px);background:var(--ui-panel);color:var(--ui-text);border:1px solid var(--ui-border);border-radius:18px;box-shadow:0 25px 85px #0009;overflow:hidden}
+.tt4-dialog:focus-visible{outline:3px solid var(--ui-accent);outline-offset:-3px}
+.tt4-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 15px;border-bottom:1px solid var(--ui-border);min-height:49px}
+.tt4-label{font-size:.79rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--ui-muted)}
+.tt4-close{display:grid;place-items:center;font-size:1.5rem;width:36px;height:36px;min-height:36px;line-height:1;padding:0;border-radius:9px}
+.tt4-required{font-size:.55rem;color:var(--ui-accent);padding:8px}
+.tt4-content{overflow:auto;overscroll-behavior:contain;padding:clamp(12px,2.3vw,24px);min-height:0;scrollbar-width:thin}
+.tt4-content>.decision{background:transparent;border:0;box-shadow:none;padding:0;margin:0;width:100%;max-width:none}
+.tt4-content .decision h2,.tt4-content .decision h3{font-size:clamp(1.12rem,2.2vw,1.4rem);margin:0}
+.tt4-content .decision p{font-size:.88rem;line-height:1.4;margin:0}
+.tt4-content .decision .actions{max-height:none;display:flex;flex-wrap:wrap;gap:8px}
+.tt4-content button{min-height:38px}
+.tt4-content .cards{display:flex;flex-wrap:wrap;gap:10px;overflow-x:auto;max-width:100%;min-width:0;align-items:flex-start}
+.tt4-content .tt3-order-list{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding:6px 4px 14px}
+.tt4-content .tt3-order-item{flex:0 0 auto}
+.tt4-content .tt3-order-item .card{max-width:clamp(55px,12vw,108px)}
+.tt4-content .cost-option{min-height:40px;display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.tt4-content .inline-input{max-width:100%;min-height:38px}
+.tt4-content .tt4-card-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:9px}
+.tt4-card-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid var(--ui-border);border-radius:12px;padding:7px;min-width:0;cursor:pointer}
+.tt4-card-option .card{pointer-events:none}
+.tt4-card-option[aria-pressed="true"],.tt4-card-option:has(input:checked){outline:2px solid var(--ui-accent);outline-offset:-2px;background:var(--ui-soft)}
+.tt4-card-option input{accent-color:var(--ui-accent)}
+.tt4-dialog .muted.small{font-size:.84rem}
+@media(max-width:600px){
+ .tt4-overlay{padding:0;align-items:end}
+ .tt4-dialog{width:100%;max-height:min(88dvh,880px);border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+ .tt4-head{min-height:44px;padding:7px 12px}
+ .tt4-content{padding:12px}
+ .tt4-content .decision .actions button{min-height:44px}
+ .tt4-content .tt3-order-list{gap:5px}
+ .tt4-content .tt3-order-item .card{max-width:75px}
+}
+@media(max-height:430px) and (orientation:landscape){
+ .tt4-overlay{padding:5px;align-items:center}
+ .tt4-dialog{width:min(900px,100%);max-height:calc(100dvh - 10px);border-radius:12px}
+ .tt4-content{padding:8px 12px}
+ .tt4-head{min-height:34px;padding:3px 10px}
+ .tt4-content .decision{gap:5px}
+ .tt4-content .tt3-order-item .card{height:60px;width:44px}
+}
+@media(prefers-reduced-motion:reduce){.tt4-scrim{backdrop-filter:none;-webkit-backdrop-filter:none}}

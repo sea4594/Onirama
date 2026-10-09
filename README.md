@@ -29,9 +29,15 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ## Online publishing
 
-**GitHub Pages hosts both solo and multiplayer. No paid Node server is needed.** Multiplayer now follows BibleGuessr's pattern: Firebase anonymous authentication, Firestore transactional code-based rooms, and real-time listeners. The hosted site runs at https://sea4594.github.io/Onirama/. See the [Firebase setup checklist](docs/FIREBASE_MULTIPLAYER.md) for the one-time no-cost Firebase setup and four required GitHub Actions variables. Single-player runs locally without Firebase; accounts, login and profile synchronization are not implemented.
+**GitHub Pages hosts both solo and multiplayer. No paid Node server is needed.** Multiplayer now follows BibleGuessr's pattern: Firebase anonymous authentication, Firestore transactional code-based rooms, and real-time listeners. The hosted site runs at https://sea4594.github.io/Onirama/. See the [Firebase setup checklist](docs/FIREBASE_MULTIPLAYER.md) for the one-time Firebase configuration and Firestore security rules; the public web config is bundled in `public/runtime-config.js` and requires no GitHub variables. Single-player runs locally without Firebase; accounts, login and profile synchronization are not implemented.
 
 `npm start` remains an optional legacy local Node server for development; it is **not used by GitHub Pages** once Firebase is configured. The Firebase client intentionally uses its own Firestore storage, so old Node-hosted rooms are not migrated.
+
+## UI redesign progress (v0.16.0)
+
+- **UI Phases 1–3:** reusable card and layout foundations; solo base-game virtual tabletop; tap, keyboard, and drag-to-play/discard; draggable revealed-card ordering.
+- **UI Phase 4:** all 23 mandatory effect types appear in accessible temporary dialogs. Mirror pairs, Cyclobot, cooperative discard/swap and Spellbook use optional contextual dialogs. Mandatory effects cannot be dismissed without choosing a legal resolution. See [Phase 4 dialogs](docs/UI_PHASE4_DIALOGS.md).
+- Phases 5–6 will redesign permanent expansion components and the full cooperative table; the older board areas remain usable until then.
 
 ## What works today
 
