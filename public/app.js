@@ -10,6 +10,7 @@ import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
+import {createTabletopAnimator} from './tabletop/animation.js';
 import {renderOverlay} from './game-overlay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io');
@@ -307,7 +308,7 @@ function fitGameTabletop(){
   const viewport=app.querySelector?.('.tt6-table-slot'),table=viewport?.querySelector?.('.tt2-root');
   return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
 }
-function render(){cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
+function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
   const previousPile=app.querySelector?.('.tt6-pile-scroll'),pileScroll=previousPile?.scrollTop||0;
   const previousWindow=app.querySelector?.('.shell-viewport-window');
@@ -330,6 +331,7 @@ function render(){cardInspector?.close();const dialogFocus=typeof dialogControll
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
   }
+  tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page);
   const nextDock=app.querySelector?.('.tt6-dock-scroll');if(nextDock){nextDock.scrollTop=dockScroll;nextDock.scrollLeft=dockX;}
   const nextPile=app.querySelector?.('.tt6-pile-scroll');if(nextPile)nextPile.scrollTop=pileScroll;
   const nextWindow=app.querySelector?.('.shell-viewport-window');
@@ -501,6 +503,7 @@ async function handle(actionName){
 // Interaction adapter: gestures never mutate state. They produce the same
 // validated play/discard commands as the original buttons.
 let tabletopController=null,dialogController=null,cardInspector=null;
+let tabletopAnimator=typeof createTabletopAnimator==='function'?createTabletopAnimator({root:app}):null;
 function installTabletopController(){
   if(typeof createTabletopInteractions!=='function')return; // lightweight legacy UI test harness
   tabletopController=createTabletopInteractions({

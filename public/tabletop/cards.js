@@ -12,7 +12,7 @@ export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,
   // Inspect metadata only for a card already visible to this viewer. Never
   // serialize IDs, private hands, deck order, or unrevealed card details.
   const visible={kind:c.kind,color:c.color||'',symbol:c.symbol||'',expansion:c.expansion||'',ability:c.ability||'',number:c.number||'',left:c.left||'',right:c.right||''};
-  const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"`;
+  const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"${c.kind!=='hidden'&&c.id?` data-tt-motion-id="${htmlEscape(c.id)}"`:``}`;
   const face=c.kind==='tower'?`<span class="tt5-tower-face"><span class="tt5-tower-edge">${(c.left||'').split('+').map(x=>cardSymbol(x)).join('')}</span><strong>${htmlEscape(c.number)}</strong><span class="tt5-tower-edge">${(c.right||'').split('+').map(x=>cardSymbol(x)).join('')}</span></span>`:`<span class="symbol">${symbol}</span>`;
   return select?`<button class="${classes}" aria-pressed="${selectedId===c.id}" title="${text}" aria-label="${text}" data-pick="${htmlEscape(c.id)}"${inspect} ${interactive?`data-tt-card="${htmlEscape(c.id)}"`:``} ${dim?'disabled':''}>${face}${c.kind==='location'?'':`<span class="card-label">${text}</span>`}</button>`:`<div class="${classes}" title="${text}" aria-label="${text}"${inspect}>${face}${c.kind==='location'?'':`<span class="card-label">${text}</span>`}</div>`;
 }

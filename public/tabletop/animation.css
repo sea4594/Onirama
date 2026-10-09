@@ -1,0 +1,14 @@
+/* Phase 7: visual feedback only. Never intercept game controls. */
+.tt8-flying-card{box-sizing:border-box!important;transform-origin:center center!important;box-shadow:0 9px 25px #0009!important;overflow:hidden;user-select:none!important;touch-action:none!important}
+.tt8-draw-cue{animation:tt8-draw-glow .48s ease-out}
+.tt8-shuffle-cue{animation:tt8-shuffle .7s ease-in-out}
+.tt8-progress-cue{animation:tt8-progress .55s ease-out}
+.tt8-turn-cue{animation:tt8-turn .65s ease-out}
+.tt8-decision-cue{animation:tt8-decision .58s ease-out}
+@keyframes tt8-draw-glow{0%,100%{filter:none}45%{filter:brightness(1.55) drop-shadow(0 0 9px var(--table-gold))}}
+@keyframes tt8-shuffle{0%,100%{transform:none}20%{transform:translateX(-4px) rotate(-4deg)}45%{transform:translateX(4px) rotate(4deg)}70%{transform:translateX(-2px) rotate(-2deg)}}
+@keyframes tt8-progress{0%,100%{filter:none}50%{filter:brightness(1.6)}}
+@keyframes tt8-turn{0%,100%{filter:none}35%{filter:brightness(1.5)}}
+@keyframes tt8-decision{0%,100%{box-shadow:none}40%{box-shadow:inset 0 0 0 2px var(--table-gold)}}
+html[data-motion="reduced"] :is(.tt8-draw-cue,.tt8-shuffle-cue,.tt8-progress-cue,.tt8-turn-cue,.tt8-decision-cue){animation:none!important}
+@media (prefers-reduced-motion:reduce){.tt8-flying-card{display:none!important}.tt8-draw-cue,.tt8-shuffle-cue,.tt8-progress-cue,.tt8-turn-cue,.tt8-decision-cue{animation:none!important}}
