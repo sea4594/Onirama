@@ -44,7 +44,7 @@ test('Glyph discarded reveals five; claim one matching Goal or any Door; exact b
 });
 test('Dreamcatchers: group catches, free with Failsafe, overload discards only chosen stack',()=>{
  let s=mk(['dreamcatchers']);s.limbo.push(...s.deck.splice(0,2));const first=s.limbo.map(c=>c.id);
- s=a(s,{type:'discard',id:s.players[0].hand[0].id});while(s.phase==='decision'&&s.pending.type!=='catchChoose')s=a(s,choose(s));assert.equal(s.pending.type,'catchChoose');s=a(s,{type:'catchChoose',index:0});assert.deepEqual(s.moduleState.dreamcatchers.zones.catch0.map(c=>c.id),first); // additional limbo possible
+ s=a(s,{type:'discard',id:s.players[0].hand[0].id});while(s.phase==='decision'&&s.pending.type!=='catchOverload')s=a(s,choose(s));assert.deepEqual(s.moduleState.dreamcatchers.zones.catch0.map(c=>c.id),first); // additional limbo possible
  const old=s.moduleState.dreamcatchers.failsafes;s=a(s,{type:'freeCatcher',index:0});assert.equal(s.moduleState.dreamcatchers.failsafes,old-1);assert.equal(s.moduleState.dreamcatchers.zones.catch0.length,0);
  // Force all four occupied and the next Limbo group; overload one stack only.
  s=mk(['dreamcatchers']);for(let i=0;i<4;i++){s.moduleState.dreamcatchers.zones['catch'+i].push(s.deck.pop());}

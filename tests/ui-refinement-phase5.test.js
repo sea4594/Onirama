@@ -30,7 +30,7 @@ test('every decision ordering has drag/tap handles and an end gap; no up/down bu
   assert.ok(app.includes(`data-tt-order-group="${kind}"`));
   assert.ok(app.includes(`data-tt-order-end="${kind}"`));
  }
- assert.match(app,/prophecyOrder=moveOrderedCardToGap/);assert.match(app,/effectOrder=moveOrderedCardToGap/);
+ assert.match(app,/const moved=moveOrderedCardToGap/);assert.match(app,/effectOrder=moveOrderedCardToGap/);
  assert.match(app,/data-tt-order-handle/);assert.match(app,/role="button" tabindex="0"/);
  assert.doesNotMatch(app,/prophecyUp:|prophecyDown:|effectUp:|effectDown:/);
  assert.match(css,/tt5-insert-before::before/);assert.match(css,/tt5-insert-after::after/);

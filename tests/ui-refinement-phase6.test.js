@@ -24,7 +24,7 @@ test('pile counts track actual moves and remain consistent in both player views'
  assert.deepEqual(v0.pileInventory,v1.pileInventory);
  for(const pile of ['deck','discard','limbo'])assert.equal(v0.pileInventory.reduce((n,r)=>n+r[pile],0),s[pile].length);
  for(const pile of ['deck','discard','limbo']){
-  const html=renderPileInspector(v0,pile);assert.match(html,/data-pile-inspector/);assert.match(html,/\/ \d+/);assert.match(html,/Red Sun Location/);
+  const html=renderPileInspector(v0,pile);assert.match(html,/data-pile-inspector/);assert.match(html,/\/\d+/);assert.match(html,/tt7-inventory-card/);assert.doesNotMatch(html,/>Red Sun Location<\//);
  }
 });
 test('all engine decision kinds have a user-facing prompt and decision controls stay in fixed dock',()=>{
@@ -32,8 +32,8 @@ test('all engine decision kinds have a user-facing prompt and decision controls 
  for(const type of DOCK_PENDING_TYPES){const fake={...g,phase:'decision',pending:{type}};const prompt=actionDockPrompt(fake,0);assert.ok(prompt.title&&prompt.title!=='Resolve the card effect',type);
   const html=renderActionDock(fake,0,{dialog:{type,html:'<button data-action="resolve">Resolve</button>'}});assert.match(html,/data-dock-decision/);assert.match(html,/Resolve/);
  }
- assert.match(actionDockPrompt({...g,phase:'decision',pending:{type:'prophecy'}},0,{prophecyDiscard:'c1'}).title,/Rearrange/);
- assert.match(actionDockPrompt({...g,phase:'refill'},0).hint,/automatically/);
+ assert.match(actionDockPrompt({...g,phase:'decision',pending:{type:'prophecy'}},0,{prophecyDiscard:'c1'}).title,/Prophecy/);
+ assert.match(actionDockPrompt({...g,phase:'refill'},0).title,/Drawing/);
  assert.match(actionDockPrompt({...g,phase:'draft'},1).title,/draft/i);
  const app=readFileSync('public/app.js','utf8');assert.match(app,/gameWorkspace\(state\.game,state\.room\)/);assert.match(app,/tt6-table-slot/);assert.doesNotMatch(app,/\+\(inGame\?gameDialog\(state\.game,state\.room\)/);
  const css=readFileSync('public/tabletop/action-dock.css','utf8');assert.match(css,/grid-template-rows:minmax\(0,1fr\) 132px/);assert.match(css,/grid-template-columns:minmax\(0,1fr\) 234px/);
@@ -46,4 +46,4 @@ test('landscape multi-row card reorder uses both axes',()=>{
  assert.equal(gapAtPoint(list,0,90),2);assert.equal(gapAtPoint(list,102,90),4);
 });
 
-test('selection with no legal move receives informative prompt',()=>{const g=viewFor(newGame({seed:66}),0);assert.match(actionDockPrompt(g,0,{selectedId:'c999',legal:[]}).title,/No legal action/);});
+test('selection with no legal move receives informative prompt',()=>{const g=viewFor(newGame({seed:66}),0);assert.match(actionDockPrompt(g,0,{selectedId:'c999',legal:[]}).title,/Play \/ discard/);});

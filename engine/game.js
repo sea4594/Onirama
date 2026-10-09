@@ -140,7 +140,8 @@ function endTurn(s){
  if(s.status!=='active')return;
  if(has(s,'dreamcatchers')&&s.limbo.length){
    const empty=catcherIds(s).filter(i=>stacks(s)['catch'+i].length===0);
-   s.pending={type:empty.length?'catchChoose':'catchOverload',choices:empty.length?empty:catcherIds(s)};s.phase='decision';return;
+   if(empty.length){const i=empty[0];stacks(s)['catch'+i].push(...s.limbo.splice(0));note(s,`Limbo was caught by Dreamcatcher ${i+1}.`);advanceTurn(s);return;}
+   s.pending={type:'catchOverload',choices:catcherIds(s)};s.phase='decision';return;
  }
  if(s.limbo.length){s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,'Limbo shuffled into deck.');event(s,'limboResolved');}
  advanceTurn(s);

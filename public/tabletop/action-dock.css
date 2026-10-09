@@ -7,7 +7,7 @@
 .tt6-dock-status{flex:none;display:flex;align-items:baseline;gap:10px;min-width:0;line-height:1.25}
 .tt6-dock-status strong{font-size:.85rem;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tt6-dock-subtitle{font-size:.72rem;color:var(--ui-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tt6-dock-scroll{flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.tt6-dock-scroll{flex:1;min-width:0;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .tt6-dock-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:37px}
 .tt6-dock-tip{font-size:.81rem;color:var(--ui-muted)}
 .tt6-dock-button,.tt6-dock-decision button{font-size:.78rem;min-height:32px;padding:5px 9px;border-radius:7px}
@@ -89,3 +89,79 @@
 /* Contextual card-action buttons now live in the reserved workspace; keep the
    original direct card/target gestures available on the tabletop. */
 .game-viewport .tt2-context,.game-viewport .tt6-context{display:none!important}
+
+/* Phase 6 follow-up: one compact control strip; never scroll the action workspace. */
+#app .game-viewport,#app .game-viewport *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none}
+.tt6-workspace{justify-content:center}
+.tt6-dock-status{align-items:center;justify-content:center;text-align:center}
+.tt6-dock-scroll,.tt6-dock-decision,.tt6-dock-decision .decision{width:100%;max-width:100%;overflow:hidden!important;box-sizing:border-box}
+.tt6-dock-decision .decision{justify-content:center;align-items:center;gap:4px}
+.tt6-dock-buttons,.tt6-dock-decision .decision>.actions,.tt6-dock-decision .decision>.stack{justify-content:center;align-items:center;margin:0 auto;gap:4px}
+.tt6-dock-decision .decision>p,.tt6-dock-decision .decision>.muted.small{display:none}
+.tt6-dock-decision button{min-height:28px;padding:3px 6px;white-space:normal;line-height:1.05}
+.tt6-dock-decision .tt3-order-list{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;flex-wrap:nowrap;justify-content:center;gap:3px;padding:1px 2px}
+.tt6-dock-decision .tt3-order-item{flex:0 1 auto;min-width:0;max-width:42px}
+.tt6-dock-decision .tt3-order-handle{min-width:0;max-width:100%}
+.tt6-dock-decision .tt3-order-handle .card{width:clamp(20px,8vw,42px);max-width:100%;min-width:0;aspect-ratio:.71}
+.tt6-dock-decision .tt4-card-choices{flex-wrap:nowrap;overflow:hidden;justify-content:center;max-width:100%;gap:3px}
+.tt6-dock-decision .tt4-card-option{flex:0 1 auto;min-width:0;max-width:48px;overflow:hidden}
+.tt6-dock-decision .tt4-card-option .card{width:clamp(20px,7vw,39px);max-width:100%}
+.tt6-dock-decision .tt7-compact-row{display:flex;justify-content:center;align-items:center;gap:4px;min-width:0;max-width:100%;width:100%}
+.tt6-dock-decision .tt7-prophecy-slot{flex:0 0 52px;width:52px;height:65px;display:grid;place-items:center;border:2px dashed var(--ui-accent);border-radius:7px;background:var(--ui-soft);padding:2px;color:var(--ui-text);font-size:.67rem}
+.tt7-prophecy-slot .card{width:36px;height:auto;aspect-ratio:.71;pointer-events:none}
+.tt6-dock-decision .tt7-prophecy-slot:focus-visible{outline:2px solid var(--ui-accent)}
+.tt6-dock-decision .tt7-page-actions{display:flex;align-items:center;justify-content:center;gap:3px}
+.tt6-dock-decision .tt7-page-actions small{font-size:.65rem}
+.tt6-dock-decision [disabled]{opacity:.35;cursor:not-allowed}
+.tt6-inventory-rows{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 5px}
+.tt6-inventory-line{display:flex;align-items:center;flex-direction:column;gap:2px;text-align:center;border-radius:7px;padding:2px;background:var(--ui-soft);font-size:.75rem}
+.tt6-inventory-line .card{width:37px;height:52px;max-width:100%;border-radius:4px}
+.tt6-inventory-line b{display:flex;align-items:center;gap:2px;font-size:.83rem}
+.tt7-eligible{outline:2px solid var(--table-gold)!important;outline-offset:1px;box-shadow:0 0 0 3px var(--ui-accent)!important;cursor:pointer!important}
+.tt7-selected{box-shadow:0 0 0 3px var(--ui-accent)!important}
+@media(orientation:landscape) and (min-width:600px){
+ .tt6-dock-decision .decision{flex-direction:row;align-items:center;justify-content:center;flex-wrap:wrap}
+ .tt6-dock-status{flex-direction:row}
+ .tt6-dock-decision .tt3-order-list{flex:0 1 auto;flex-wrap:nowrap;overflow:hidden}
+ .tt6-dock-decision .tt3-order-handle .card{width:clamp(20px,2.6vw,34px)}
+ .tt6-dock-decision .tt4-card-choices{flex-wrap:nowrap;overflow:hidden}
+ .tt6-dock-decision .tt4-card-option .card{width:30px}
+ .tt6-dock-decision .tt7-prophecy-slot{flex-basis:37px;width:37px;height:51px}
+ .tt7-prophecy-slot .card{width:25px}
+ .tt6-dock-decision .tt7-compact-row{gap:2px}
+ .tt6-dock-decision .decision>.actions{flex-wrap:wrap}
+ .tt6-dock-decision button{font-size:.68rem;padding:2px 4px;min-height:24px}
+}
+@media(max-height:430px){.tt6-dock-decision .tt7-prophecy-slot{height:43px}.tt6-dock-status strong{font-size:.73rem}.tt6-dock-decision .tt3-order-handle .card{width:27px}.tt6-dock-decision .tt7-compact-row{gap:2px}}
+
+.tt6-dock-decision .tt7-option{min-width:38px;flex:1 1 38px;max-width:82px;font-size:.71rem;font-weight:650}
+.tt6-dock-decision .tt7-option-active{outline:2px solid var(--ui-accent)}
+.tt6-dock-decision .tt7-night-options{width:100%;gap:3px;max-width:400px}
+.tt6-dock-decision .tt7-micro{font-size:.7rem;color:var(--ui-muted);text-align:center}
+.tt7-goal-pick{background:transparent;border:1px solid var(--ui-accent);border-radius:5px;cursor:pointer;padding:1px}
+.tt6-dock-decision .tt3-order-item .card-label{display:none}
+@media(orientation:landscape) and (min-width:600px){.tt6-dock-decision .tt7-option{min-width:38px;flex:0 1 42%;font-size:.7rem}}
+/* All decision controls share the dock's single available row on narrow screens. */
+.tt6-dock-decision .tt7-search-actions{display:flex;align-items:center;justify-content:center;flex-wrap:nowrap;gap:4px;width:100%;max-width:100%}
+.tt6-dock-decision .tt7-search-actions .tt7-compact-row{flex:1 1 auto;min-width:0;width:auto}
+.tt6-dock-decision .tt7-search-actions .tt4-card-choices{flex:0 1 auto;min-width:0}
+.tt6-dock-decision .tt7-search-card{position:relative;min-width:0;width:36px;max-width:36px;padding:0!important;overflow:visible}
+.tt6-dock-decision .tt7-search-card .card{width:30px;max-width:30px;height:42px}
+.tt7-mini-badge{position:absolute;right:0;bottom:0;border-radius:4px;background:var(--ui-panel);border:1px solid var(--ui-border);color:var(--ui-text);padding:0 2px;font-size:9px;line-height:13px}
+.tt6-dock-decision .tt7-search-free{flex:0 0 auto;width:70px;max-width:70px;min-width:0;font-size:.68rem;min-height:25px;padding:1px}
+.tt6-dock-decision .tt7-search-actions>button[data-action="doorSearch:skip"]{flex:0 0 auto;padding:3px 5px}
+.tt6-dock-decision .decision:has(.tt7-search-actions){flex-direction:row;flex-wrap:nowrap}
+.tt6-dock-decision .decision:has(.tt7-search-actions)>.actions{flex-wrap:nowrap}
+.tt6-dock-decision .decision:has([data-mirror-choice]){flex-direction:row;flex-wrap:nowrap}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt7-compact-row{flex:0 1 auto;width:auto;min-width:0}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt7-search-free{width:61px;max-width:61px}
+.tt6-dock-decision .tt5-order-end{min-height:20px!important;height:20px;align-self:center;flex-basis:8px!important;width:8px!important;min-width:8px!important}
+@media(orientation:landscape) and (min-width:600px){.tt6-dock-decision .tt7-search-actions{flex-wrap:wrap}.tt6-dock-decision .decision:has(.tt7-search-actions)>.actions{flex-wrap:wrap}.tt6-dock-decision .decision:has([data-mirror-choice]){flex-wrap:wrap}}
+.tt6-dock-decision .decision:has([data-action^="happyFetch:"]){flex-direction:row;flex-wrap:nowrap;justify-content:center}
+.tt6-dock-decision .decision:has([data-action^="happyFetch:"])>.tt7-compact-row{width:auto;flex:0 1 auto;min-width:0}
+.tt6-dock-decision .decision:has([data-action^="happyFetch:"]) .tt4-card-option{max-width:37px}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt4-card-option{position:relative;display:flex;align-items:center;justify-content:center;flex:0 1 27px;min-width:22px;width:27px;max-width:27px;padding:0}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt4-card-option .card{width:23px!important;max-width:23px;height:34px}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt4-card-option input{position:absolute;right:0;bottom:0;margin:0;min-height:10px;width:11px;height:11px;z-index:1}
+.tt6-dock-decision .decision:has([data-mirror-choice]) .tt7-compact-row{gap:2px}
+@media(orientation:landscape) and (min-width:600px){.tt6-dock-decision .decision:has([data-mirror-choice]){flex-wrap:wrap}}

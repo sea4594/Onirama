@@ -78,7 +78,7 @@ test('all permitted order decisions support progressive drag without arrow contr
  assert.match(app,/data-tt-order-group=\"prophecy\"/);
  assert.match(app,/data-tt-order-handle/);
  assert.match(app,/createDecisionReorder/);
- assert.match(app,/prophecyOrder=moveOrderedCard/);
+ assert.match(app,/prophecyOrder=\[\.\.\.moved/);
  assert.match(app,/effectOrder=moveOrderedCard/);
  assert.doesNotMatch(app,/prophecyUp:/);assert.doesNotMatch(app,/effectUp:/);assert.match(app,/data-tt-order-end=/);
 });

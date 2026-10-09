@@ -82,14 +82,14 @@ test('All currently modeled pending decision types render an actionable dialog; 
   if(type==='premonitionPick')g.pending.options=['doors3'];
   if(type==='rally')g.pending.choices=[sample.id];
   if(type==='nightmare')g.pending.card={kind:'nightmare',id:'n'};
-  const output=vm.runInContext('decision(g,true)',Object.assign(u.ctx,{g}));assert.match(output,/class="decision/,type);assert.match(output,/data-action/,type);
+  const output=vm.runInContext('decision(g,true)',Object.assign(u.ctx,{g}));assert.match(output,/class="decision/,type);assert.match(output,/data-action|data-tt-prophecy-discard|tt7-micro/,type);
  }
  const hidden=vm.runInContext('decision(g,false)',Object.assign(u.ctx,{g:{phase:'decision',pending:{type:'nightmare'}}}));assert.match(hidden,/partner is resolving/i);
 });
 
 test('Mirror pair, Cyclobot, Confusion and cooperative swap have inline UI controls, not blocking prompts',()=>{
  const source=readFileSync('public/app.js','utf8');
- assert.match(source,/data-mirror-pair/);assert.match(source,/mirrorConfirm/);assert.match(source,/cyclobotSwap:/);assert.match(source,/swapPersonal/);assert.match(source,/swapShared/);assert.match(source,/discardConfirm/);assert.match(source,/Confusion — reorder your hand/);
+ assert.match(source,/mirrorPairSelection/);assert.match(source,/eligibleDecisionCards/);assert.match(source,/mirrorConfirm/);assert.match(source,/cyclobotSwap:/);assert.match(source,/swapPersonal/);assert.match(source,/swapShared/);assert.match(source,/discardConfirm/);assert.match(source,/Confusion — reorder your hand/);
  assert.doesNotMatch(source,/prompt\(/,'all prompt-based gameplay actions should be replaced');
 });
 

@@ -188,7 +188,7 @@ export function gapAtPoint(list,x,y){
  for(const c of row.cards)if(x<c.box.left+c.box.width/2)return c.index;
  return row.cards.at(-1).index+1;
 }
-export function createDecisionReorder({root,canReorder,onReorder}){
+export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{}}){
   let press=null,ghost=null,highlight=null,tap=null,suppress=false;
   const group=kind=>[...root.querySelectorAll('[data-tt-order-group]')].find(l=>l.dataset.ttOrderGroup===kind);
   function eraseLine(){highlight?.classList.remove('tt5-insert-before','tt5-insert-after');highlight=null;}
@@ -229,8 +229,10 @@ export function createDecisionReorder({root,canReorder,onReorder}){
   function up(e){
     if(!press||e.pointerId!==press.pointerId)return;
     const {dragging,id}=press,target=dragging?dragGap(e.clientX,e.clientY):null;
+    const slot=press.kind==='prophecy'?root.querySelector('[data-tt-prophecy-discard]'):null;
+    const box=slot?.getBoundingClientRect();const discarded=dragging&&box&&e.clientX>=box.left-10&&e.clientX<=box.right+10&&e.clientY>=box.top-10&&e.clientY<=box.bottom+10;
     if(dragging){suppress=true;setTimeout(()=>suppress=false,0);}
-    clear();if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
+    clear();if(discarded){onDiscard(id);return;}if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
   }
   function activate(item){
     const list=item?.closest('[data-tt-order-group]');if(!list||!canReorder(list.dataset.ttOrderGroup))return;
@@ -241,6 +243,8 @@ export function createDecisionReorder({root,canReorder,onReorder}){
   }
   function click(e){
     if(suppress&&e.target.closest?.('[data-tt-order-group]')){suppress=false;e.preventDefault();e.stopImmediatePropagation();return;}
+    const slot=e.target.closest?.('[data-tt-prophecy-discard]');
+    if(slot&&tap?.kind==='prophecy'){const id=tap.id;cancelTap();onDiscard(id);e.preventDefault();return;}
     const end=e.target.closest?.('[data-tt-order-end]');
     if(end&&tap&&tap.kind===end.dataset.ttOrderEnd){
       const kind=tap.kind,from=tap.id,list=group(kind),count=list?.querySelectorAll(':scope > [data-tt-order-id]').length;
