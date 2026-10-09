@@ -1,0 +1,54 @@
+/* Phase 2 — the viewport is the shell; scroll is confined to explicit windows. */
+html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0;min-height:0}
+#app{height:100vh;height:100dvh;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#app>.nav{flex:0 0 auto}
+#app>.page{flex:1 1 auto;min-height:0;min-width:0;width:100%;max-width:none;padding:0;margin:0;display:flex;flex-direction:column;overflow:hidden}
+#app .bottom-nav{position:relative;flex:0 0 auto;bottom:auto;left:auto;width:100%}
+.shell-viewport-window{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;padding:clamp(6px,1.6vw,20px) clamp(8px,2vw,24px) 10px}
+.shell-viewport-window>.route{margin-inline:auto}
+#app>.page.game-viewport{background:radial-gradient(ellipse at 40% 24%,#325349,#182f2b 70%,#0e201e);position:relative;display:block;overflow:hidden}
+.game-viewport>.tt2-root{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;transform-origin:top center;overflow:visible;position:relative}
+.game-viewport>.loading{padding:10vh 10px}
+.game-viewport .tt2-top,.game-viewport .tt6-top{justify-content:space-between}
+.game-viewport .tt2-rule-link{flex:none;cursor:pointer;background:transparent;padding:0}
+.game-viewport .game-top-actions{display:flex;align-items:center;gap:7px;margin-left:auto}
+.game-viewport .game-menu-trigger{display:grid;place-items:center;width:30px;height:30px;min-height:30px;border-radius:50%;border:1px solid #e9daba66;background:transparent;color:#f8efd9;font-size:15px;padding:0;line-height:1}
+.game-viewport .game-menu-trigger:hover,.game-viewport .tt2-rule-link:hover{background:#f6ebd524}
+.game-viewport .game-menu-trigger:focus-visible{outline:3px solid #f0d38e}
+.game-viewport .tt6-top .game-top-actions{margin-left:0}
+.game-viewport .tt6-top .tt6-turn{margin-left:auto}
+.game-viewport>.notice.error{position:absolute;z-index:180;left:50%;top:5px;transform:translateX(-50%);width:min(500px,calc(100% - 16px));max-height:25%;overflow:auto;margin:0}
+/* Popups are temporary windows above the *unchanged* live game. */
+.game-menu-layer{position:fixed;inset:0;z-index:350;display:grid;place-items:center;isolation:isolate;padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.game-menu-scrim{position:absolute;inset:0;background:#091a17b3;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.game-menu-dialog{z-index:1;position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;width:min(530px,100%);max-height:100%;overflow:hidden;border:1px solid #b6cba781;border-radius:15px;background:#f2f1e5;color:#233a31;box-shadow:0 20px 75px #0009}
+.game-menu-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #b0c1aa;padding:9px 14px;flex:0 0 auto}
+.game-menu-head h2{margin:0;font-size:1.1rem;color:#233a31;font-weight:750}
+.game-menu-dialog button{color:#233a31;background:#dfe8d7;border:1px solid #b3c6af;min-height:39px;border-radius:8px}
+.game-menu-dialog button.primary{background:#365d4e;color:#fff;border-color:#365d4e}
+.game-menu-dialog button:hover:not(:disabled){background:#c7d9c2}
+.game-menu-dialog button.primary:hover:not(:disabled){background:#436d59}
+.game-menu-dialog .game-menu-close{font-size:1.5rem;line-height:1;width:34px;min-height:34px;padding:0;background:transparent;border:0}
+.game-menu-content{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;min-height:0;flex:1;padding:12px 15px 16px}
+.game-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.game-menu-settings{border-top:1px solid #c5d1bf;margin-top:14px;padding-top:10px}
+.game-menu-settings>summary,.game-rule>summary{cursor:pointer;font-weight:650;min-height:39px;display:flex;align-items:center;justify-content:space-between;list-style:none}
+.game-menu-settings>summary::-webkit-details-marker,.game-rule>summary::-webkit-details-marker{display:none}
+.game-menu-settings>summary::after,.game-rule>summary::after{content:'+';font-size:1.3rem;color:#436b53}
+.game-menu-settings[open]>summary::after,.game-rule[open]>summary::after{content:'−'}
+.game-menu-setting{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:5px 0;font-size:.85rem}
+.game-menu-setting .inline-input{background:#fff;color:#233a31;border-color:#b3c6af;min-height:36px;width:min(55%,220px);padding:6px 8px}
+.game-menu-note{font-size:.78rem;color:#516657;line-height:1.5;margin:13px 0 5px}
+.game-menu-dialog .game-menu-home{font-size:.85rem;background:transparent;border:0;text-decoration:underline;text-underline-offset:3px;padding:5px 0}
+.game-rule{border-bottom:1px solid #ccd7c7}
+.game-rule>summary{padding:5px 0;font-size:.9rem}
+.game-rule>p{font-size:.86rem;line-height:1.5;color:#465b50;margin:0 0 13px}
+.game-menu-footer{display:flex;justify-content:flex-end;flex:0 0 auto;padding:8px 14px;border-top:1px solid #c5d1bf}
+.game-menu-footer button{min-width:100px}
+.game-menu-dialog :focus-visible{outline:3px solid #427654;outline-offset:2px}
+@media(max-height:460px){.game-menu-dialog{width:min(640px,100%)}.game-menu-content{padding:7px 13px}.game-menu-head{padding:4px 12px}.game-menu-actions button{min-height:34px}}
+@media(max-width:440px){.game-menu-layer{padding:8px}.game-menu-dialog{max-height:100%;width:100%}}
+@media(prefers-reduced-motion:reduce){.game-menu-scrim{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+.tt4-game-controls{display:flex;gap:5px;margin-left:auto}.tt4-game-nav{font-size:14px;min-height:30px;width:30px;padding:2px;border-radius:50%;font-weight:700}.tt4-head .tt4-game-controls button{min-height:30px}

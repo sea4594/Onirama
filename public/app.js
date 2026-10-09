@@ -6,6 +6,7 @@ import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCard} from './tabletop/interactions.js';
 import {renderGameDialog,decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
+import {renderOverlay} from './game-overlay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io');
 const REMOTE_API=typeof window!=='undefined'&&typeof window.ONIRAMA_API_ORIGIN==='string'&&/^https:\/\/[^/]+$/.test(window.ONIRAMA_API_ORIGIN)?window.ONIRAMA_API_ORIGIN:'';
@@ -25,6 +26,7 @@ const THEME_PRESETS=[{id:'ocean-light',name:'Ocean · Light',theme:'ocean',mode:
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,lastAnnouncement='';
+let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'ocean-light',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'ocean-light',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
 let uiSettings=readSettings();
 let playerDisplayName='Dreamwalker',partnerDisplayName='Partner';
@@ -46,7 +48,7 @@ const btn=(label,action,klass='')=>`<button type="button" class="${klass}" data-
 const card=(c,options={})=>renderCard(c,{...options,selectedId:selected});
 function nav(){return `<header class="nav shell-nav"><a class="brand" href="#/" aria-label="Onirama home">ONIRAMA</a><div class="nav-right"><a href="#/rules" title="Rules" aria-label="Rules">?</a><a href="#/settings" title="Settings" aria-label="Settings">⚙</a></div></header>`;}
 function bottomNav(){if(page==='#/game')return '';const entries=[['#/','Single Player','◈'],['#/multiplayer','Multiplayer','♧'],['#/settings','Settings','⚙']];const active=page==='#/multiplayer'||page.startsWith('#/join')?'#/multiplayer':(page==='#/settings'||page==='#/history'||page==='#/roadmap')?'#/settings':'#/';return `<nav class="bottom-nav" aria-label="Primary">${entries.map(([url,label,icon])=>`<a href="${url}" class="bottom-nav-item${active===url?' active':''}" ${active===url?'aria-current="page"':''}><span aria-hidden="true" class="bottom-icon">${icon}</span><span>${label}</span></a>`).join('')}</nav>`;}
-function setRoute(path){location.hash=path;page=path;render();}
+function setRoute(path){if(path!=='#/game'){gameOverlay=null;gameRulesFromPause=false;}location.hash=path;page=path;render();}
 function setError(msg){error=msg;render();}
 async function api(route,method='GET',body=null){
   const headers={'Content-Type':'application/json'};if(session?.token)headers.Authorization=`Bearer ${session.token}`;
@@ -272,19 +274,67 @@ function historyPage(){const list=readHistory(localStorage),stats=summarizeHisto
  <section class="shell-stats">${[['Games',stats.played],['Wins',stats.wins],['Win rate',stats.winRate+'%'],['Solo · Co-op',stats.solo+' · '+stats.coop]].map(([name,value])=>`<div class="shell-card shell-stat"><strong>${value}</strong><span>${name}</span></div>`).join('')}</section>
  <section class="shell-card shell-history"><h2 class="shell-section-title">Games</h2>${list.length?`<div class="shell-history-list">${list.map(r=>`<div class="shell-history-row"><span class="shell-result ${r.status}">${r.status==='won'?'✓':'×'}</span><div><strong>${r.mode==='solo'?'Solo':'Co-op'} · ${r.status==='won'?'Win':'Loss'}</strong><small>${new Date(r.finishedAt).toLocaleDateString()} · Turn ${r.turn}${r.config.expansions.length?' · '+r.config.expansions.length+' expansions':''}</small></div></div>`).join('')}</div>`:'<p class="shell-empty">No completed games</p>'}${list.length?btn('Clear history','historyClear','shell-text-button'):''}</section>
  </div>`;}
-function render(){const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;page=location.hash||'#/';let content;
+function fitGameTabletop(){
+  const viewport=app.querySelector?.('.game-viewport'),table=viewport?.querySelector?.('.tt2-root');if(!table)return;
+  table.style.transform='';table.style.zoom='1';
+  // Temporary compact-size fallback until Phase 4's actual zone rearrangement.
+  // CSS zoom keeps the board full width (unlike transform:scale) and permits
+  // layout reflow at each candidate size. Nothing gets scrolled offscreen.
+  const available=viewport.clientHeight||0;if(!available)return;
+  if(table.getBoundingClientRect().height<=available){table.style.setProperty?.('--game-fit-scale','1');return;}
+  let low=.2,high=1,best=.2;
+  for(let i=0;i<8;i++){
+    const candidate=(low+high)/2;table.style.zoom=String(candidate);
+    if(table.getBoundingClientRect().height<=available-2){best=candidate;low=candidate;}else high=candidate;
+  }
+  table.style.zoom=String(best);table.style.setProperty?.('--game-fit-scale',String(best));
+}
+function render(){const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
+  const previousWindow=app.querySelector?.('.shell-viewport-window');
+  const windowScroll=previousWindow?.scrollTop||0,windowRoute=previousWindow?.dataset?.pageRoute;
+  const previousOverlay=app.querySelector?.('[data-game-menu-dialog]');
+  const overlayScroll=previousOverlay?.querySelector?.('[data-game-menu-scroll]')?.scrollTop||0;
+  const expandedRules=[...(previousOverlay?.querySelectorAll?.('details[open][data-rule-index]')||[])].map(el=>el.dataset.ruleIndex);
+  const settingsExpanded=!!previousOverlay?.querySelector?.('[data-pause-settings][open]');
+  const overlayFocused=focused?.closest?.('[data-game-menu-dialog]')?focused?.dataset?.action||focused?.dataset?.setting:null;
+  page=location.hash||'#/';if(page!=='#/game'){gameOverlay=null;gameRulesFromPause=false;}let content;
   if(page==='#/setup')content=setup();else if(page==='#/join'||roomCodeFromHash())content=joinPage();else if(page==='#/rules')content=rules();else if(page==='#/roadmap')content=roadmap();else if(page==='#/multiplayer')content=multiplayer();else if(page==='#/settings')content=settings();else if(page==='#/history')content=historyPage();else if(page==='#/tutorial')content=tutorial();else if(page==='#/game')content=!state?'<div class="loading">Loading the dream…</div>':state.room.started?board(state.game,state.room):lobby(state.room);else content=home();
-  app.innerHTML=nav()+`<main class="page" id="main-content" tabindex="-1">${error?`<div class="notice error" role="alert">${escape(error)} <button class="mini ghost" data-action="clearError">Dismiss</button></div>`:''}${content}</main>`+bottomNav()+(typeof renderGameDialog==='function'&&state?.room?.started&&page==='#/game'?gameDialog(state.game,state.room):'');
-  if(page==='#/game'&&state?.room.started){
+  const inGame=page==='#/game'&&!!state?.room?.started;
+  const errorMessage=error?`<div class="notice error" role="alert">${escape(error)} <button class="mini ghost" data-action="clearError">Dismiss</button></div>`:'';
+  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?content:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame?gameDialog(state.game,state.room):'')+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause}):'');
+  if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     for(const labyrinth of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){labyrinth.scrollLeft=labyrinth.scrollWidth;}
+    fitGameTabletop();
   }
+  const nextWindow=app.querySelector?.('.shell-viewport-window');
+  if(nextWindow&&windowRoute===page)nextWindow.scrollTop=windowScroll;
   if(typeof dialogController!=='undefined'&&dialogController)dialogController.sync(dialogFocus);
-  if(focusKind){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
+  const openMenu=app.querySelector?.('[data-game-menu-dialog]');
+  if(openMenu){
+    const scroller=openMenu.querySelector?.('[data-game-menu-scroll]');if(scroller)scroller.scrollTop=overlayScroll;
+    for(const detail of openMenu.querySelectorAll?.('[data-rule-index]')||[])detail.open=expandedRules.includes(detail.dataset.ruleIndex);
+    const pauseSettings=openMenu.querySelector?.('[data-pause-settings]');if(pauseSettings)pauseSettings.open=settingsExpanded;
+    const match=overlayFocused?[...(openMenu.querySelectorAll?.('[data-action],[data-setting]')||[])].find(el=>el.dataset.action===overlayFocused||el.dataset.setting===overlayFocused):null;
+    (match||openMenu.querySelector?.('button,[href],summary,select')||openMenu)?.focus?.({preventScroll:true});
+  }else if(overlayReturnAction){(app.querySelector?.(`.tt4-overlay [data-action="${overlayReturnAction}"]`)||app.querySelector?.(`[data-action="${overlayReturnAction}"]`))?.focus?.({preventScroll:true});overlayReturnAction=null;}
+  for(const node of app.querySelectorAll?.('.page,.tt4-overlay')||[]){if(gameOverlay)node.setAttribute?.('inert','');else node.removeAttribute?.('inert');}
+  if(focusKind&&!gameOverlay){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
 }
 function pick(id){selected=selected===id?null:id;swapDraft=null;render();}
 function moveProphecy(id,dir){let i=prophecyOrder.indexOf(id),j=i+dir;if(j<0||j>=prophecyOrder.length)return;[prophecyOrder[i],prophecyOrder[j]]=[prophecyOrder[j],prophecyOrder[i]];render();}
 async function handle(actionName){
+  if(actionName==='openGamePause'||actionName==='openGameRules'){
+    if(page!=='#/game'||!state?.room?.started)return;
+    gameRulesFromPause=actionName==='openGameRules'&&gameOverlay==='pause';
+    gameOverlay=actionName==='openGamePause'?'pause':'rules';return render();
+  }
+  if(actionName==='closeGameOverlay'){
+    if(!gameOverlay)return;
+    overlayReturnAction=gameOverlay==='pause'?'openGamePause':'openGameRules';
+    gameOverlay=null;gameRulesFromPause=false;return render();
+  }
+  if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;return setRoute('#/');}
   if(actionName==='soloStart'){selectedMode='solo';return create('solo');}if(actionName==='coopStart'){selectedMode='coop';return create('coop');}
   if(actionName==='history')return setRoute('#/history');
   if(actionName==='tutorial'){tutorialStep=0;return setRoute('#/tutorial');}
@@ -428,10 +478,22 @@ function installTabletopController(){
 app.addEventListener('input',e=>{if(e.target?.id==='name')playerDisplayName=String(e.target.value).slice(0,40);if(e.target?.id==='joinname')partnerDisplayName=String(e.target.value).slice(0,40);});
 app.addEventListener('change',e=>{if(e.target?.dataset?.mirrorPair){if(e.target.checked)mirrorPairSelection.add(e.target.dataset.mirrorPair);else mirrorPairSelection.delete(e.target.dataset.mirrorPair);return;}if(e.target?.dataset?.mirrorChoice){if(e.target.checked)mirrorSelection.add(e.target.dataset.mirrorChoice);else mirrorSelection.delete(e.target.dataset.mirrorChoice);return;}if(e.target?.dataset?.expansion){const id=e.target.dataset.expansion;if(e.target.checked){if(id==='incubus')selectedExpansions.clear();else selectedExpansions.delete('incubus');selectedExpansions.add(id);}else{selectedExpansions.delete(id);delete selectedDifficulties[id];}return render();}if(e.target?.dataset?.difficulty){selectedDifficulties[e.target.dataset.difficulty]=e.target.value;return render();}if(e.target?.dataset?.spellChoice){spellChoice=e.target.value;spellSelected.clear();return render();}const key=e.target?.dataset?.setting;if(!['theme','motion','cardSize','contrast','textSize'].includes(key))return;const value=e.target.value;if(key==='theme'&&!THEME_PRESETS.some(t=>t.id===value))return;if(key==='motion'&&!['normal','reduced'].includes(value))return;if(key==='cardSize'&&!['normal','large'].includes(value))return;if(key==='contrast'&&!['normal','high'].includes(value))return;if(key==='textSize'&&!['normal','large'].includes(value))return;uiSettings[key]=value;localStorage.setItem(SETTINGS_KEY,JSON.stringify(uiSettings));applySettings();render();});
 app.addEventListener('click',e=>{
+  if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
   const target=e.target.closest('[data-action],[data-pick]');if(!target)return;
+  if(gameOverlay&&!target.closest?.('[data-game-menu-dialog]'))return;
   if(target.dataset.pick){if(state?.game?.phase==='draft')handle(`draft:${target.dataset.pick}`);else pick(target.dataset.pick);return;}
   handle(target.dataset.action);
 });
+app.addEventListener('keydown',e=>{
+  const popup=app.querySelector?.('[data-game-menu-dialog]');if(!popup)return;
+  if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation?.();handle('closeGameOverlay');return;}
+  if(e.key!=='Tab')return;
+  const items=[...(popup.querySelectorAll?.('button:not([disabled]),a[href],summary,select:not([disabled]),[tabindex]:not([tabindex="-1"])')||[])].filter(el=>el.getClientRects?.().length!==0);
+  if(!items.length){e.preventDefault();popup.focus();return;}
+  const first=items[0],last=items.at(-1),active=document.activeElement;
+  if(e.shiftKey&&(active===first||!popup.contains(active))){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&(active===last||!popup.contains(active))){e.preventDefault();first.focus();}
+},true);
 addEventListener('hashchange',render);
 addEventListener('online',()=>{if(session&&!IS_LOCAL_SOLO())startStream();});
 addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startStream();});
@@ -439,4 +501,4 @@ document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session
 render();installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
-addEventListener('resize',()=>{if(page==='#/game'&&state?.room.started)applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});});
+addEventListener('resize',()=>{if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}});
