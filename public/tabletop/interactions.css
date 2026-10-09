@@ -14,11 +14,26 @@
 .tt2-root .tt2-hand-card .card:focus-visible{outline:3px solid #ffdc82;outline-offset:4px}
 @media(hover:hover){.tt2-root [data-tt-card]:hover:not(:disabled){box-shadow:0 6px 18px #0009;border-color:#f2d59a}}
 @media(prefers-reduced-motion:reduce){.tt2-root [data-tt-drop],.tt3-ghost{transition:none!important}}
-/* Revealed-card reordering is an enhancement to existing ↑/↓ controls. */
+/* Gap-based drag reordering with touch/keyboard fallback. */
 .tt3-order-list .tt3-order-item{min-width:0;align-items:center;position:relative;border:1px solid transparent;border-radius:10px;padding:3px}
 .tt3-order-handle{cursor:grab;touch-action:none;user-select:none;-webkit-touch-callout:none}
 .tt3-order-handle:active{cursor:grabbing}
 .tt3-order-handle .card{pointer-events:none}
 .tt3-order-item.tt3-order-dragging{opacity:.4}
-.tt3-order-item.tt3-order-hover{border:1px dashed #e5bb79;background:#e5bb7925}
+.tt3-order-item.tt5-insert-before::before,.tt3-order-item.tt5-insert-after::after{content:"";position:absolute;z-index:20;top:5px;bottom:5px;width:3px;border-radius:3px;background:var(--ui-accent);box-shadow:0 0 0 2px var(--ui-panel),0 0 9px var(--ui-accent);pointer-events:none}
+.tt3-order-item.tt5-insert-before::before{left:-6px}
+.tt3-order-item.tt5-insert-after::after{right:-6px}
+.tt3-order-handle:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px;border-radius:8px}
+.tt3-order-item.tt5-order-selected{border-color:var(--ui-accent);background:var(--ui-soft)}
+.tt5-order-end{flex:0 0 10px!important;width:10px!important;min-width:10px!important;min-height:40px!important;align-self:stretch;border:0!important;padding:0!important;background:transparent!important;opacity:0;cursor:pointer}
+.tt5-order-picking .tt5-order-end,.tt5-order-end:focus-visible{opacity:1;background:var(--ui-accent)!important;border-radius:3px}
+.tt5-order-end:focus-visible{outline:2px solid var(--ui-accent)}
 .tt3-order-ghost{position:fixed;z-index:2147483600;pointer-events:none;transform:rotate(-4deg);filter:drop-shadow(0 10px 12px #0007)}
+
+/* On-demand card inspection follows viewport edges, even inside decision windows. */
+.tt5-inspection{position:fixed;z-index:1050;box-sizing:border-box;width:min(280px,calc(100vw - 16px));max-height:calc(100dvh - 16px);overflow:auto;background:var(--ui-panel);color:var(--ui-text);border:1px solid var(--ui-border);border-radius:11px;box-shadow:0 10px 36px #0009;padding:13px 37px 13px 14px;font-size:.85rem;line-height:1.4;overscroll-behavior:contain}
+.tt5-inspection strong{display:block;font-size:.95rem;color:var(--ui-text);padding:0 0 5px}
+.tt5-inspection p{margin:0;color:var(--ui-muted)}
+.tt5-inspection-close{position:absolute;right:5px;top:5px;width:29px;height:29px;min-height:29px;display:grid;place-items:center;background:transparent;color:var(--ui-text);border:0;border-radius:6px;font-size:22px;cursor:pointer}
+.tt5-inspection-close:focus-visible{outline:2px solid var(--ui-accent)}
+@media (hover:none){.tt5-inspection{font-size:.9rem}}

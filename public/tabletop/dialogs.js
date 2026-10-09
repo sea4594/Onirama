@@ -45,7 +45,7 @@ export function createDialogController({root,onDismiss}){
   const tabbable=()=>[...(dialog()?.querySelectorAll?.('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')||[])].filter(el=>!el.hidden&&el.getAttribute?.('aria-hidden')!=='true');
   // Capture a stable descriptor BEFORE app.innerHTML replaces the current controls.
   // Remember the exact card/checkbox/field rather than returning focus to <body>.
-  const focusKeys=['data-action','data-pick','data-mirror-pair','data-mirror-choice','data-spell-choice','data-tt-card','id'];
+  const focusKeys=['data-action','data-pick','data-mirror-pair','data-mirror-choice','data-spell-choice','data-tt-card','data-tt-order-handle','id'];
   function describe(el){
     if(!el||!root.contains?.(el))return null;
     const name=focusKeys.find(k=>k==='id'?!!el.id:el.hasAttribute?.(k));
@@ -53,7 +53,7 @@ export function createDialogController({root,onDismiss}){
   }
   function recover(info){
     if(!info?.name)return null;
-    return [...(root.querySelectorAll?.('[data-tt4-dialog] button,[data-tt4-dialog] input,[data-tt4-dialog] select,[data-tt4-dialog] textarea,[data-action],[data-pick],[id]')||[])].find(el=>(info.name==='id'?el.id:el.getAttribute?.(info.name))===info.value&&(!info.modal||dialog()?.contains?.(el)))||null;
+    return [...(root.querySelectorAll?.('[data-tt4-dialog] button,[data-tt4-dialog] input,[data-tt4-dialog] select,[data-tt4-dialog] textarea,[data-tt-order-handle],[data-action],[data-pick],[id]')||[])].find(el=>(info.name==='id'?el.id:el.getAttribute?.(info.name))===info.value&&(!info.modal||dialog()?.contains?.(el)))||null;
   }
   const capture=()=>describe(typeof document==='undefined'?null:document.activeElement);
   function sync(before){

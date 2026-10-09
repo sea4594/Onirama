@@ -155,52 +155,102 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   return {syncTargets,dispose(){clearDrag();root.removeEventListener('pointerdown',onPointerDown);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',onCancel);window.removeEventListener('blur',onCancel);root.removeEventListener('click',onClick,true);root.removeEventListener('keydown',onKey);}};
 }
 
-/** Pure visual reordering: moves a card in front of the card it was dropped on.
- * The confirmation action still sends the ordered card IDs through the engine. */
-export function moveOrderedCard(ids,from,to){
-  if(!Array.isArray(ids)||!ids.includes(from)||!ids.includes(to)||from===to)return ids;
-  const next=[...ids];next.splice(next.indexOf(from),1);next.splice(next.indexOf(to),0,from);
+/** Reordering uses a GAP index (0..length), not the card under the cursor. */
+export function moveOrderedCardToGap(ids,from,gap){
+  if(!Array.isArray(ids)||!ids.includes(from)||!Number.isInteger(gap)||gap<0||gap>ids.length)return ids;
+  const old=ids.indexOf(from),next=[...ids];next.splice(old,1);
+  next.splice(gap>old?gap-1:gap,0,from);
   return next;
 }
+// Retained for compatibility with existing third-party/older UI fixtures.
+export function moveOrderedCard(ids,from,to){
+  if(!Array.isArray(ids)||!ids.includes(from)||!ids.includes(to)||from===to)return ids;
+  return moveOrderedCardToGap(ids,from,ids.indexOf(to));
+}
+export function gapAtX(list,x){
+  if(!list)return null;
+  const items=[...list.querySelectorAll(':scope > [data-tt-order-id]')];
+  if(!items.length)return null;
+  const at=items.findIndex(item=>x<item.getBoundingClientRect().left+item.getBoundingClientRect().width/2);
+  return at===-1?items.length:at;
+}
 export function createDecisionReorder({root,canReorder,onReorder}){
-  let press=null,ghost=null,hover=null,suppress=false;
-  function clear(){
-    ghost?.remove();ghost=null;hover?.classList.remove('tt3-order-hover');hover=null;
-    press?.item?.classList.remove('tt3-order-dragging');press=null;
+  let press=null,ghost=null,highlight=null,tap=null,suppress=false;
+  const group=kind=>[...root.querySelectorAll('[data-tt-order-group]')].find(l=>l.dataset.ttOrderGroup===kind);
+  function eraseLine(){highlight?.classList.remove('tt5-insert-before','tt5-insert-after');highlight=null;}
+  function clear(){ghost?.remove();ghost=null;eraseLine();press?.item?.classList.remove('tt3-order-dragging');press=null;}
+  function cancelTap(){root.querySelectorAll('.tt5-order-selected,.tt5-order-picking').forEach(el=>el.classList.remove('tt5-order-selected','tt5-order-picking'));tap=null;}
+  function markGap(list,gap){
+    eraseLine();const items=[...list.querySelectorAll(':scope > [data-tt-order-id]')];
+    highlight=gap===items.length?items.at(-1):items[gap];
+    highlight?.classList.add(gap===items.length?'tt5-insert-after':'tt5-insert-before');
   }
-  const targetAt=(x,y,kind)=>{
-    const item=document.elementFromPoint(x,y)?.closest?.('[data-tt-order-id]');
-    return item?.closest?.('[data-tt-order-group]')?.dataset.ttOrderGroup===kind?item:null;
-  };
+  function dragGap(x,y){
+    const list=group(press.kind);if(!list)return null;
+    const rect=list.getBoundingClientRect();if(y<rect.top-45||y>rect.bottom+45||x<rect.left-42||x>rect.right+42)return null;
+    if(x<rect.left+30)list.scrollLeft-=11;
+    if(x>rect.right-30)list.scrollLeft+=11;
+    return {list,index:gapAtX(list,x)};
+  }
   function down(e){
     if(e.button!==0&&e.pointerType==='mouse')return;
     const grip=e.target.closest?.('[data-tt-order-handle]');
-    const item=grip?.closest?.('[data-tt-order-id]');const list=item?.closest?.('[data-tt-order-group]');
+    const item=grip?.closest?.('[data-tt-order-id]'),list=item?.closest?.('[data-tt-order-group]');
     if(!item||!list||!canReorder(list.dataset.ttOrderGroup))return;
-    const rect=grip.getBoundingClientRect();press={pointerId:e.pointerId,id:item.dataset.ttOrderId,kind:list.dataset.ttOrderGroup,item,grip,x:e.clientX,y:e.clientY,offsetX:e.clientX-rect.left,offsetY:e.clientY-rect.top,dragging:false};
+    const rect=grip.getBoundingClientRect();
+    press={pointerId:e.pointerId,id:item.dataset.ttOrderId,kind:list.dataset.ttOrderGroup,item,grip,x:e.clientX,y:e.clientY,offsetX:e.clientX-rect.left,offsetY:e.clientY-rect.top,dragging:false};
   }
   function move(e){
     if(!press||e.pointerId!==press.pointerId)return;
     if(!press.dragging&&Math.hypot(e.clientX-press.x,e.clientY-press.y)<DRAG_THRESHOLD)return;
     if(!press.dragging){
-      press.dragging=true;press.item.classList.add('tt3-order-dragging');
+      cancelTap();press.dragging=true;press.item.classList.add('tt3-order-dragging');
       const card=press.grip.cloneNode(true),rect=press.grip.getBoundingClientRect();
       card.classList.add('tt3-order-ghost');card.style.width=`${rect.width}px`;card.style.height=`${rect.height}px`;
       card.setAttribute('aria-hidden','true');document.body.appendChild(card);ghost=card;
     }
     e.preventDefault();ghost.style.left=`${e.clientX-press.offsetX}px`;ghost.style.top=`${e.clientY-press.offsetY}px`;
-    const next=targetAt(e.clientX,e.clientY,press.kind);
-    if(hover!==next){hover?.classList.remove('tt3-order-hover');hover=next;hover?.classList.add('tt3-order-hover');}
+    const target=dragGap(e.clientX,e.clientY);if(target)markGap(target.list,target.index);else eraseLine();
   }
   function up(e){
     if(!press||e.pointerId!==press.pointerId)return;
-    const {dragging,id,kind}=press,target=dragging?targetAt(e.clientX,e.clientY,kind):null;
+    const {dragging,id}=press,target=dragging?dragGap(e.clientX,e.clientY):null;
     if(dragging){suppress=true;setTimeout(()=>suppress=false,0);}
-    clear();if(target&&target.dataset.ttOrderId!==id)onReorder(kind,id,target.dataset.ttOrderId);
+    clear();if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
   }
-  function click(e){if(suppress&&e.target.closest?.('[data-tt-order-group]')){suppress=false;e.preventDefault();e.stopImmediatePropagation();}}
+  function activate(item){
+    const list=item?.closest('[data-tt-order-group]');if(!list||!canReorder(list.dataset.ttOrderGroup))return;
+    const id=item.dataset.ttOrderId,kind=list.dataset.ttOrderGroup;
+    if(tap?.kind===kind&&tap.id!==id){const from=tap.id,index=[...list.querySelectorAll(':scope > [data-tt-order-id]')].indexOf(item);cancelTap();onReorder(kind,from,index);return;}
+    if(tap?.kind===kind&&tap.id===id){cancelTap();return;}
+    cancelTap();tap={id,kind};item.classList.add('tt5-order-selected');list.classList.add('tt5-order-picking');
+  }
+  function click(e){
+    if(suppress&&e.target.closest?.('[data-tt-order-group]')){suppress=false;e.preventDefault();e.stopImmediatePropagation();return;}
+    const end=e.target.closest?.('[data-tt-order-end]');
+    if(end&&tap&&tap.kind===end.dataset.ttOrderEnd){
+      const kind=tap.kind,from=tap.id,list=group(kind),count=list?.querySelectorAll(':scope > [data-tt-order-id]').length;
+      cancelTap();if(count!==undefined)onReorder(kind,from,count);e.preventDefault();return;
+    }
+    if(e.target.closest?.('[data-action]'))return;
+    const item=e.target.closest?.('[data-tt-order-handle]')?.closest?.('[data-tt-order-id]');
+    if(item){activate(item);e.preventDefault();}
+  }
+  function key(e){
+    const handle=e.target.closest?.('[data-tt-order-handle]'),item=handle?.closest?.('[data-tt-order-id]');
+    if(!item)return;
+    const list=item.closest('[data-tt-order-group]'),kind=list?.dataset.ttOrderGroup;
+    if(!canReorder(kind))return;
+    if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&e.altKey){
+      const items=[...list.querySelectorAll(':scope > [data-tt-order-id]')],idx=items.indexOf(item),gap=idx+(e.key==='ArrowRight'?2:-1);
+      if(gap>=0&&gap<=items.length){cancelTap();onReorder(kind,item.dataset.ttOrderId,gap);}
+      e.preventDefault();return;
+    }
+    if(e.key==='Enter'||e.key===' '){activate(item);e.preventDefault();}
+    if(e.key==='Escape'&&tap){cancelTap();e.preventDefault();}
+  }
   root.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});
   window.addEventListener('pointerup',up);window.addEventListener('pointercancel',clear);window.addEventListener('blur',clear);
-  root.addEventListener('click',click,true);
-  return {dispose(){clear();root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);}};
+  root.addEventListener('click',click,true);root.addEventListener('keydown',key);
+  return {dispose(){clear();cancelTap();root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key);}};
 }

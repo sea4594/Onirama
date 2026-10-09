@@ -72,7 +72,7 @@ test('visual reorder helper does not alter source array and preserves card multi
  assert.deepEqual(moveOrderedCard(input,'a','missing'),input);
  assert.deepEqual(input,['a','b','c','d','e']);
 });
-test('all permitted order decisions support progressive drag without replacing arrow controls',()=>{
+test('all permitted order decisions support progressive drag without arrow controls',()=>{
  const app=readFileSync('public/app.js','utf8');
  assert.match(app,/data-tt-order-group=\"effect\"/);
  assert.match(app,/data-tt-order-group=\"prophecy\"/);
@@ -80,5 +80,5 @@ test('all permitted order decisions support progressive drag without replacing a
  assert.match(app,/createDecisionReorder/);
  assert.match(app,/prophecyOrder=moveOrderedCard/);
  assert.match(app,/effectOrder=moveOrderedCard/);
- assert.match(app,/prophecyUp:/);assert.match(app,/effectUp:/);
+ assert.doesNotMatch(app,/prophecyUp:/);assert.doesNotMatch(app,/effectUp:/);assert.match(app,/data-tt-order-end=/);
 });

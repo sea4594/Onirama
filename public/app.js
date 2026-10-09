@@ -2,11 +2,12 @@ import {icon} from './icons.js';
 import {cleanConfig,readHistory,recordResult,summarizeHistory,readPresets,savePreset,deletePreset,clearHistory} from './guest-data.js';
 import * as firebase from './firebase-room.js';
 import {renderCard} from './tabletop/cards.js';
+import {createCardInspector} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
-import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCard} from './tabletop/interactions.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap} from './tabletop/interactions.js';
 import {renderGameDialog,decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderOverlay} from './game-overlay.js';
 const app=document.querySelector('#app');
@@ -165,7 +166,7 @@ function effectReorder(p){if(!p.cards)return '';const ids=p.cards.map(c=>c.id);i
  const modes={sphinxResolve:'Sphinx — choose the top card if your named aspect matched; arrange the others bottom-first.',diver:'Diver — stop and put last card on top, continue revealing, or resolve a Nightmare.',denizenPeek:'Denizen insight — reorder inspected cards.',happyPeek:'Happy Dream — choose zero or more cards to discard, then reorder the rest.',incantation:'Incantation — choose one Door (if available) and order the others from bottom to top.',towerLook:'Tower insight — order inspected cards from top to bottom.',spellPeek:'Paradoxical Prophecy — pick one card to put on top; order the others from bottom to top.'};
  const options=p.cards.filter(c=>p.type==='incantation'?c.kind==='door':['spellPeek','sphinxResolve'].includes(p.type));
  if(effectPick&&!options.some(c=>c.id===effectPick))effectPick=null;
- return `<section class="decision stack"><h2>${escape(modes[p.type])}</h2><p>Use arrows to rearrange the revealed cards. Leftmost is first in the indicated ordering.</p><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag to reorder">${card(c)}</div>${options.some(x=>x.id===id)?btn(effectPick===id?'✓ Selected':'Select',`effectPick:${id}`,'mini'):''}${p.type==='happyPeek'?btn(effectDiscards.has(id)?'✓ Discard':'Keep / discard',`effectDiscard:${id}`,'mini'):''}${btn('↑',`effectUp:${id}`,'mini')}${btn('↓',`effectDown:${id}`,'mini')}</div>`;}).join('')}</div>${p.type==='sphinxResolve'?`<div class="actions">${p.cards.map(c=>btn(`Top: ${c.id}`,`effectPick:${c.id}`,'mini')).join('')}</div>${btn('Resolve Sphinx','sphinxConfirm','primary')}`:p.type==='diver'?`<div class="actions">${p.cards.at(-1)?.kind==='nightmare'?btn('Resolve Diver as Nightmare','diverNightmare','danger'):btn('Stop here','diverStop','primary')}${p.cards.at(-1)?.kind!=='nightmare'&&p.remaining!==0?btn('Reveal another','diverContinue'):''}</div>`:btn('Confirm effect','effectConfirm','primary')}</section>`;
+ return `<section class="decision stack"><h2>${escape(modes[p.type])}</h2><p>Drag to reorder, or tap one card then its destination. Leftmost is first.</p><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div>${options.some(x=>x.id===id)?btn(effectPick===id?'✓ Selected':'Select',`effectPick:${id}`,'mini'):''}${p.type==='happyPeek'?btn(effectDiscards.has(id)?'✓ Discard':'Keep / discard',`effectDiscard:${id}`,'mini'):''}</div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${p.type==='sphinxResolve'?`<div class="actions">${p.cards.map(c=>btn(`Top: ${c.id}`,`effectPick:${c.id}`,'mini')).join('')}</div>${btn('Resolve Sphinx','sphinxConfirm','primary')}`:p.type==='diver'?`<div class="actions">${p.cards.at(-1)?.kind==='nightmare'?btn('Resolve Diver as Nightmare','diverNightmare','danger'):btn('Stop here','diverStop','primary')}${p.cards.at(-1)?.kind!=='nightmare'&&p.remaining!==0?btn('Reveal another','diverContinue'):''}</div>`:btn('Confirm effect','effectConfirm','primary')}</section>`;
 }
 function towerEdgeConflict(left,right){const marks=v=>Array.isArray(v)?v:typeof v==='string'?v.split(/[+|,/ ]+/).filter(Boolean):[];return marks(left).some(mark=>marks(right).includes(mark));}
 function catcherSearchChoice(g,searchesDeck){
@@ -180,7 +181,7 @@ function decision(g,canAct){
   const p=g.pending;if(!p)return '';
   if(p.type==='sphinxName')return `<section class="decision stack"><h2>Sphinx: name an aspect</h2><div class="actions">${[...COLOR,'moon','key',...(g.config.expansions.includes('glyphs')?['glyph']:[])].map(a=>btn(a,`sphinxName:${a}`,'primary')).join('')}</div></section>`;
   if(p.type==='sphinxResolve'||p.type==='diver')return effectReorder(p);
-  if(p.type==='confusion'){const cards=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])];const ids=cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];return `<section class="decision stack"><h2>Confusion — reorder your hand</h2><p>Arrange cards bottom-first, then draw a new hand. Doors and Dreams drawn during replacement go to Limbo without resolving.</p><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag to reorder">${card(c)}</div>${btn('↑',`effectUp:${id}`,'mini')}${btn('↓',`effectDown:${id}`,'mini')}</div>`;}).join('')}</div>${btn('Return cards and redraw','confusionResolve','primary')}</section>`;}
+  if(p.type==='confusion'){const cards=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])];const ids=cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];return `<section class="decision stack"><h2>Confusion — reorder your hand</h2><p>Arrange cards bottom-first, then draw a new hand. Doors and Dreams drawn during replacement go to Limbo without resolving.</p><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${btn('Return cards and redraw','confusionResolve','primary')}</section>`;}
   if(p.type==='mirrorReward')return `<section class="decision stack"><h2>${escape(p.mirror)} Mirror reward</h2><p>Select cards from the ${p.mirror==='blue'?'discard pile':'deck'}; choose exactly the printed number if available.</p>${p.mirror==='key'?`<label>Door color <select id="mirrorColor" class="inline-input">${COLOR.map(c=>`<option>${c}</option>`).join('')}</select></label>`:''}<div class="tt4-card-choices">${p.options.map(c=>`<label class="tt4-card-option"><input type="checkbox" data-mirror-choice="${escape(c.id)}" ${mirrorSelection.has(c.id)?'checked':''}>${card(c,{tiny:true})}</label>`).join('')}</div>${catcherSearchChoice(g,p.mirror!=='blue')}${btn('Apply Mirror effect','mirrorRewardConfirm','primary')}</section>`;
   if(p.type==='doorSearch')return `<section class="decision stack"><h2>A Door awaits</h2><p>Three ${p.color} Locations. Search for an eligible Door, or skip.</p><div class="actions">${(p.targets||[]).map(t=>`<button type="button" class="tt4-card-option" data-action="doorSearch:claim:${escape(t.id)}" title="Claim Door">${card({id:t.id,kind:'door',color:p.color},{tiny:true})}<span class="muted small">${t.source==='deck'?'Deck':`Catcher ${Number(t.source.slice(5))+1}`}</span></button>`).join('')||'<span class="muted small">No Door is available for this search.</span>'}${btn('Skip','doorSearch:skip')}</div>${g.expansion?.dreamcatchers?`<p class="muted small">Optional: free one Dreamcatcher when shuffling after a deck search.</p><select id="freeOnSearch" class="inline-input"><option value="">Do not free</option>${g.expansion.dreamcatchers.stacks.map((stack,i)=>stack.length&&g.expansion.dreamcatchers.active[i]?`<option value="${i}">Free catcher ${i+1}</option>`:'').join('')}</select>`:''}</section>`;
   if(p.type==='door')return `<section class="decision stack"><h2>Oneiric Door</h2><p>A ${p.card.color} Door appeared. Spend a matching Key to claim it, or put the Door into Limbo.</p><div class="actions">${p.keys.map(k=>`<button type="button" class="tt4-card-option" data-action="useKey:${escape(k.id)}" title="Use Key from ${escape(k.zone)}">${card([...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])].find(c=>c.id===k.id)||{kind:'location',symbol:'key',color:p.card.color},{tiny:true})}<span class="muted small">${escape(k.zone)}</span></button>`).join('')}${btn('Send to Limbo','useKey:limbo')}</div></section>`;
@@ -205,7 +206,7 @@ let prophecyDiscard=null,prophecyOrder=[];
 function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
   if(!cards.some(c=>c.id===prophecyDiscard)){prophecyDiscard=null;prophecyOrder=cards.map(c=>c.id);}
   if(prophecyOrder.length!==cards.length||prophecyOrder.some(id=>!cards.some(c=>c.id===id)))prophecyOrder=cards.map(c=>c.id);
-  return `<section class="decision stack"><h2>Prophecy</h2><p>Choose exactly one card to discard. Reorder the others from top to bottom, then confirm.</p><div class="cards tt3-order-list" data-tt-order-group="prophecy">${prophecyOrder.map((id,index)=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag to reorder">${card(c,{tiny:false})}</div>${btn(prophecyDiscard===id?'✓ Discard':'Discard',`prophecyDiscard:${id}`,'mini')}${btn('↑',`prophecyUp:${id}`,'mini')}${btn('↓',`prophecyDown:${id}`,'mini')}</div>`;}).join('')}</div><div class="muted small">Leftmost card will be drawn first.</div>${btn('Confirm Prophecy','prophecyConfirm',prophecyDiscard?'primary':'')}</section>`;
+  return `<section class="decision stack"><h2>Prophecy</h2><p>Choose exactly one card to discard. Reorder the others from top to bottom, then confirm.</p><div class="cards tt3-order-list" data-tt-order-group="prophecy">${prophecyOrder.map((id,index)=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c,{tiny:false})}</div>${btn(prophecyDiscard===id?'✓ Discard':'Discard',`prophecyDiscard:${id}`,'mini')}</div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="prophecy" aria-label="Move selected card to end" title="Insert at end"></button></div><div class="muted small">Leftmost card will be drawn first.</div>${btn('Confirm Prophecy','prophecyConfirm',prophecyDiscard?'primary':'')}</section>`;
 }
 // The new solo and cooperative tabletops are the only supported gameplay surfaces.
 // Unknown modes fail visibly instead of silently falling back to obsolete controls.
@@ -280,7 +281,7 @@ function fitGameTabletop(){
   const viewport=app.querySelector?.('.game-viewport'),table=viewport?.querySelector?.('.tt2-root');
   return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
 }
-function render(){const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
+function render(){cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousWindow=app.querySelector?.('.shell-viewport-window');
   const windowScroll=previousWindow?.scrollTop||0,windowRoute=previousWindow?.dataset?.pageRoute;
   const previousOverlay=app.querySelector?.('[data-game-menu-dialog]');
@@ -312,7 +313,6 @@ function render(){const dialogFocus=typeof dialogController!=='undefined'?dialog
   if(focusKind&&!gameOverlay){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
 }
 function pick(id){selected=selected===id?null:id;swapDraft=null;render();}
-function moveProphecy(id,dir){let i=prophecyOrder.indexOf(id),j=i+dir;if(j<0||j>=prophecyOrder.length)return;[prophecyOrder[i],prophecyOrder[j]]=[prophecyOrder[j],prophecyOrder[i]];render();}
 async function handle(actionName){
   if(actionName==='openGamePause'||actionName==='openGameRules'){
     if(page!=='#/game'||!state?.room?.started)return;
@@ -421,8 +421,6 @@ async function handle(actionName){
   if(actionName==='nightReveal')return action({type:'nightmare',option:'reveal'});
   if(actionName==='nightHand')return action({type:'nightmare',option:'hand'});
   if(actionName.startsWith('prophecyDiscard:')){prophecyDiscard=actionName.slice(16);return render();}
-  if(actionName.startsWith('prophecyUp:'))return moveProphecy(actionName.slice(11),-1);
-  if(actionName.startsWith('prophecyDown:'))return moveProphecy(actionName.slice(13),1);
   if(actionName.startsWith('freeCatcher:'))return action({type:'freeCatcher',index:Number(actionName.slice(12))});
   if(actionName.startsWith('catchChoose:'))return action({type:'catchChoose',index:Number(actionName.slice(12))});
   if(actionName.startsWith('catchOverload:'))return action({type:'catchOverload',index:Number(actionName.slice(14))});
@@ -431,14 +429,13 @@ async function handle(actionName){
   if(actionName.startsWith('spellCost:')){const id=actionName.slice(10);if(spellSelected.has(id))spellSelected.delete(id);else spellSelected.add(id);return render();}
   if(actionName==='castSpell'){const goals=state.game.expansion?.book?.goals||[];const a=Number(document.querySelector('#goalA')?.value)-1,b=Number(document.querySelector('#goalB')?.value)-1;return action({type:'cast',spell:spellChoice,costIds:[...spellSelected],...(spellChoice==='parallel'?{first:a,second:b}:{})});}
   if(actionName.startsWith('effectPick:')){effectPick=actionName.slice(11);return render();}
-  if(actionName.startsWith('effectUp:')||actionName.startsWith('effectDown:')){const id=actionName.split(':')[1],i=effectOrder.indexOf(id),j=i+(actionName.startsWith('effectUp:')?-1:1);if(i>=0&&j>=0&&j<effectOrder.length)[effectOrder[i],effectOrder[j]]=[effectOrder[j],effectOrder[i]];return render();}
   if(actionName.startsWith('moduleDecision:'))return action({type:'moduleDecision',decisionId:g.pending.id,choice:decodeURIComponent(actionName.slice(15))});
   if(actionName==='effectConfirm'){const p=state.game.pending;const cards=p.cards;if(p.type==='happyPeek')return action({type:'happyPeek',discardIds:[...effectDiscards],order:effectOrder.filter(id=>!effectDiscards.has(id))});if(p.type==='denizenPeek')return action({type:'denizenPeek',order:effectOrder});return p.type==='towerLook'?action({type:'towerLook',order:effectOrder}):p.type==='spellPeek'?action({type:'spellPeek',topId:effectPick,bottomOrder:effectOrder.filter(id=>id!==effectPick)}):action({type:'incantation',doorId:effectPick||undefined,order:effectOrder.filter(id=>id!==effectPick)});}
   if(actionName==='prophecyConfirm'){if(!prophecyDiscard)return setError('Choose one card to discard.');return action({type:'prophecy',discardId:prophecyDiscard,order:prophecyOrder.filter(id=>id!==prophecyDiscard)});}
 }
 // Interaction adapter: gestures never mutate state. They produce the same
 // validated play/discard commands as the original buttons.
-let tabletopController=null,dialogController=null;
+let tabletopController=null,dialogController=null,cardInspector=null;
 function installTabletopController(){
   if(typeof createTabletopInteractions!=='function')return; // lightweight legacy UI test harness
   tabletopController=createTabletopInteractions({
@@ -456,10 +453,10 @@ function installTabletopController(){
   });
   createDecisionReorder({root:app,
     canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind),
-    onReorder:(kind,from,to)=>{
+    onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
-      if(kind==='prophecy'&&state.game.pending?.type==='prophecy')prophecyOrder=moveOrderedCard(prophecyOrder,from,to);
-      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCard(effectOrder,from,to);
+      if(kind==='prophecy'&&state.game.pending?.type==='prophecy')prophecyOrder=moveOrderedCardToGap(prophecyOrder,from,gap);
+      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,gap);
       else return;
       render();
     }
@@ -488,7 +485,7 @@ addEventListener('hashchange',render);
 addEventListener('online',()=>{if(session&&!IS_LOCAL_SOLO())startStream();});
 addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startStream();});
 document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()&&streamAbort===null)startStream();});
-render();installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
+render();if(typeof createCardInspector==='function')cardInspector=createCardInspector({root:app});installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
 function resizeGameplay(){if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
