@@ -53,8 +53,9 @@ test('all 512 expansion combinations show essential areas and matching shared ex
   for(let mask=0;mask<1<<expansions.length;mask++){
     const enabled=expansions.filter((_,i)=>mask&(1<<i));const g=viewFor(newGame({mode:'coop',seed:mask+7,config:{expansions:enabled}}),0);
     const html=renderCooperativeTabletop(g,{seat:0});
-    for(const component of ['tt6-opponent','tt6-self','tt6-center','tt6-piles','tt6-shared-block','tt6-player-labyrinth','tt6-door-color','tt6-draft'])assert.ok(html.includes(component),`${mask}: ${component}`);
-    for(const [id,zone] of [['book','goals'],['dreamcatchers','catchers'],['towers','alignment'],['premonitions','premonitions'],['oniverse','denizens'],['mirrors','mirrors']])if(enabled.includes(id))assert.match(html,new RegExp(`data-tt-zone="${zone}"`));
+    for(const component of ['tt6-opponent','tt6-self','tt6-center','tt6-piles','tt6-shared-block','tt6-player-labyrinth','tt8-door-slot','tt6-draft'])assert.ok(html.includes(component),`${mask}: ${component}`);
+    if(enabled.includes('book')){assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);}
+    for(const [id,zone] of [['dreamcatchers','catchers'],['towers','alignment'],['premonitions','premonitions'],['oniverse','denizens'],['mirrors','mirrors']])if(enabled.includes(id))assert.match(html,new RegExp(`data-tt-zone="${zone}"`));
   }
 });
 test('both co-op seats can complete drafts, play actions, and conserve all card instances',()=>{

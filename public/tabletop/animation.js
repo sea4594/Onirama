@@ -14,7 +14,8 @@ const arrays = game => [
   game?.expansion?.incubus?.stored,
   // Only the currently revealed decision cards. Never include deck-search
   // options or unrevealed card identities.
-  game?.pending?.cards
+  game?.pending?.cards,
+  game?.pending?.card ? [game.pending.card] : []
 ];
 const allVisible = game => new Set(arrays(game).flatMap(a => cards(a).map(c => c.id)));
 const locations = game => {

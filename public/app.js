@@ -66,7 +66,7 @@ async function refresh(){if(IS_LOCAL_SOLO()){const raw=localStorage.getItem('oni
 function saveSession(o){cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
 async function create(mode){
   const name=(document.querySelector('#name')?.value||playerDisplayName||'Dreamwalker').trim();const config={ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
-  try{if(STATIC_SITE&&mode==='solo'){cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'solo',config});localStorage.setItem('onirama.solo.v1',JSON.stringify(game));session={id:'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));beginGuestSession();await refresh();setRoute('#/game');return;}const o=mode==='coop'&&USE_FIREBASE?{...(await firebase.createFirebaseRoom(name,config)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api(mode==='solo'?'/api/solo':'/api/rooms','POST',{name,config});saveSession(o);beginGuestSession();await refresh();setRoute('#/game');startStream();}
+  try{if(STATIC_SITE&&mode==='solo'){cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'solo',config,interactiveDraw:true});localStorage.setItem('onirama.solo.v1',JSON.stringify(game));session={id:'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));beginGuestSession();await refresh();setRoute('#/game');return;}const o=mode==='coop'&&USE_FIREBASE?{...(await firebase.createFirebaseRoom(name,config)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api(mode==='solo'?'/api/solo':'/api/rooms','POST',{name,config});saveSession(o);beginGuestSession();await refresh();setRoute('#/game');startStream();}
   catch(e){setError(e.message);}finally{busy=false;render();}
 }
 async function join(){const code=document.querySelector('#roomcode')?.value;const name=(document.querySelector('#joinname')?.value||partnerDisplayName||'Partner').trim();
@@ -209,13 +209,17 @@ function decision(g,canAct){
   const p=g.pending;if(!p)return '';
   if(p.type==='sphinxName')return `<section class="decision stack"><h2>Sphinx: name an aspect</h2><div class="actions">${[...COLOR,'moon','key',...(g.config.expansions.includes('glyphs')?['glyph']:[])].map(a=>btn(a,`sphinxName:${a}`,'primary')).join('')}</div></section>`;
   if(p.type==='sphinxResolve'||p.type==='diver')return effectReorder(p);
+  if(p.type==='drawReady'||p.type==='drawn')return '';
   if(p.type==='confusion'){const cards=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])];const ids=cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];return `<section class="decision stack"><h2>Confusion — reorder your hand</h2><div class="cards tt3-order-list" data-tt-order-group="effect">${orderSlice(effectOrder).visible.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${btn('Redraw','confusionResolve','primary')}</section>`;}
   if(p.type==='mirrorReward')return `<section class="decision stack"><h2>${escape(p.mirror)} Mirror reward</h2>${p.mirror==='key'?`<label>Door color <select id="mirrorColor" class="inline-input">${COLOR.map(c=>`<option>${c}</option>`).join('')}</select></label>`:''}${pagedCards(p.options,c=>`<label class="tt4-card-option"><input type="checkbox" data-mirror-choice="${escape(c.id)}" ${mirrorSelection.has(c.id)?'checked':''}>${card(c,{tiny:true})}</label>`)}${catcherSearchChoice(g,p.mirror!=='blue')}${btn('Confirm','mirrorRewardConfirm','primary')}</section>`;
-  if(p.type==='doorSearch')return `<section class="decision stack"><h2>Door search</h2><div class="actions tt7-search-actions">${pagedCards(p.targets||[],t=>`<button type="button" class="tt4-card-option tt7-search-card" data-action="doorSearch:claim:${escape(t.id)}" title="${t.source==='deck'?'Deck':`Catcher ${Number(t.source.slice(5))+1}`}">${card({id:t.id,kind:'door',color:p.color},{tiny:true})}<span class="tt7-mini-badge">${t.source==='deck'?'D':Number(t.source.slice(5))+1}</span></button>`)}${g.expansion?.dreamcatchers?`<select id="freeOnSearch" class="inline-input tt7-search-free" aria-label="Free Dreamcatcher"><option value="" ${freeSearchId===''?'selected':''}>No free</option>${g.expansion.dreamcatchers.stacks.map((stack,i)=>stack.length&&g.expansion.dreamcatchers.active[i]?`<option value="${i}" ${freeSearchId===String(i)?'selected':''}>Free ${i+1}</option>`:'').join('')}</select>`:''}${btn('Skip','doorSearch:skip')}</div></section>`;
+  if(p.type==='doorSearch'){
+    const targets=p.targets||[],deck=targets.find(t=>t.source==='deck'),catchers=[...new Set(targets.filter(t=>t.source!=='deck').map(t=>t.source))];
+    return `<section class="decision stack"><div class="actions tt7-search-actions">${deck?btn('Claim Door','doorSearch:claim:'+deck.id,'primary'):''}${!deck?catchers.map(source=>btn('Catcher '+(Number(source.slice(5))+1),'doorSearch:claim:'+targets.find(t=>t.source===source).id,'primary')).join(''):''}${g.expansion?.dreamcatchers?catcherSearchChoice(g,true):''}${btn('Skip','doorSearch:skip')}</div></section>`;
+  }
   if(p.type==='door')return `<section class="decision stack"><div class="actions">${p.keys.length?'<span class="tt7-micro">Tap a matching Key</span>':''}${btn('Limbo','useKey:limbo')}</div></section>`;
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
-    const option=(name,id,enabled,chosen=false)=>`<button type="button" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" ${enabled?'':'disabled'} aria-pressed="${chosen}">${name}</button>`;
+    const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" ${enabled?'':'disabled'} aria-pressed="${chosen}">${name}</button>`;
     const extras=`${g.expansion?.incubus&&!p.incubus&&(g.expansion.incubus.level==='easy'?!g.expansion.incubus.used:g.expansion.incubus.stored.length>0)?btn('Incubus','incubusCancel'):''}${(g.expansion?.oniverse?.rallied||[]).filter(d=>d.ability==='mirror'&&d.owner===g.active).map(d=>btn('Mirror',`mirror:${d.id}`)).join('')}`;
     return `<section class="decision stack"><div class="actions tt7-night-options">${option('Key','nightChoose:key',keys.length>0,nightChoice==='key')}${option('Door','nightChoose:door',doors.length>0,nightChoice==='door')}${option('Reveal 5','nightReveal',true)}${option('Hand','nightHand',true)}${extras}</div></section>`;
   }
@@ -276,8 +280,9 @@ function contextualDialog(g,room){
 }
 function gameWorkspace(g,room){
  if(!g||!room||g.status!=='active')return null;
+ if(g.phase==='decision'&&['drawReady','drawn'].includes(g.pending?.type))return null;
  if(g.phase==='decision'&&spellOpen&&g.expansion?.book)return contextualDialog(g,room);
- if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,html:decision(g,true)+(g.expansion?.book?`<div class="tt4-spell-shortcut">${btn('Cast spell','openSpells','mini')}</div>`:'')}:null;}
+ if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,html:decision(g,true)}:null;}
  return contextualDialog(g,room);
 }
 function closeOptionalDialog(){mirrorTarget=null;mirrorPairSelection.clear();cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();render();}
@@ -480,6 +485,7 @@ async function handle(actionName){
     if(actionName==='discard'&&g.mode==='coop'){swapDraft={cardId:selected};return render();}
     return action(command);
   }
+  if(actionName==='draw'||actionName==='confirmDraw')return action({type:actionName});
   if(actionName.startsWith('doorSearch:')){const value=document.querySelector('#freeOnSearch')?.value,parts=actionName.split(':'),freeId=value===''||value===undefined?undefined:Number(value);if(parts[1]==='claim'&&freeId!==undefined){const target=g.pending?.targets?.find(t=>t.id===parts[2]);if(target?.source===`catch${freeId}`)return setError('You cannot free the same Dreamcatcher holding the selected Door. Choose a different catcher or no freeing.');}return action({type:'doorSearch',option:parts[1],doorId:parts[2],freeId});}
   if(actionName.startsWith('useKey:'))return action({type:'chooseDoor',keyId:actionName.slice(7)});
   if(actionName.startsWith('nightKey:'))return action({type:'nightmare',option:'key',cardId:actionName.slice(9)});

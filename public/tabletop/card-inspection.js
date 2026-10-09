@@ -17,6 +17,7 @@ export function cardHelp(card){
  const kind=card.kind,extra=card.expansion;
  let detail='';
  switch(kind){
+  case 'nightmarePenalty':detail=({Key:'Discard one Key from your hand or shared area.',Door:'Return one collected Door to Limbo.','Reveal 5':'Reveal five cards; discard Locations and send Doors and Dreams to Limbo.',Hand:'Discard your entire hand and draw replacements.'})[card.option]||'Nightmare penalty';break;
   case 'premonition':detail=PREMONITIONS[card.premonitionId]||'Dark Premonition';break;
   case 'location':
    detail=card.symbol==='key'?'Play into your Labyrinth, discard to use Prophecy, or spend as a matching Key to claim a Door.':card.symbol==='glyph'?'A Glyph Location. Discard it to trigger its five-card Incantation, or play it in your Labyrinth.':'Play in your Labyrinth if its symbol differs from the previous Location, or discard it.';
@@ -34,7 +35,7 @@ export function cardHelp(card){
   case 'confusion':detail='Reorder your hand onto the bottom of the deck, then draw a replacement hand.';break;
   default:detail='See the relevant base-game or expansion rules for this card.';
  }
- const title=kind==='premonition'?'Dark Premonition':cardDescription(card).replace(/^([a-z])/,(_,a)=>a.toUpperCase());
+ const title=kind==='nightmarePenalty'?`${card.option} penalty`:kind==='premonition'?'Dark Premonition':cardDescription(card).replace(/^([a-z])/,(_,a)=>a.toUpperCase());
  return {title,detail};
 }
 /** Small, non-modal inspection bubble; closes without changing game state. */

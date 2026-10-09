@@ -45,7 +45,7 @@ export function setReady(room,uid,value,now=Date.now()){
 export function startRoom(room,uid,now=Date.now()){
   requireRule(seatFor(room,uid)===0,'Only the host can start');
   requireRule(!room.game&&room.guestUid&&room.ready.every(Boolean),'Both players must join and be ready');
-  const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName]});assertConserved(game);
+  const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName],interactiveDraw:true});assertConserved(game);
   return {...room,game:clone(game),updatedAt:now,version:room.version+1};
 }
 export function playRoom(room,uid,expectedVersion,command,now=Date.now()){

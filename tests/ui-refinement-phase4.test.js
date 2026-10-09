@@ -31,7 +31,8 @@ test('The tabletop remains a pure visual projection, with every enabled expansio
  for(const mode of ['solo','coop']){
   const g=viewFor(newGame({mode,seed:91,config:{expansions}}),0);
   const html=mode==='solo'?renderSoloTabletop(g):renderCooperativeTabletop(g,{seat:0});
-  for(const zone of ['goals','alignment','catchers','premonitions','denizens','mirrors'])assert.ok(html.includes(`data-tt-zone="${zone}"`),`${mode}: ${zone}`);
+  for(const zone of ['alignment','catchers','premonitions','denizens','mirrors'])assert.ok(html.includes(`data-tt-zone="${zone}"`),`${mode}: ${zone}`);
+  assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);
   for(const action of ['openGamePause','openGameRules'])assert.ok(html.includes(`data-action="${action}"`),action);
   assert.match(html,/data-tabletop-scroll=/);
  }

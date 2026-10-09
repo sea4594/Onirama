@@ -65,7 +65,7 @@ test('existing rules commands and event stack remain unchanged',()=>{
 test('all prior inline decision placements removed and book spells work while an effect interrupts',()=>{
  assert.doesNotMatch(appSource,/\$\{expansionBoard\(g,canAct\)\}\$\{decision\(g,canAct\)\}/);
  assert.match(appSource,/g\.phase==='decision'&&spellOpen&&g\.expansion\?\.book/);
- assert.match(appSource,/data-action="openSpells"|btn\('Cast spell','openSpells'/);
+ assert.match(readFileSync('public/tabletop/solo-board.js','utf8'),/data-action="openSpells"/);
  assert.match(appSource,/gameWorkspace\(state\.game,state\.room\)/);
  assert.match(readFileSync('public/index.html','utf8'),/tabletop\/dialogs\.css/);
 });

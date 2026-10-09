@@ -17,19 +17,19 @@ test('all nine combinable expansion sets render and preserve unhidden physical t
  for(let mask=0;mask<(1<<expansions.length);mask++){
   const selected=expansions.filter((_,i)=>mask&(1<<i)),g=model(selected,17+mask);const html=renderSoloTabletop(g);
   for(const essential of ['tt2-doors','tt2-labyrinth','tt2-piles','tt2-hand'])assert.ok(html.includes(essential),essential);
-  if(selected.includes('book'))assert.match(html,/data-tt-zone="goals"/);
+  if(selected.includes('book')){assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);}
   if(selected.includes('dreamcatchers'))assert.match(html,/data-tt-zone="catchers"/);
   if(selected.includes('towers'))assert.match(html,/data-tt-zone="alignment"/);
   if(selected.includes('premonitions'))assert.match(html,/data-tt-zone="premonitions"/);
   if(selected.includes('oniverse'))assert.match(html,/data-tt-zone="denizens"/);
   if(selected.includes('mirrors'))assert.match(html,/data-tt-zone="mirrors"/);
-  assert.equal((html.match(/data-tt-zone="goals"/g)||[]).length,selected.includes('book')?1:0);
+  assert.equal((html.match(/data-tt-zone="goals"/g)||[]).length,0);
  }
 });
 test('collected Door slots reflect Glyphs and Oniverse without inventing Door cards',()=>{
  const basic=renderSoloTabletop(model([])),glyphs=renderSoloTabletop(model(['glyphs'])),special=renderSoloTabletop(model(['glyphs','oniverse']));
  assert.match(basic,/0\/8/);assert.match(glyphs,/0\/12/);assert.match(special,/0\/13/);
- assert.match(special,/Missing Door to the Oniverse/);assert.match(special,/Oniverse/);
+ assert.match(special,/wild Door/);assert.match(special,/tt8-door-slot wild/);
 });
 test('tower side legality uses its printed marks and never sends an illegal side',()=>{
  const g=model(['towers']);const card={kind:'tower',id:'t1',color:'red',left:'sun',right:'moon',number:4};
@@ -78,5 +78,5 @@ test('hard variants change physical component availability and status',()=>{
 });
 test('Tower face visually contains printed inspection value and both edge symbols',()=>{
  const g=model(['towers']);g.players[0].hand.unshift({id:'face3',kind:'tower',color:'red',number:3,left:'sun+moon',right:'moon'});
- const html=renderSoloTabletop(g);assert.match(html,/tt5-tower-face/);assert.match(html,/tt5-tower-edge/);assert.match(html,/sun\+moon/);
+ const html=renderSoloTabletop(g);assert.match(html,/tt5-tower-face/);assert.match(html,/tt8-tower-marks/);assert.match(html,/sun\+moon/);
 });

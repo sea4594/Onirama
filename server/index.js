@@ -71,7 +71,7 @@ function sendEvents(x){
 function create(mode,name,rawConfig){
   const config=validateConfig(rawConfig);let id=token().slice(0,12);while(sessions[id])id=token().slice(0,12);
   let roomCode=code();while(Object.values(sessions).some(x=>x.code===roomCode))roomCode=code();
-  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],game:mode==='solo'?newGame({mode:'solo',config}):null,version:0,createdAt:Date.now()};
+  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],game:mode==='solo'?newGame({mode:'solo',config,interactiveDraw:true}):null,version:0,createdAt:Date.now()};
   commit(x);return {room:roomSummary(x,0),token:key};
 }
 async function body(req){
@@ -114,7 +114,7 @@ function endpoint(req,res,url,data){
     if(original.mode!=='coop'||seat!==0)throw Error('Only the host can start the cooperative game');
     if(original.game)throw Error('Game already started');
     if(!original.seats[1]||!original.ready.every(Boolean))throw Error('Both players must join and be ready');
-    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config});next.version++;commit(next);
+    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true});next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   if(req.method==='POST'&&operation==='action'){

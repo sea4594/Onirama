@@ -26,6 +26,21 @@ function reflowLabyrinths(table){
     row.scrollLeft=0;
   }
 }
+function fitExpansionContents(table){
+ for(const zone of table.querySelectorAll('.tt5-zone')){
+  // Towers occupy a dedicated Door-sized shelf; never miniaturize it as an expansion tile.
+  if(zone.closest('.tt8-towers-slot'))continue;
+  const inner=zone.querySelector('.tt5-contents'),head=zone.querySelector('header');if(!inner||!head)continue;
+  inner.style.transform='';inner.style.left='0px';inner.style.top='0px';
+  const w=Math.max(inner.scrollWidth,inner.offsetWidth),h=Math.max(inner.scrollHeight,inner.offsetHeight),
+    headBottom=head.offsetTop+head.offsetHeight,
+    availW=Math.max(1,zone.clientWidth-8),availH=Math.max(1,zone.clientHeight-headBottom-5),
+    scale=Math.max(.1,Math.min(1,availW/Math.max(1,w),availH/Math.max(1,h)));
+  inner.style.transform=`scale(${scale})`;
+  inner.style.left=`${Math.max(2,(zone.clientWidth-w*scale)/2)}px`;
+  inner.style.top=`${headBottom+Math.max(1,(availH-h*scale)/2)}px`;
+ }
+}
 export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   if(!viewport||!table)return null;
   const width=viewport.clientWidth,height=viewport.clientHeight;
@@ -75,6 +90,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   table.style.transform=scale<1?`scale(${scale})`:'';
   const zoom=scale;
   reflowLabyrinths(table);
+  fitExpansionContents(table);
   table.dataset.tt4Fit=used;
   table.style.setProperty('--game-fit-scale',String(zoom));
   return {...plan,pressure:used,zoom,tableHeight:table.getBoundingClientRect().height,viewportHeight:height};

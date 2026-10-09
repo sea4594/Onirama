@@ -21,8 +21,9 @@ test('all 512 expansion combinations render for both modes/seats with each relev
     assert.match(markup,/data-tt-drop="discard"/);
     if(mode==='solo'||seat===view.active)assert.match(markup,/data-tt-drop="play"/);
     const match=new Set([...markup.matchAll(/data-tt-zone="([^"]+)"/g)].map(m=>m[1]));
-    for(const [exp,zone] of [['book','goals'],['towers','alignment'],['dreamcatchers','catchers'],['premonitions','premonitions'],['oniverse','denizens'],['mirrors','mirrors']])
+    for(const [exp,zone] of [['towers','alignment'],['dreamcatchers','catchers'],['premonitions','premonitions'],['oniverse','denizens'],['mirrors','mirrors']])
       assert.equal(match.has(zone),expansions.includes(exp),`${mask}/${mode}/${seat}/${zone}`);
+    if(expansions.includes('book')){assert.match(markup,/data-action="openSpells"/);assert.doesNotMatch(markup,/data-tt-zone="goals"/);}
     if(mode==='coop'){
       assert.match(markup,/tt6-opponent/);assert.match(markup,/tt6-shared-block/);
       for(const card of game.players[1-seat].hand){assert.ok(!markup.includes(`data-tt-card="${card.id}"`));assert.ok(!markup.includes(`data-pick="${card.id}"`));}

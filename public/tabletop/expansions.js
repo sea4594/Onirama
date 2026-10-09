@@ -15,7 +15,6 @@ const buttonAllowed=(canAct,phase='action')=>canAct&&phase==='action';
 
 export function expansionTabletopZones(g,{canAct=true,decisionTargets=new Set(),spellGoalMode=false,spellGoals=[],selectedPremonition=null}={}){
   const e=g?.expansion||{},active=buttonAllowed(canAct,g?.phase),zones=[];
-  if(e.book){const b=e.book;zones.push(zone('goals','Steps',b.goals.map((goal,i)=>tile(String(i+1),`${spellGoalMode?`<button type="button" class="tt7-goal-pick ${spellGoals.includes(i)?'tt7-selected':''}" data-action="goalPick:${i}" aria-label="Choose Step ${i+1}" aria-pressed="${spellGoals.includes(i)}"><span class="tt5-goal-face ${esc(goal.color)}">${goal.done?icon('check'):icon('diamond')}</span></button>`:`<span class="tt5-goal-face ${esc(goal.color)}">${goal.done?icon('check'):icon('diamond')}</span>`}`,{className:`tt5-goal ${goal.done?'tt5-completed':''}`,title:`Step ${i+1}: ${goal.color}${goal.done?' (complete)':''}`})).join('')+tile('Spellbook',action('Spells','openSpells',{disabled:!canAct||!['action','decision'].includes(g.phase),title:'Open spellbook'}),{className:'tt5-spell',title:`Spellbook, ${b.discardCount||0} discarded cards permanently removed`}),`<span class="tt5-count">${b.goals.filter(x=>x.done).length}/${b.goals.length}</span>`));}
   if(e.towers){const a=e.towers.alignment||[];const place=(side)=>`<button type="button" class="tt5-tower-target" data-tt-drop="tower${side==='left'?'Left':'Right'}" aria-label="Play selected Tower on ${side}" disabled title="Place Tower on ${side}">+</button>`;
     zones.push(zone('alignment','Towers',`${place('left')}<div class="tt5-tower-cards">${preview(a,Math.max(1,a.length),decisionTargets)}</div>${place('right')}`,e.towers.protected?`<span class="tt5-count" title="Alignment protected">${icon('tower')}</span>`:`<span class="tt5-count">${a.length}/4</span>`));}
   if(e.dreamcatchers){const d=e.dreamcatchers;zones.push(zone('catchers','Dreamcatchers',d.stacks.map((cards,i)=>{
@@ -31,8 +30,13 @@ export function expansionTabletopZones(g,{canAct=true,decisionTargets=new Set(),
   return zones;
 }
 export function renderExpansionTabletop(g,options={}){
-  const zones=expansionTabletopZones(g,options);
+  const zones=expansionTabletopZones(g,options).filter(z=>!z.includes('data-tt-zone="alignment"'));
   if(!zones.length)return '';
   return `<div class="tt5-expansions" aria-label="Expansion components" data-tt5-count="${zones.length}">${zones.join('')}</div>`;
 }
-export const EXPANSION_TABLETOP_ZONE_IDS=['goals','alignment','catchers','premonitions','denizens','mirrors','incubus'];
+export const EXPANSION_TABLETOP_ZONE_IDS=['alignment','catchers','premonitions','denizens','mirrors','incubus'];
+
+export function renderTowerTabletop(g,options={}){
+ if(!g?.expansion?.towers)return '';
+ return `<div class="tt8-towers-slot">${expansionTabletopZones(g,options).find(z=>z.includes('data-tt-zone="alignment"'))||''}</div>`;
+}

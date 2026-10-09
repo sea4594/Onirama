@@ -33,7 +33,7 @@ test('all engine decision kinds have a user-facing prompt and decision controls 
   const html=renderActionDock(fake,0,{dialog:{type,html:'<button data-action="resolve">Resolve</button>'}});assert.match(html,/data-dock-decision/);assert.match(html,/Resolve/);
  }
  assert.match(actionDockPrompt({...g,phase:'decision',pending:{type:'prophecy'}},0,{prophecyDiscard:'c1'}).title,/Prophecy/);
- assert.match(actionDockPrompt({...g,phase:'refill'},0).title,/Drawing/);
+ assert.match(actionDockPrompt({...g,phase:'refill'},0).title,/Draw/);
  assert.match(actionDockPrompt({...g,phase:'draft'},1).title,/draft/i);
  const app=readFileSync('public/app.js','utf8');assert.match(app,/gameWorkspace\(state\.game,state\.room\)/);assert.match(app,/tt6-table-slot/);assert.doesNotMatch(app,/\+\(inGame\?gameDialog\(state\.game,state\.room\)/);
  const css=readFileSync('public/tabletop/action-dock.css','utf8');assert.match(css,/grid-template-rows:minmax\(0,1fr\) 132px/);assert.match(css,/grid-template-columns:minmax\(0,1fr\) 234px/);

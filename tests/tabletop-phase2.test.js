@@ -29,8 +29,8 @@ test('base solo board renders all physical tabletop areas, five cards and eight 
  const s=newGame({mode:'solo',seed:112233,config:{expansions:[],difficulties:{}}});const g=viewFor(s,0);
  const html=renderSoloTabletop(g);for(const zone of ['tt2-doors','tt2-labyrinth','tt2-piles','tt2-hand'])assert.match(html,new RegExp(zone));
  assert.equal((html.match(/tt2-hand-card/g)||[]).length,5);
- assert.equal((html.match(/tt2-door-group /g)||[]).length,4);
- assert.equal((html.match(/tt2-door-empty/g)||[]).length,8);
+ assert.equal((html.match(/tt8-door-slot /g)||[]).length,8);
+ assert.equal((html.match(/tt8-door-empty/g)||[]).length,8);
  assert.match(html,/Deck/);assert.match(html,/Discard/);assert.match(html,/Limbo/);
  assert.ok(!html.includes('board-side'));assertConserved(s);
 });

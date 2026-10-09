@@ -7,11 +7,13 @@ export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDis
  if(game.status==='won')return {title:'Victory',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
  if(game.phase==='draft')return {title:seat===game.active?'Draft':'Partner drafting',hint:''};
- if(game.phase==='refill')return {title:'Drawing…',hint:''};
+ if(game.phase==='refill')return {title:'Draw',hint:''};
  if(game.phase==='decision'){
   if(seat!==game.active)return {title:'Partner resolving',hint:''};
   if(dialog?.type==='spellbook')return {title:'Spellbook',hint:''};
   const type=game.pending?.type||'';
+  if(type==='drawReady')return {title:'Draw',hint:''};
+  if(type==='drawn')return {title:game.pending.destination==='hand'?'Add to hand':game.pending.destination==='limbo'?'Send to Limbo':'Discard',hint:''};
   return {title:type==='prophecy'&&prophecyDiscard?'Prophecy · order':'Prophecy'===step[type]?'Prophecy · discard':step[type]||'Resolve',hint:''};
  }
  if(seat!==game.active)return {title:`${game.players[game.active]?.name||'Partner'}’s turn`,hint:''};
@@ -22,13 +24,17 @@ const button=(label,action)=>`<button type="button" data-action="${escape(action
 export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null}={}){
  const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog});
  let controls='';
+ if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawReady')controls=button('Draw','draw');
+ if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawn')controls=button(game.pending.destination==='hand'?'Add to hand':game.pending.destination==='limbo'?'Send to Limbo':'Discard','confirmDraw');
  if(!dialog&&game.phase==='action'&&game.status==='active'&&seat===game.active){
   if(selectedId)controls=[['play','Play'],['discard','Discard'],['towerLeft','Tower left'],['towerRight','Tower right']].filter(([type])=>legal.includes(type)).map(([type,label])=>button(label,type)).join('');
   if(game.config?.expansions?.includes('crossroads'))controls+=button('Escape','escape');
  }
  if(game.status!=='active')controls=button('New game','setup');
  const content=dialog?.html||controls||'';
- return `<section class="tt6-workspace" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${content}</div></div></section>`;
+ const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
+ const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
+ return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${content}</div></div></section>`;
 }
 function inventoryPreview(row){
  const [,kind='',color='',symbol='',ability='',number='']=row.key.split(':');
