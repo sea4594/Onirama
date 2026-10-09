@@ -61,3 +61,6 @@ html[data-contrast="high"] button:focus-visible,html[data-contrast="high"] a:foc
   .preset-row{gap:7px}.preset-row strong{flex-basis:100%}
   .page{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
 }
+
+/* Long Git commit IDs wrap cleanly on narrow Settings screens. */
+.commit-sha{overflow-wrap:anywhere;word-break:break-word}
