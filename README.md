@@ -142,3 +142,7 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - Added `scripts/verify-backend.js` for owner-run live-backend verification and regression tests for CORS, room ownership, streaming, privacy and stale actions.
 - **Owner activation remains necessary:** Render (or another durable Node host), GitHub Actions `ONIRAMA_API_ORIGIN`, Pages redeploy, real-device QA, monitoring and backups. See **[the Phase 11 launch checklist](docs/PHASE11_LAUNCH_CHECKLIST.md)**.
 - No player login/accounts. Printed Tower edges and rare rules questions are still open; a green automated gate is not proof of every publisher ruling.
+
+## Firebase configuration (0.12.1)
+
+Onirama uses the six public Firebase web-app settings for project `onirama-5124e` directly from `public/runtime-config.js` in both local development and GitHub Pages. No `ONIRAMA_FIREBASE_*` GitHub Actions variables are needed. Enable Anonymous Auth and publish `firestore.rules` in the Firebase Console; see [docs/FIREBASE_MULTIPLAYER.md](docs/FIREBASE_MULTIPLAYER.md).

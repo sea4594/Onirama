@@ -7,20 +7,8 @@ This matches the hosting model in the supplied BibleGuessr checkpoint: a static 
 1. Open https://console.firebase.google.com/ and create a **separate Onirama project** on the **Spark (no-cost)** plan. Creating a separate project avoids overwriting BibleGuessr's Firestore rules or sharing quota and rooms. Google Analytics is optional and not used by Onirama.
 2. In Firebase **Build → Authentication → Sign-in method**, enable **Anonymous**. Under Authentication → Settings → Authorized domains, add `sea4594.github.io` if it is not already present. Users will never see a sign-in form. Their local browser receives a persistent anonymous Firebase UID.
 3. In Firebase **Build → Firestore Database**, create the default database (choose an available region and **Production mode**). Open its **Rules** tab, paste the entire contents of the repository's [`firestore.rules`](../firestore.rules), and click **Publish**. Do not use open/test-mode rules. If you reuse an existing Firebase project, merge these rules into its existing policy rather than replacing it; a separate project is safer.
-4. In **Firebase Project settings → General → Your apps**, register a **Web app** (no Firebase Hosting needed). Copy the values from the `firebaseConfig` object.
-5. In https://github.com/sea4594/Onirama/settings/variables/actions create these **repository variables** under Actions (not GitHub Secrets):
-
-   | Variable | Source from Firebase web config |
-   |---|---|
-   | `ONIRAMA_FIREBASE_API_KEY` | `apiKey` |
-   | `ONIRAMA_FIREBASE_AUTH_DOMAIN` | `authDomain` |
-   | `ONIRAMA_FIREBASE_PROJECT_ID` | `projectId` |
-   | `ONIRAMA_FIREBASE_APP_ID` | `appId` |
-   | `ONIRAMA_FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` (optional) |
-   | `ONIRAMA_FIREBASE_STORAGE_BUCKET` | `storageBucket` (optional) |
-
-   Firebase's browser configuration identifies the public web app; it is **not** an administrator credential. Never paste a service-account private key or admin token here. The four first variables are required.
-6. **Remove `ONIRAMA_API_ORIGIN`** if you set it previously; it is unnecessary. Ensure GitHub **Settings → Pages → Build and deployment → Source** is **GitHub Actions**. Open **Actions → GitHub Pages (solo + Firebase multiplayer) → Run workflow** to rebuild the site with your Firebase configuration. Once green, load https://sea4594.github.io/Onirama/ in a fresh browser tab.
+4. The repository already contains your exact Firebase Web app configuration in `public/runtime-config.js` (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`). **You do not need to create or rename GitHub Actions variables.** These six values identify a public browser app; they are not administrator credentials. Firebase security is enforced through Authentication and Firestore Rules. Never commit a Firebase service-account key.
+5. **Remove `ONIRAMA_API_ORIGIN`** if you set it previously; it is unnecessary. Ensure GitHub **Settings → Pages → Build and deployment → Source** is **GitHub Actions**. The hotfix push will trigger the Pages workflow; if necessary manually rerun **Actions → GitHub Pages (solo + Firebase multiplayer)**. Load https://sea4594.github.io/Onirama/ and try **Settings → Test multiplayer connection**.
 
 ## Verify rooms / codes
 
@@ -43,7 +31,7 @@ Room codes are randomly generated in the browser using `crypto.getRandomValues`,
 
 ## Troubleshooting
 
-- **Multiplayer not configured:** Confirm GitHub repository variables, rerun Pages deployment, and inspect the deployed `runtime-config.js` (never edit this generated file manually).
+- **Multiplayer not configured:** Confirm the Pages deployment completed and that deployed `runtime-config.js` contains `onirama-5124e`; this file is generated from `public/runtime-config.js` and should not be edited on the live site.
 - **`auth/operation-not-allowed`:** Enable Anonymous sign-in for the correct Firebase project.
 - **`permission-denied`:** Publish `firestore.rules` in the correct database/project; check the code is not full and that the Firebase anonymous UID matches the room's member.
 - **Connection blocked / dynamic import failed:** Ensure gstatic.com and Firebase domains are reachable. Check network/ad-blocker settings.

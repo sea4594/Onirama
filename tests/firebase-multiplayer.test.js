@@ -40,16 +40,19 @@ test('All seven standard expansions plus promos initialize consistently in Fires
  const combinations=[[],['book'],['glyphs','towers','dreamcatchers'],['premonitions','crossroads','oniverse'],['mirrors','sphinx'],['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx']];
  for(const expansions of combinations){const room=started({expansions});assertConserved(room.game);assert.equal(roomView(room,'guest-uid').game.mode,'coop');}
 });
-test('Browser bundle and published Pages configuration include Firebase transport, no server URL requirement',()=>{
+test('Pages and local runtime use the exact six Firebase browser config values without GitHub variables',()=>{
  const dir=mkdtempSync(join(tmpdir(),'onirama-firebase-pages-'));
  try{
-  const env={...process.env,ONIRAMA_API_ORIGIN:'',ONIRAMA_FIREBASE_API_KEY:'example-key',ONIRAMA_FIREBASE_AUTH_DOMAIN:'example.firebaseapp.com',ONIRAMA_FIREBASE_PROJECT_ID:'example',ONIRAMA_FIREBASE_APP_ID:'1:123:web:abc'};
+  const env={...process.env,ONIRAMA_API_ORIGIN:'',ONIRAMA_FIREBASE_API_KEY:'',ONIRAMA_FIREBASE_AUTH_DOMAIN:'',ONIRAMA_FIREBASE_PROJECT_ID:'',ONIRAMA_FIREBASE_APP_ID:'',ONIRAMA_FIREBASE_MESSAGING_SENDER_ID:'',ONIRAMA_FIREBASE_STORAGE_BUCKET:''};
   execFileSync(process.execPath,['scripts/build-pages.js',dir],{env});
-  const config=readFileSync(join(dir,'runtime-config.js'),'utf8');assert.match(config,/example\.firebaseapp\.com/);assert.match(config,/ONIRAMA_FIREBASE_CONFIG/);
+  const local=readFileSync('public/runtime-config.js','utf8'),output=readFileSync(join(dir,'runtime-config.js'),'utf8');
+  assert.equal(output,local);
+  for(const expected of ['AIzaSyCJFNXowBzLyPfvFI0X2BHaPszLbfs2vlE','onirama-5124e.firebaseapp.com','onirama-5124e','onirama-5124e.firebasestorage.app','963565955083','1:963565955083:web:1ed229c286d73718633f0e'])assert.ok(output.includes(expected));
   assert.ok(readFileSync(join(dir,'firebase-room.js'),'utf8').includes('onSnapshot'));
   assert.ok(readFileSync(join(dir,'engine/firebase-protocol.js'),'utf8').includes('playRoom'));
-  assert.throws(()=>execFileSync(process.execPath,['scripts/build-pages.js',dir],{env:{...env,ONIRAMA_FIREBASE_PROJECT_ID:''},stdio:'pipe'}));
  }finally{rmSync(dir,{recursive:true,force:true});}
+ const workflow=readFileSync('.github/workflows/pages.yml','utf8');
+ assert.ok(!workflow.includes('vars.ONIRAMA_FIREBASE_'));
  const rules=readFileSync('firestore.rules','utf8');assert.ok(rules.includes(ROOM_COLLECTION));assert.match(rules,/allow list: if false/);assert.match(rules,/request\.auth\.uid/);
 });
 test('Local Node server can serve the same engine module paths as GitHub Pages',()=>{
