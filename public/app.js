@@ -3,6 +3,7 @@ import {cleanConfig,readHistory,recordResult,summarizeHistory,readPresets,savePr
 import * as firebase from './firebase-room.js';
 import {renderCard} from './tabletop/cards.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
+import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCard} from './tabletop/interactions.js';
@@ -276,19 +277,8 @@ function historyPage(){const list=readHistory(localStorage),stats=summarizeHisto
  <section class="shell-card shell-history"><h2 class="shell-section-title">Games</h2>${list.length?`<div class="shell-history-list">${list.map(r=>`<div class="shell-history-row"><span class="shell-result ${r.status}">${icon(r.status==='won'?'check':'close')}</span><div><strong>${r.mode==='solo'?'Solo':'Co-op'} · ${r.status==='won'?'Win':'Loss'}</strong><small>${new Date(r.finishedAt).toLocaleDateString()} · Turn ${r.turn}${r.config.expansions.length?' · '+r.config.expansions.length+' expansions':''}</small></div></div>`).join('')}</div>`:'<p class="shell-empty">No completed games</p>'}${list.length?btn('Clear history','historyClear','shell-text-button'):''}</section>
  </div>`;}
 function fitGameTabletop(){
-  const viewport=app.querySelector?.('.game-viewport'),table=viewport?.querySelector?.('.tt2-root');if(!table)return;
-  table.style.transform='';table.style.zoom='1';
-  // Temporary compact-size fallback until Phase 4's actual zone rearrangement.
-  // CSS zoom keeps the board full width (unlike transform:scale) and permits
-  // layout reflow at each candidate size. Nothing gets scrolled offscreen.
-  const available=viewport.clientHeight||0;if(!available)return;
-  if(table.getBoundingClientRect().height<=available){table.style.setProperty?.('--game-fit-scale','1');return;}
-  let low=.2,high=1,best=.2;
-  for(let i=0;i<8;i++){
-    const candidate=(low+high)/2;table.style.zoom=String(candidate);
-    if(table.getBoundingClientRect().height<=available-2){best=candidate;low=candidate;}else high=candidate;
-  }
-  table.style.zoom=String(best);table.style.setProperty?.('--game-fit-scale',String(best));
+  const viewport=app.querySelector?.('.game-viewport'),table=viewport?.querySelector?.('.tt2-root');
+  return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
 }
 function render(){const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousWindow=app.querySelector?.('.shell-viewport-window');
@@ -305,7 +295,6 @@ function render(){const dialogFocus=typeof dialogController!=='undefined'?dialog
   app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?content:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame?gameDialog(state.game,state.room):'')+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS}):'');
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
-    for(const labyrinth of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){labyrinth.scrollLeft=labyrinth.scrollWidth;}
     fitGameTabletop();
   }
   const nextWindow=app.querySelector?.('.shell-viewport-window');
@@ -502,4 +491,6 @@ document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session
 render();installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
-addEventListener('resize',()=>{if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}});
+function resizeGameplay(){if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
+addEventListener('resize',resizeGameplay);
+if(typeof window!=='undefined')window.visualViewport?.addEventListener?.('resize',resizeGameplay);
