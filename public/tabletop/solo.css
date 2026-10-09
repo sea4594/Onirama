@@ -20,3 +20,19 @@ html[data-card-size="large"] .tt2-root{--tt2-card:clamp(49px,7vw,96px)}
 @media(max-width:600px){.page:has(.tt2-root){padding:5px}}
 
 @media(min-width:680px) and (min-height:650px){.page:has(.tt2-root){min-height:calc(100dvh - 80px);display:flex;align-items:center;justify-content:center}}
+/* Phase 8 QA: keep all three piles visible in the narrow split-column layout.
+   Each pile can shrink below the normal 53px floor; its face scales with it. */
+@media(max-width:679px){
+ .tt2-pile-row{min-width:0;width:100%;justify-content:space-between;gap:2px}
+ .tt2-pile-row .tt2-pile{min-width:0;flex:1 1 0;gap:3px;padding:1px}
+ .tt2-pile-row .tt2-pile-face,.tt2-pile-row .tt2-deck-back{width:min(var(--tt2-mini),100%);height:auto;aspect-ratio:1 / 1.42}
+ .tt2-pile-row .tt2-pile-face .card.tiny{width:100%;height:100%}
+ .tt2-pile-row .tt2-pile-label{font-size:clamp(8px,2.45vw,11px)}
+ .tt2-pile-row .tt2-pill{font-size:10px;padding:1px 3px;min-width:0}
+}
+/* QA: Door slots must shrink within their color column, including three-Glyph
+   configurations. A clipped slot is not an acceptable space-saving technique. */
+.tt2-door-stack{min-width:0;max-width:100%}
+.tt2-door-stack > .tt2-door-empty,.tt2-door-stack > .card.tiny{
+ flex:1 1 0;min-width:0;max-width:var(--tt2-mini);width:auto;height:auto;aspect-ratio:1 / 1.42;
+}

@@ -182,3 +182,6 @@ All solo expansions use the compact physical tabletop, including Goals, Tower Al
 ## UI Phase 6 — two-player cooperative tabletop (v0.18.0)
 
 The responsive two-player board now shares the solo tabletop's cards, zones, expansion components and contextual decision dialogs. Both players' Doors and Labyrinths, the face-down partner hand, private personal hand, shared resources, draw/discard/Limbo and every applicable expansion area remain visible. Drafting, Firestore transactions and cooperative discard-and-swap actions still use the existing engine commands; no room schema or save migration is required. Pointer drag/drop, tap selection and keyboard alternatives work with the active seat only. See `docs/UI_PHASE6_COOPERATIVE_TABLETOP.md`.
+
+### UI redesign Phase 8 (v0.20.0)
+Responsive game and dialog QA with two clipping fixes: narrow solo Piles and the three-Door-per-color Glyph layout. The Node release gate now covers 163 tests. See [UI Phase 8 QA](docs/UI_PHASE8_QA.md) for 200 Chromium viewport cases, 52 gesture checks and the outstanding manual two-device Firebase checklist. No engine, authentication, or save behavior changed.
