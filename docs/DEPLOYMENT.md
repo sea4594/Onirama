@@ -1,9 +1,11 @@
-# Onirama production deployment (Phase 9)
+# Onirama production deployment (Phases 9–11)
 
 **No accounts.** The site at `https://sea4594.github.io/Onirama/` can run solo games entirely in the browser. Live multiplayer requires an always-on, HTTPS Node.js service. **Adding code to GitHub alone does not deploy the multiplayer service.**
 
-## 1. Apply Phase 9
-Run the supplied incremental hotfix on local `main`. Its gate must pass before it commits/pushes. CI rebuilds GitHub Pages, using any configured backend URL.
+**Complete owner checklist:** [Phase 11 launch, invite codes, and device QA](PHASE11_LAUNCH_CHECKLIST.md).
+
+## 1. Apply Phase 11
+Run the Phase 11 incremental hotfix on local `main`. Its gate must pass before it commits/pushes. CI rebuilds GitHub Pages, using any configured backend URL.
 
 ## 2. Provision backend (one persistent instance)
 
@@ -19,7 +21,7 @@ A `render.yaml` blueprint is included for Render's paid `starter` instance with 
 
 **Single-instance restriction:** File-backed transactions are atomic on one local filesystem, but this is **not** a distributed database. Do not run two replicas/workers sharing `sessions.json`. No automatically provisioned backend, cloud database, or backup service is included in this repository.
 
-Verify `https://YOUR-SERVER-DOMAIN/api/health` returns `{"ok":true,"version":"0.10.0"}`. Require HTTPS; never embed a plain HTTP backend on a Pages HTTPS site.
+Verify `https://YOUR-SERVER-DOMAIN/api/health` returns `{"ok":true,"version":"0.11.0"}`. Require HTTPS; never embed a plain HTTP backend on a Pages HTTPS site.
 
 ## 3. Connect GitHub Pages
 
@@ -27,7 +29,7 @@ In the [Onirama GitHub repo](https://github.com/sea4594/Onirama), go to **Settin
 
 `ONIRAMA_API_ORIGIN` = `https://YOUR-SERVER-DOMAIN` (no trailing slash or path).
 
-In **Settings → Pages**, select **GitHub Actions** as deployment source. Run **Actions → GitHub Pages (solo edition) → Run workflow** again to embed this URL. The live Pages **Multiplayer** tab will then connect to the server while **Single Player** stays browser-local.
+In **Settings → Pages**, select **GitHub Actions** as deployment source. Run **Actions → GitHub Pages (solo + configured multiplayer) → Run workflow** again to embed this URL. The live Pages **Multiplayer** tab will then connect to the server while **Single Player** stays browser-local.
 
 ## 4. Acceptance checks on real hosted domains
 
@@ -51,3 +53,7 @@ In **Settings → Pages**, select **GitHub Actions** as deployment source. Run *
 ## 6. Backups / restore
 
 In a maintenance window, stop the backend or take a storage-level snapshot of the mounted disk that contains `sessions.json`. Keep a secure offsite copy protected like a credential database (session tokens are in the file). To restore, stop the server, replace `sessions.json` with the desired valid snapshot, preserve file permissions, and start one server instance. Test restore on a staging instance before replacing production data.
+
+## 7. Phase 11 deploy verification
+
+After the service is live, run `node scripts/verify-backend.js https://YOUR-SERVICE.onrender.com`. This creates one disposable two-player room on the backend, validates real-code join/ready/start and private state, and leaves the room in storage; it does not modify live player rooms. Complete the separate visual/manual checklist in [Phase 11 launch checklist](PHASE11_LAUNCH_CHECKLIST.md).

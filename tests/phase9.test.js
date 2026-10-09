@@ -32,7 +32,7 @@ test('Production API: CORS preflight, forbidden origins, authentication, stale a
   const opt=await fetch(base+'/api/join',{method:'OPTIONS',headers:{Origin:PAGES,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,content-type'}});
   assert.equal(opt.status,204);assert.equal(opt.headers.get('access-control-allow-origin'),PAGES);
   const forbidden=await request(base,'/api/catalog','GET',null,null,'https://evil.example');assert.equal(forbidden.status,403);
-  const health=await request(base,'/api/health');assert.deepEqual(health.data,{ok:true,version:'0.10.0'});
+  const health=await request(base,'/api/health');assert.deepEqual(health.data,{ok:true,version:'0.11.0'});
   const room=await request(base,'/api/rooms','POST',{name:'Host'},null,PAGES);
   assert.equal(room.status,201);assert.equal(room.headers.get('access-control-allow-origin'),PAGES);
   const id=room.data.room.id,key=room.data.token;
@@ -64,6 +64,6 @@ test('Source security invariants: save-before-commit, no plaintext frontend toke
  assert.match(server,/persist\(next\);sessions=next;sendEvents\(x\)/);
  assert.match(server,/renameSync\(temp,path\)/);
  assert.match(server,/viewFor\(x.game,record.seat\)/);
- assert.match(web,/fetch\(`\$\{base\}\/api\/rooms\/\$\{session.id\}\/stream`/);
+ assert.match(web,/fetch\(`\$\{base\}\/api\/rooms\/\$\{roomId\}\/stream`/);
  assert.ok(!web.includes('token=${session.token}'));
 });

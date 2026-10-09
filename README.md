@@ -29,7 +29,7 @@ Data is stored under `server-data/sessions.json` by default (ignored by Git). To
 
 ## Online publishing
 
-A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, browser-only solo edition**, including the rules engine and local saved game. After the hotfix is pushed, choose **GitHub → Settings → Pages → Source → GitHub Actions** once; the site is published at https://sea4594.github.io/Onirama/. GitHub Pages does **not** run Node services. Online multiplayer needs a separately hosted server (Phase 9), while `npm start` runs both frontend and multiplayer locally. See [deployment notes](docs/DEPLOYMENT.md).
+A GitHub Pages workflow (`.github/workflows/pages.yml`) builds a **static, browser-only solo edition**, including the rules engine and local saved game. After the hotfix is pushed, choose **GitHub → Settings → Pages → Source → GitHub Actions** once; the site is published at https://sea4594.github.io/Onirama/. GitHub Pages does **not** run Node services. Online multiplayer needs a separately hosted server (Phase 11 activation), while `npm start` runs both frontend and multiplayer locally. See [deployment notes](docs/DEPLOYMENT.md).
 
 ## What works today
 
@@ -131,3 +131,10 @@ Phase 5 enables **Happy Dreams and Dark Premonitions**, **Crossroads and Dead En
 - Added in-board selections for Mirror pairs, Cyclobot exchange, cooperative discard/swaps and Confusion card ordering. Corrected Tower-removal visual legality checks and catcher freeing safeguards.
 - The full release gate now includes the GitHub Pages production build. See [the detailed Phase 10 matrix](docs/PHASE10_RULES_MATRIX.md) for the full action/decision inventory and source-status of remaining exceptions.
 - **Not a claim of perfect publisher fidelity:** all 12 printed Tower card edges, ambiguous cooperative expansion ownership, Rainbow/Crossroad interaction, and some partial-deck combinations still need authoritative verification.
+
+## Phase 11 — hosted release readiness
+
+- Added copyable invite links with auto-filled eight-character room codes; links contain no seat credentials. Added multiplayer connection test, reconnection safeguards, and a visible retry action.
+- Added `scripts/verify-backend.js` for owner-run live-backend verification and regression tests for CORS, room ownership, streaming, privacy and stale actions.
+- **Owner activation remains necessary:** Render (or another durable Node host), GitHub Actions `ONIRAMA_API_ORIGIN`, Pages redeploy, real-device QA, monitoring and backups. See **[the Phase 11 launch checklist](docs/PHASE11_LAUNCH_CHECKLIST.md)**.
+- No player login/accounts. Printed Tower edges and rare rules questions are still open; a green automated gate is not proof of every publisher ruling.

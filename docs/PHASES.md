@@ -15,7 +15,7 @@ Each phase must deliver code, documentation, and tests. No phase is considered c
 | 8: Guest experience | **Implemented (scoped)** | Browser-local completed-game history/stats, named expansion presets, seven-step guided base-game tutorial, contrast/text-size preferences, screen-reader status and mobile board improvements. No login. | 66+ automated tests; final manual accessibility audit remains |
 | 9: Production infrastructure | **Code implemented; cloud activation pending** | Atomic single-instance persistence, HTTPS API endpoint configuration for Pages, CORS, rate limiting, health check, hosting blueprint, restart/security tests and deployment documentation. Real cloud hosting requires user/provider action. | Gate passes; host integration and security tests; see `docs/DEPLOYMENT.md` |
 | 10: Rules and interaction verification | **Implementation audit delivered; source gaps explicitly open** | Fix discovered interaction bugs, expand 23-dialog UI coverage and variant tests, document source-backed vs app-adjudicated rules | Release gate and Pages build pass; unresolved print-card and publisher questions remain labeled |
-| 11: Hosted release verification | **Pending** | Deploy backend, set GitHub variable, manual real-device co-op acceptance, host backup/restore and monitoring, asset/legal review | Live multiplayer demonstrated; manual and operational checks documented |
+| 11: Hosted release verification | **Code + local integration checks implemented; deployment pending owner** | Invite links, reconnect safeguards, backend smoke command, deployment and device QA guide; paid backend/Pages variable/manual QA still required | 90+ automated tests, Pages build, owner-run hosted and visual acceptance |
 
 ## Phase 3 engine contract
 
