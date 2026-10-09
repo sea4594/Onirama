@@ -157,3 +157,11 @@ Onirama uses the six public Firebase web-app settings for project `onirama-5124e
 ### UI Phase 2 (v0.14.0)
 
 The live solo **base-game** board now uses the responsive virtual tabletop (`public/tabletop/solo-board.js`, `solo.css`). It shows all physical play zones at once with selectable hand cards and existing legal action commands. Cooperative and expansion-enabled boards remain on their fully functional original renderer until their planned migration phases. Exact printed Tower cards and the complete 192-card inventory are documented in `docs/UI_PHASE2_AND_RULINGS.md`.
+
+### UI Phase 3 (v0.15.0)
+
+The responsive **solo base-game tabletop** now supports pointer drag from hand to Labyrinth or discard, plus card selection followed by tapping/clicking a legal destination. Play/Discard still invoke exactly the same engine commands and remain usable as small contextual buttons or keyboard shortcuts (`P`, `D`); Escape cancels selection, and arrow keys navigate the hand. Targets are highlighted only when legal. Pointer cancellation, interrupted gestures, bad drops and pending decisions never submit actions.
+
+Existing ordered-card decision controls (Prophecy, Happy Dream, Sphinx/Diver, Tower inspection, Denizen inspection, spell inspection, Incantation and Confusion) additionally support dragging revealed cards into a different position; the preexisting arrow controls are retained as accessible alternatives. None of these gestures changes game state until the user confirms the decision. Expansion-enabled and cooperative full-tabletop redesigns remain scheduled for UI Phases 5 and 6; their existing buttons and decisions continue to work.
+
+See `docs/UI_PHASE3_INTERACTIONS.md` and `docs/ui-phase3-baselines/` for the interaction contract and responsive Chromium screenshots.

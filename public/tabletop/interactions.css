@@ -1,0 +1,24 @@
+/* Phase 3 gestures: visual affordances only; engine remains authoritative. */
+.tt2-root [data-tt-card]{cursor:grab;touch-action:none;-webkit-touch-callout:none;user-select:none}
+.tt2-root [data-tt-card]:active{cursor:grabbing}
+.tt2-root .tt3-drag-source{opacity:.48}
+.tt3-ghost{position:fixed!important;z-index:2147483600!important;pointer-events:none!important;margin:0!important;transform:rotate(-3deg) scale(1.04)!important;opacity:.94!important;box-shadow:0 18px 34px #0008!important;transition:none!important;touch-action:none}
+.tt2-root .tt3-zone-action{position:absolute;top:5px;right:6px;min-width:29px;min-height:29px;padding:2px 6px;border-radius:6px;border:1px solid #f0dfbb77;background:#e8dac1;color:#28392f;font-weight:750;font-size:19px;line-height:1;opacity:.88}
+.tt2-root .tt3-zone-action:disabled{visibility:hidden}
+.tt2-root .tt3-discard-action{top:auto;bottom:5px;right:5px}
+.tt2-root [data-tt-drop]{transition:background-color .12s,border-color .12s,box-shadow .12s}
+.tt2-root [data-tt-drop].tt3-target-ready:is(.tt2-zone,.tt2-pile){border-color:#f9d989;box-shadow:inset 0 0 0 2px #eec5748c;background-color:#efdc9b13;cursor:pointer}
+.tt2-root [data-tt-drop].tt3-drop-hover:is(.tt2-zone,.tt2-pile){border-color:#fff4be;box-shadow:inset 0 0 0 3px #fff3b9,0 0 22px #f4d08790;background-color:#f4d08732}
+.tt2-root [data-tt-drop].tt3-drop-hover.tt3-zone-action{background:#fff2bd;box-shadow:0 0 0 3px #fcdf9588}
+.tt2-root [data-tt-drop].tt3-target-ready.tt2-pile{padding:4px;border:2px solid #f9d989;border-radius:8px}
+.tt2-root .tt2-hand-card .card:focus-visible{outline:3px solid #ffdc82;outline-offset:4px}
+@media(hover:hover){.tt2-root [data-tt-card]:hover:not(:disabled){box-shadow:0 6px 18px #0009;border-color:#f2d59a}}
+@media(prefers-reduced-motion:reduce){.tt2-root [data-tt-drop],.tt3-ghost{transition:none!important}}
+/* Revealed-card reordering is an enhancement to existing ↑/↓ controls. */
+.tt3-order-list .tt3-order-item{min-width:0;align-items:center;position:relative;border:1px solid transparent;border-radius:10px;padding:3px}
+.tt3-order-handle{cursor:grab;touch-action:none;user-select:none;-webkit-touch-callout:none}
+.tt3-order-handle:active{cursor:grabbing}
+.tt3-order-handle .card{pointer-events:none}
+.tt3-order-item.tt3-order-dragging{opacity:.4}
+.tt3-order-item.tt3-order-hover{border:1px dashed #e5bb79;background:#e5bb7925}
+.tt3-order-ghost{position:fixed;z-index:2147483600;pointer-events:none;transform:rotate(-4deg);filter:drop-shadow(0 10px 12px #0007)}
