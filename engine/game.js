@@ -10,7 +10,7 @@ const own=s=>s.players[s.active];
 const hand=s=>own(s).hand;
 const quota=s=>s.mode==='solo'?5:3;
 const takeTop=s=>s.deck.pop();
-const note=(s,msg)=>{s.log.push(msg);if(s.log.length>150)s.log.shift();};
+const note=(s,msg)=>{s.log.push(msg);};
 const event=(s,type,data={})=>{const effects=emitGameEvent(s,{type,...data});if(effects.length)enqueueEffects(s,effects);};
 function need(ok,msg){if(!ok)throw Error(msg);}
 function spots(s){return [...hand(s).map(c=>({card:c,id:c.id,zone:'personal'})),...(s.mode==='coop'?s.shared.map(c=>({card:c,id:c.id,zone:'shared'})):[]),...(has(s,'oniverse')?oni(s).zones.treasure.filter(c=>c.owner===s.active).map(c=>({card:c,id:c.id,zone:'treasure'})):[])];}
@@ -294,7 +294,7 @@ export function act(previous,command){
  if(command.type==='cast'){need(s.phase==='action'||s.phase==='decision','Spell unavailable during draft or refill');castSpell(s,command);return s;}
  if(s.phase==='decision'&&s.pending?.type==='drawReady'){
    need(command.type==='draw','Draw the next card');
-   need(s.deck.length>0,'Deck empty');const c=takeTop(s);
+   need(s.deck.length>0,'Deck empty');const c=takeTop(s);note(s,'Drew a card.');
    // Keep the revealed card in the authoritative pending zone until its destination is confirmed.
    if(['location','tower','deadEnd'].includes(c.kind)){s.pending={type:'drawn',card:c,destination:'hand'};return s;}
    if(c.kind==='lostDream'){s.pending={type:'drawn',card:c,destination:'limbo'};return s;}
@@ -317,9 +317,9 @@ export function act(previous,command){
    need(command.type==='confirmDraw','Confirm the drawn card');const {card,destination}=s.pending;
    if(destination==='hand'){if(hand(s).length<quota(s))hand(s).push(card);else s.shared.push(card);}
    else if(destination==='limbo')s.limbo.push(card);else s.discard.push(card);
-   s.pending=null;refill(s);return s;
+   note(s,destination==='hand'?'Added to hand.':destination==='limbo'?'Sent to Limbo.':'Discarded a card.');s.pending=null;refill(s);return s;
  }
- if(s.phase==='draft'){need(command.type==='draft','Choose a card from the draft');const i=s.draft.findIndex(c=>c.id===command.id);need(i!==-1,'Card not available in draft');hand(s).push(s.draft.splice(i,1)[0]);if(s.players.every(p=>p.hand.length===3)){s.shared=s.draft.splice(0);s.active=0;s.phase='action';}else s.active=1-s.active;return s;}
+ if(s.phase==='draft'){need(command.type==='draft','Choose a card from the draft');const i=s.draft.findIndex(c=>c.id===command.id);need(i!==-1,'Card not available in draft');hand(s).push(s.draft.splice(i,1)[0]);note(s,`${own(s).name} drafted a card.`);if(s.players.every(p=>p.hand.length===3)){s.shared=s.draft.splice(0);s.active=0;s.phase='action';}else s.active=1-s.active;return s;}
  if(s.phase==='action'){
   if(command.type==='mirrorPair'){playMirrorPair(s,command);return s;}
   if(command.type==='incubusActivate'){activateIncubus(s);return s;}
@@ -357,7 +357,7 @@ export function act(previous,command){
  }
  if(p.type==='happyDream'){
    need(command.type==='happyDream'&&['banish','peek','fetch'].includes(command.option),'Choose a Happy Dream effect');s.discard.push(p.card);
-   if(command.option==='banish'){need(has(s,'premonitions')&&prem(s).faceUp.includes(command.premonitionId),'Choose an active Dark Premonition');prem(s).faceUp.splice(prem(s).faceUp.indexOf(command.premonitionId),1);prem(s).resolved.push(command.premonitionId);s.pending=null;refill(s);return s;}
+   if(command.option==='banish'){need(has(s,'premonitions')&&prem(s).faceUp.includes(command.premonitionId),'Choose an active Dark Premonition');prem(s).faceUp.splice(prem(s).faceUp.indexOf(command.premonitionId),1);prem(s).resolved.push(command.premonitionId);note(s,'Removed a Dark Premonition.');s.pending=null;refill(s);return s;}
    if(command.option==='peek'){s.pending={type:'happyPeek',cards:takeLook(s,7)};return s;}
    need(s.deck.length>0,'No cards remain to fetch');s.pending={type:'happyFetch',options:s.deck.map(c=>({...c}))};return s;
  }

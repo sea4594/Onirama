@@ -20,7 +20,7 @@ test('Premonitions are inspectable and can be selected before confirming Happy D
  for(const mode of ['solo','coop']){
   const g=viewFor(newGame({mode,config:{expansions:['premonitions']},seed:83}),0);
   g.phase='decision';g.pending={type:'happyDream'};g.expansion.premonitions.faceUp=['red2','doors5'];
-  const html=mode==='solo'?renderSoloTabletop(g,{selectedPremonition:'red2'}):renderCooperativeTabletop(g,{seat:0,selectedPremonition:'red2'});
+  const html=mode==='solo'?renderSoloTabletop(g,{selectedPremonition:'red2',premonitionChoiceMode:true}):renderCooperativeTabletop(g,{seat:0,selectedPremonition:'red2',premonitionChoiceMode:true});
   assert.match(html,/data-action="happyPremonitionSelect:red2"/);
   assert.match(html,/data-tt-card-info="[^"]*premonition/);
   assert.match(html,/tt7-premonition-selected/);

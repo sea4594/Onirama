@@ -1,4 +1,5 @@
 import {icon} from './icons.js';
+import {renderCard} from './tabletop/cards.js';
 /** View-only in-game navigation. Never dispatches gameplay/room commands. */
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]));
 export const BASE_RULES = [
@@ -25,6 +26,17 @@ export function rulesSections(expansions=[],coop=false){
   const base=BASE_RULES.filter(([heading])=>coop||heading!=='Two-player co-op');
   return [...base,...[...new Set(expansions)].filter(id=>Object.hasOwn(EXPANSION_RULES,id)).map(id=>EXPANSION_RULES[id])];
 }
+export function renderActionHistory(log=[]){
+  const entries=Array.isArray(log)?[...log].reverse():[];
+  const item=line=>{
+    const raw=String(line),match=raw.match(/\b(played|discarded) (red|blue|green|brown|wild) (sun|moon|key|glyph)\b/i);
+    if(!match)return `<li>${escape(raw)}</li>`;
+    const c={kind:'location',color:match[2].toLowerCase(),symbol:match[3].toLowerCase()};
+    const start=match.index+match[1].length+1,end=match.index+match[0].length;
+    return `<li>${escape(raw.slice(0,start))}<span class="tt9-log-card">${renderCard(c,{tiny:true})}</span>${escape(raw.slice(end))}</li>`;
+  };
+  return `<details class="game-menu-history" data-pause-history open><summary>Action log <small>${entries.length}</small></summary><ol class="tt9-action-log" aria-label="Previous game actions">${entries.map(item).join('')||'<li>No actions yet</li>'}</ol></details>`;
+}
 export function renderOverlay(kind,expansions=[],coop=false,settings={}){
   if(!['pause','rules'].includes(kind))return '';
   const rules=rulesSections(expansions,coop);
@@ -32,7 +44,7 @@ export function renderOverlay(kind,expansions=[],coop=false,settings={}){
   const field=(key,label,items)=>`<label class="game-menu-setting"><span>${label}</span><select class="inline-input" data-setting="${key}" aria-label="${label}">${options(key,items)}</select></label>`;
   return `<div class="game-menu-layer" data-game-overlay="${kind}"><div class="game-menu-scrim" data-game-menu-dismiss aria-hidden="true"></div><section class="game-menu-dialog" role="dialog" aria-modal="true" aria-label="${kind==='rules'?'Game rules':'Game menu'}" tabindex="-1" data-game-menu-dialog>
     <header class="game-menu-head"><h2>${kind==='rules'?'Rules':'Paused'}</h2><button type="button" data-action="closeGameOverlay" class="game-menu-close" aria-label="Close ${kind==='rules'?'rules':'pause menu'}" title="Close">${icon('close')}</button></header>
-    <div class="game-menu-content" data-game-menu-scroll>${kind==='rules'?`<div class="game-menu-accordions">${rules.map(([title,description],i)=>`<details class="game-rule" data-rule-index="${i}"><summary>${escape(title)}</summary><p>${escape(description)}</p></details>`).join('')}</div>`:`<div class="game-menu-actions"><button type="button" data-action="closeGameOverlay" class="primary">Resume game</button><button type="button" data-action="openGameRules">Rules</button></div><details class="game-menu-settings" data-pause-settings><summary>Settings</summary>${field('theme','Theme',(settings.themes||[{id:'forest',name:'Forest'}]).map(p=>[p.id,p.name]))}${field('motion','Animations',[['normal','On'],['reduced','Reduced motion']])}${field('cardSize','Card size',[['normal','Standard'],['large','Large']])}${field('contrast','Contrast',[['normal','Standard'],['high','High contrast']])}${field('textSize','Text size',[['normal','Standard'],['large','Large']])}</details><p class="game-menu-note">The game remains saved while you view another screen.</p><button type="button" class="game-menu-home" data-action="gameGoHome">Return to home</button>`}</div>
+    <div class="game-menu-content" data-game-menu-scroll>${kind==='rules'?`<div class="game-menu-accordions">${rules.map(([title,description],i)=>`<details class="game-rule" data-rule-index="${i}"><summary>${escape(title)}</summary><p>${escape(description)}</p></details>`).join('')}</div>`:`<div class="game-menu-actions"><button type="button" data-action="closeGameOverlay" class="primary">Resume game</button><button type="button" data-action="openGameRules">Rules</button></div><details class="game-menu-settings" data-pause-settings><summary>Settings</summary>${field('theme','Theme',(settings.themes||[{id:'forest',name:'Forest'}]).map(p=>[p.id,p.name]))}${field('motion','Animations',[['normal','On'],['reduced','Reduced motion']])}${field('cardSize','Card size',[['normal','Standard'],['large','Large']])}${field('contrast','Contrast',[['normal','Standard'],['high','High contrast']])}${field('textSize','Text size',[['normal','Standard'],['large','Large']])}</details>${renderActionHistory(settings.log)}<button type="button" class="game-menu-home" data-action="gameGoHome">Return to home</button>`}</div>
     ${kind==='rules'?`<footer class="game-menu-footer"><button type="button" data-action="${settings.fromPause?'openGamePause':'closeGameOverlay'}">${settings.fromPause?'Back to pause':'Back to game'}</button></footer>`:''}
   </section></div>`;
 }

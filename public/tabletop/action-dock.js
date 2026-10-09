@@ -27,25 +27,32 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawReady')controls=button('Draw','draw');
  if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawn')controls=button(game.pending.destination==='hand'?'Add to hand':game.pending.destination==='limbo'?'Send to Limbo':'Discard','confirmDraw');
  if(!dialog&&game.phase==='action'&&game.status==='active'&&seat===game.active){
-  if(selectedId)controls=[['play','Play'],['discard','Discard'],['towerLeft','Tower left'],['towerRight','Tower right']].filter(([type])=>legal.includes(type)).map(([type,label])=>button(label,type)).join('');
+  // Selecting a card only outlines its legal tabletop destinations. No duplicate action buttons.
   if(game.config?.expansions?.includes('crossroads'))controls+=button('Escape','escape');
  }
  if(game.status!=='active')controls=button('New game','setup');
  const content=dialog?.html||controls||'';
  const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
- return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${content}</div></div></section>`;
+ return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }
 function inventoryPreview(row){
  const [,kind='',color='',symbol='',ability='',number='']=row.key.split(':');
  return renderCard({kind,color,symbol,ability,number,expansion:row.section},{tiny:true});
 }
 export function renderPileInspector(game,pile){
+ const catcherMatch=/^catcher:([0-3])$/.exec(pile);
+ if(catcherMatch){
+  const i=Number(catcherMatch[1]),stack=game.expansion?.dreamcatchers?.stacks?.[i];
+  if(!Array.isArray(stack))return '';
+  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="Dreamcatcher ${i+1} contents"><header><strong>Dreamcatcher ${i+1}</strong><span>${stack.length} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll tt9-stack-details">${stack.map(c=>renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div></aside>`;
+ }
  if(!['deck','discard','limbo'].includes(pile))return '';
  const inventory=Array.isArray(game.pileInventory)?game.pileInventory:[];
  const titles={deck:'Draw pile',discard:'Discard pile',limbo:'Limbo pile'};
  const sections=[['base','Base game'],['glyphs','Glyphs'],['dreamcatchers','Dreamcatchers'],['towers','Towers'],['premonitions','Happy Dreams'],['crossroads','Crossroads'],['oniverse','Oniverse'],['sphinx','Sphinx / Diver / Confusion']];
  const count=inventory.reduce((n,r)=>n+r[pile],0);
- const body=sections.map(([key,name])=>{const entries=inventory.filter(i=>i.section===key);if(!entries.length)return '';return `<section class="tt6-inventory-group"><h3>${escape(name)}</h3><div class="tt6-inventory-rows">${entries.map(i=>`<div class="tt6-inventory-line" aria-label="${escape(i.label)}: ${i[pile]} of ${i.total}"><span class="tt7-inventory-card">${inventoryPreview(i)}</span><b>${i[pile]}<small>/${i.total}</small></b></div>`).join('')}</div></section>`;}).join('');
+ const visible=Array.isArray(game[pile])&&pile!=='deck'?`<section class="tt6-inventory-group"><h3>Cards in ${escape(pile)}</h3><div class="tt9-stack-details">${game[pile].map(c=>renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div></section>`:'';
+ const body=visible+sections.map(([key,name])=>{const entries=inventory.filter(i=>i.section===key);if(!entries.length)return '';return `<section class="tt6-inventory-group"><h3>${escape(name)}</h3><div class="tt6-inventory-rows">${entries.map(i=>`<div class="tt6-inventory-line ${i[pile]===0?'tt9-empty-count':''}" aria-label="${escape(i.label)}: ${i[pile]} of ${i.total}"><span class="tt7-inventory-card">${inventoryPreview(i)}</span><b><span class="tt9-count-current">${i[pile]}</span><small>/${i.total}</small></b></div>`).join('')}</div></section>`;}).join('');
  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="${titles[pile]} contents"><header><strong>${titles[pile]}</strong><span>${count} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll">${body||'<p>Card counts unavailable.</p>'}</div></aside>`;
 }

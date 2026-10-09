@@ -23,8 +23,7 @@ test('same-symbol play is disabled; discarding remains legal even with same symb
  assert.deepEqual(soloLegalTargets(g,card.id),['discard']);
  assert.deepEqual(targetState(g,card.id),{play:false,discard:true});
  let html=renderSoloTabletop(g,{selectedId:card.id});assert.match(html,/data-tt-drop="play"/);assert.match(html,/data-tt-drop="discard"/);
- assert.match(html,/class="tt3-zone-action"[^>]* disabled/);
- assert.match(html,/class="tt3-zone-action tt3-discard-action"[^>]*><svg class="ui-icon"/);
+ assert.doesNotMatch(html,/class="tt3-zone-action"/);assert.doesNotMatch(html,/tt3-discard-action/);
 });
 test('stale, inactive, decision, opponent and invalid card actions return no targets',()=>{
  const g=fixture(52),id=g.players[0].hand[0].id;
@@ -40,8 +39,7 @@ test('tap and pointer targets map only to original play/discard action types',()
  assert.equal((html.match(/data-tt-card=/g)||[]).length,5);
  assert.match(html,new RegExp(`data-selected-card="${id}"`));
  assert.match(html,/data-tt-drop="play"/);assert.match(html,/data-tt-drop="discard"/);
- assert.match(html,/aria-label="Play selected Location in the Labyrinth"/);
- assert.match(html,/aria-label="Discard selected Location"/);
+ assert.match(html,/aria-label="Labyrinth"/);assert.match(html,/aria-label="Discard, /);
  assert.ok(!html.includes('data-tt-drop="draw"'));
  assert.match(renderCard(g.players[0].hand[0],{interactive:true,select:true}),/data-tt-card=/);
  assert.doesNotMatch(renderCard(g.players[0].hand[0]),/data-tt-card=/);

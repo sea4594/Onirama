@@ -42,7 +42,7 @@ test('playing/discarding via existing engine command remains valid with new rend
    const chosen=g.players[0].hand.find(c=>c.kind==='location'&&c.symbol!==g.players[0].labyrinth.at(-1)?.symbol);
    assert.ok(chosen);
    const model=soloTabletopModel(g,{selectedId:chosen.id});assert.ok(model.canPlay);assert.ok(model.canDiscard);
-   const html=renderSoloTabletop(g,{selectedId:chosen.id});assert.match(html,/data-action="play"/);assert.match(html,/data-action="discard"/);
+   const html=renderSoloTabletop(g,{selectedId:chosen.id});assert.match(html,/data-tt-drop="play"/);assert.match(html,/data-tt-drop="discard"/);assert.doesNotMatch(html,/data-action="play"/);
    s=act(s,{type:'play',id:chosen.id});assertConserved(s);
    if(s.phase==='decision')break;
   }
@@ -52,7 +52,7 @@ test('selected same-symbol card has disabled Play but retains Discard',()=>{
  const s=newGame({mode:'solo',seed:402,config:{expansions:[],difficulties:{}}});const g=viewFor(s,0);
  g.players[0].labyrinth.push({id:'existing',kind:'location',color:'red',symbol:g.players[0].hand[0].symbol});
  const m=soloTabletopModel(g,{selectedId:g.players[0].hand[0].id});assert.equal(m.canPlay,false);assert.equal(m.canDiscard,true);
- const html=renderSoloTabletop(g,{selectedId:g.players[0].hand[0].id});assert.match(html,/data-action="play" disabled/);
+ const html=renderSoloTabletop(g,{selectedId:g.players[0].hand[0].id});assert.match(html,/data-tt-drop="play"/);assert.match(html,/data-tt-drop="discard"/);assert.equal(m.canPlay,false);
 });
 test('decision, nonaction and finished states keep zones visible without illegal hand controls',()=>{
  const s=newGame({mode:'solo',seed:12,config:{expansions:[],difficulties:{}}});const g=viewFor(s,0);

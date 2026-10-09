@@ -39,14 +39,14 @@ test('tower side legality uses its printed marks and never sends an illegal side
  assert.deepEqual(soloLegalTargets(g,card.id),['towerRight','discard']);
  assert.match(renderSoloTabletop(g,{selectedId:card.id}),/data-tt-drop="towerLeft"/);
  assert.match(renderSoloTabletop(g,{selectedId:card.id}),/data-tt-drop="towerRight"/);
- assert.match(renderSoloTabletop(g,{selectedId:card.id}),/data-action="towerRight"/);
+ assert.doesNotMatch(renderSoloTabletop(g,{selectedId:card.id}),/data-action="towerRight"/);
 });
 test('keeper stored cards remain selectable, and Dead Ends are never made discardable',()=>{
  const g=model(['oniverse','crossroads']);const keeper={id:'stored-1',kind:'location',symbol:'moon',color:'red',owner:0};g.expansion.oniverse.treasure=[keeper];
  assert.deepEqual(soloLegalTargets(g,keeper.id),['play','discard']);
  assert.match(renderSoloTabletop(g,{selectedId:keeper.id}),/data-tt-card="stored-1"/);
  g.players[0].hand.push({id:'dead',kind:'deadEnd'});assert.deepEqual(soloLegalTargets(g,'dead'),[]);
- assert.match(renderSoloTabletop(g),/data-action="escape"/);
+ assert.doesNotMatch(renderSoloTabletop(g),/data-action="escape"/);
 });
 test('all persistent physical sections provide their existing action entry points',()=>{
  const g=model(['book','towers','dreamcatchers','oniverse','mirrors','premonitions']);const html=renderSoloTabletop(g);

@@ -1,0 +1,108 @@
+/* Phase 7C: interaction states must be paint-only. NEVER change geometry. */
+.game-viewport .tt2-root [data-tt-drop],.game-viewport .tt2-root [data-tt-card],
+.game-viewport .tt2-root .tt5-zone,.game-viewport .tt2-root .card{box-sizing:border-box!important;transition:none!important}
+.game-viewport .tt2-root [data-tt-drop].tt3-target-ready,
+.game-viewport .tt2-root [data-tt-drop].tt3-drop-hover{border-width:1px!important;padding:var(--tt4-panel-pad,6px)!important;outline:2px solid var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;background:transparent!important;filter:none!important}
+.game-viewport .tt2-root [data-tt-drop].tt3-drop-hover{outline-color:var(--ui-accent)!important;outline-width:3px!important}
+.game-viewport .tt2-root .tt2-pile[data-tt-drop].tt3-target-ready,
+.game-viewport .tt2-root .tt2-pile[data-tt-drop].tt3-drop-hover{padding:0!important;border:1px solid transparent!important;outline-offset:-1px!important}
+.game-viewport .tt2-root .tt6-pile[data-tt-drop].tt3-target-ready,
+.game-viewport .tt2-root .tt6-pile[data-tt-drop].tt3-drop-hover{padding:3px!important;border:1px solid transparent!important;outline-offset:-1px!important}
+.game-viewport .tt2-root .tt5-tower-target.tt3-target-ready,
+.game-viewport .tt2-root .tt5-tower-target.tt3-drop-hover{padding:0 3px!important;border:1px dashed var(--table-line)!important}
+.game-viewport .tt2-root :is(.card.selected,.card.tt7-eligible,.tt7-premonition-selected,.tt8-goal-chosen){filter:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important;transform:none!important}
+/* Highlight is an outline; never touch a card's own background or border dimensions. */
+.game-viewport .tt2-root .tt3-drag-source{opacity:.45;transform:none!important;filter:none!important}
+.game-viewport .tt2-root :is(.tt2-labyrinth,.tt6-player-labyrinth,.tt2-hand,.tt6-hand-block){min-width:0}
+.game-viewport .tt2-root :is(.tt2-labyrinth-row,.tt6-labyrinth-cards){box-sizing:border-box!important}
+.game-viewport .tt2-root :is(.tt2-valid-target,.tt6-active-labyrinth){outline:0!important;box-shadow:none!important}
+/* Solo portrait: consistent physical order, Doors first, the hand immediately above dock. */
+.game-viewport .tt2-root[data-tabletop-solo] .tt5-expansions.tt9-exp-primary{grid-area:exp-primary;grid-template-columns:minmax(0,1fr);--tt4-exp-height:72px}
+.game-viewport .tt2-root[data-tabletop-solo] .tt5-expansions.tt9-exp-secondary{grid-area:exp-secondary;grid-template-columns:minmax(0,1fr);--tt4-exp-height:72px}
+.game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-primary .tt5-zone,
+.game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-secondary .tt5-zone{height:var(--tt4-exp-height)!important;max-height:var(--tt4-exp-height)!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-grid{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-areas:'doors doors' 'towers towers' 'exp-primary exp-primary' 'exp-secondary exp-secondary' 'labyrinth labyrinth' 'piles piles' 'hand hand'!important;
+  grid-template-rows:repeat(7,auto)!important;align-content:start;
+}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-hand{grid-area:hand!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-piles{grid-area:piles!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-labyrinth{grid-area:labyrinth!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt8-towers-slot{grid-area:towers!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-doors{grid-area:doors!important}
+/* A smaller desktop can use two shelves while preserving the zone order. */
+@media(min-width:780px){
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-primary,.game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-secondary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt2-grid{
+  grid-template-areas:'doors doors' 'towers towers' 'exp-primary exp-secondary' 'labyrinth labyrinth' 'piles piles' 'hand hand'!important;
+  grid-template-rows:repeat(6,auto)!important;
+ }
+}
+@media(orientation:landscape) and (max-height:530px){
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-primary,.game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-secondary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt2-grid{
+  grid-template-areas:'doors piles' 'towers hand' 'exp-primary exp-secondary' 'labyrinth labyrinth'!important;
+  grid-template-rows:repeat(4,auto)!important;
+ }
+}
+/* Expansion components remain legible inside their fixed-size zones. */
+.game-viewport .tt2-root .tt9-exp-primary .tt5-tile,.game-viewport .tt2-root .tt9-exp-secondary .tt5-tile{min-height:56px}
+.game-viewport .tt2-root .tt9-exp-primary .tt5-contents,.game-viewport .tt2-root .tt9-exp-secondary .tt5-contents{gap:5px}
+.game-viewport .tt5-preview:has(.card){max-width:100%;min-width:0}
+.game-viewport .tt5-catcher .tt5-preview{display:flex;max-height:56px;max-width:100%;overflow:hidden}
+.game-viewport .tt5-catcher .tt5-preview .card.tiny{flex:0 0 29px;width:29px!important;height:41px!important;margin-right:-19px!important}
+.game-viewport .tt5-catcher .tt5-preview .card.tiny:last-child{margin-right:0!important}
+/* Public Limbo and discard piles show an overlapping spread of visible cards. */
+.game-viewport .tt9-visible-pile{display:flex;align-items:center;justify-content:center;max-width:100%;width:100%;height:100%;overflow:hidden;pointer-events:none}
+.game-viewport .tt9-visible-pile>.card.tiny{flex:0 1 auto;min-width:0;width:65%!important;max-width:65%;height:auto!important;aspect-ratio:.705;margin-right:-38%;font-size:70%}
+.game-viewport .tt9-visible-pile>.card.tiny:last-child{margin-right:0}
+.game-viewport .tt2-pile-face,.game-viewport .tt6-pile-face{overflow:hidden}
+/* Drawn card is anchored left; controls are centered within the remaining width. */
+.game-viewport .tt6-workspace .tt9-drawn-layout{display:grid!important;grid-template-columns:84px minmax(0,1fr);align-items:center;width:100%!important;height:100%;gap:0;justify-content:stretch!important}
+.game-viewport .tt9-drawn-actions{min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.game-viewport .tt8-drawn-card{width:82px!important;max-height:113px!important;justify-self:start;justify-content:start!important}
+.game-viewport .tt8-drawn-card .card.tiny{width:76px!important;height:107px!important;max-height:107px!important}
+@media(orientation:landscape) and (max-height:460px){
+ .game-viewport .tt6-workspace .tt9-drawn-layout{grid-template-columns:52px minmax(0,1fr)}
+ .game-viewport .tt8-drawn-card{width:50px!important;max-height:70px!important}
+ .game-viewport .tt8-drawn-card .card.tiny{width:47px!important;height:67px!important}
+}
+/* Inspection counts: zeros remain in the grid but are visually muted. */
+.tt6-inventory-line.tt9-empty-count .tt7-inventory-card{opacity:.3;filter:grayscale(1)}
+.tt6-inventory-line .tt9-count-current{font-size:1.12rem;font-weight:800;line-height:1.2}
+.tt6-inventory-line small{font-size:.64rem!important;font-weight:500;color:var(--ui-muted)}
+/* Scrollable timeline inside the Pause popup, not the app/page. */
+.game-menu-history{border-top:1px solid var(--ui-border);margin-top:10px;padding-top:8px}
+.game-menu-history>summary{cursor:pointer;font-weight:650}
+.game-menu-history small{font-weight:400;color:var(--ui-muted)}
+.tt9-action-log{list-style:none;padding:0;margin:6px 0 0;max-height:min(29dvh,220px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.tt9-action-log li{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:25px;padding:3px 0;border-bottom:1px solid var(--ui-border);font-size:.76rem}
+.tt9-log-card{display:inline-flex;vertical-align:middle;align-items:center}
+.tt9-log-card .card.tiny{width:24px;height:33px;pointer-events:none;font-size:.5rem}
+
+/* A decorative deck back is not a selected/ready action target. */
+.game-viewport .tt2-pile.draw .tt2-deck-back,.game-viewport .tt6-pile .tt2-deck-back{outline:none!important;border-color:var(--ui-border)!important;box-shadow:2px 2px 0 var(--card-back-shadow)!important}
+.game-viewport .tt2-pile.draw .tt6-pile-inspect:focus:not(:focus-visible),.game-viewport .tt6-pile .tt6-pile-inspect:focus:not(:focus-visible){outline:none!important}
+/* When a playable card is selected, the discard face is the target; the little
+   inspection control remains separate and always opens counts/cards. */
+.game-viewport .tt2-pile,.game-viewport .tt6-pile{position:relative}
+.game-viewport .tt9-pile-info{position:absolute;top:-3px;right:-5px;width:20px;min-width:20px;height:20px;min-height:20px;padding:0;border:1px solid var(--ui-border);background:var(--ui-panel);color:var(--ui-text);font-size:12px;line-height:1;border-radius:50%;z-index:4;cursor:pointer}
+.game-viewport .tt9-discard-gesture{cursor:pointer!important}
+.game-viewport .tt2-pile[data-tt-drop]:has(.tt9-discard-gesture),.game-viewport .tt6-pile[data-tt-drop]:has(.tt9-discard-gesture){outline:2px solid var(--table-gold);outline-offset:-2px}
+.tt9-stack-details{display:flex;justify-content:flex-start;align-items:center;align-content:flex-start;gap:6px;flex-wrap:wrap;padding:7px 0}
+.tt9-stack-details .card.tiny{flex:0 0 46px;width:46px;height:65px;pointer-events:none}
+.game-viewport .tt5-catcher[data-action^="inspectCatcher:"]{cursor:pointer}
+.game-viewport .tt5-catcher .tt5-preview{pointer-events:none}
+.game-viewport .tt5-catcher{width:57px;min-width:0!important}
+.game-viewport .tt5-premonition{width:57px;min-height:55px}
+.game-viewport .tt9-exp-secondary .tt5-mirror{width:46px;min-height:54px}
+.game-viewport .tt9-exp-secondary .tt5-denizen{width:64px;min-height:56px}
+/* The interactive Discard button is already sized in its normal state;
+   ready/hover may ONLY paint an outline, never add padding or borders. */
+.game-viewport .tt2-root .tt6-pile-inspect.tt9-discard-gesture.tt3-target-ready,
+.game-viewport .tt2-root .tt6-pile-inspect.tt9-discard-gesture.tt3-drop-hover{padding:0!important;border:0!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important;box-shadow:none!important}
+/* Reserve a full card row even when an effect temporarily empties a hand.
+   Card count is game state, not a reason to move the adjacent zones. */
+.game-viewport .tt2-root .tt2-hand-row{min-height:calc(var(--tt2-card)*1.42 + 9px)}
+.game-viewport .tt2-root .tt6-hand-cards{min-height:calc(var(--tt6-card)*1.42 + 10px)}
