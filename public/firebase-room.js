@@ -1,6 +1,6 @@
 // BibleGuessr-style Firestore multiplayer: anonymous auth, transactions, onSnapshot.
 // No separate Node server is required. These client-side cooperative rooms assume trusted players.
-import {ROOM_COLLECTION,makeRoom,joinRoom,setReady,startRoom,playRoom,roomView,seatFor} from './engine/firebase-protocol.js';
+import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,startRoom,playRoom,roomView,seatFor} from './engine/firebase-protocol.js';
 let clientPromise;
 function config(){const c=window.ONIRAMA_FIREBASE_CONFIG;return c&&['apiKey','authDomain','projectId','appId'].every(k=>typeof c[k]==='string'&&c[k].length)?c:null;}
 export function firebaseConfigured(){return !!config();}
@@ -29,12 +29,12 @@ async function update(code,transition){const c=await connect();const ref=roomRef
   return loadRoom(code);
 }
 export async function createFirebaseRoom(name,setup){
-  const c=await connect();for(let i=0;i<8;i++){
-    const code=code8(),ref=roomRef(c,code);
-    try{await c.store.runTransaction(c.db,async tx=>{const old=await tx.get(ref);if(old.exists())throw Error('Room code collision');tx.set(ref,makeRoom(code,c.uid,name,setup));});return loadRoom(code);}
-    catch(e){if(e.message!=='Room code collision')throw e;}
-  }
-  throw Error('Could not allocate a unique room code. Try again.');
+  const c=await connect();
+  // A transaction cannot read a non-existent code under the published room get rules.
+  // A direct set is a rules-protected CREATE for new IDs; an existing ID is an
+  // UPDATE, which the existing room security rules reject. Retry unlikely collisions.
+  const code=await allocateRoom((id,room)=>c.store.setDoc(roomRef(c,id),room),code8,c.uid,name,setup);
+  return loadRoom(code);
 }
 export async function joinFirebaseRoom(code,name){return update(code,(old,uid)=>joinRoom(old,uid,name));}
 export async function loadRoom(code){const c=await connect(),snap=await c.store.getDoc(roomRef(c,code));if(!snap.exists())throw Error('Room not found or expired');return roomView(snap.data(),c.uid);}

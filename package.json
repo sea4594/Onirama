@@ -1,7 +1,7 @@
 {
   "name": "onirama",
   "private": true,
-  "version": "0.12.2",
+  "version": "0.12.3",
   "type": "module",
   "description": "Onirama: original-visuals solo and cooperative dream labyrinth web game",
   "engines": {

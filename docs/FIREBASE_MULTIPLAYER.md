@@ -33,7 +33,7 @@ Room codes are randomly generated in the browser using `crypto.getRandomValues`,
 
 - **Multiplayer not configured:** Confirm the Pages deployment completed and that deployed `runtime-config.js` contains `onirama-5124e`; this file is generated from `public/runtime-config.js` and should not be edited on the live site.
 - **`auth/operation-not-allowed`:** Enable Anonymous sign-in for the correct Firebase project.
-- **`permission-denied`:** Publish `firestore.rules` in the correct database/project; check the code is not full and that the Firebase anonymous UID matches the room's member.
+- **`permission-denied` when creating a room:** Confirm that you published the complete repository `firestore.rules` in **onirama-5124e → Firestore Database → (default) → Rules**, and enabled Anonymous Authentication. The v0.12.3 client creates a room directly instead of requesting permission to read a document that does not yet exist. Pushing a GitHub hotfix does **not** publish Firestore security rules. For existing room actions, also check the anonymous UID and that the room has a free seat.
 - **Connection blocked / dynamic import failed:** Ensure gstatic.com and Firebase domains are reachable. Check network/ad-blocker settings.
 - **Invite opens but second player is treated as host:** Use another browser profile, private window or device; same browser profile shares one anonymous UID.
 - **Room disappeared after clearing storage:** The local anonymous UID was lost. Firebase prevents another UID from taking over a claimed seat; create a new room.

@@ -12,6 +12,21 @@ export function makeRoom(code,uid,playerName,rawConfig,now=Date.now()){
   identity(uid);requireRule(/^[A-F0-9]{8}$/.test(code),'Invalid room code');
   return {code,hostUid:uid,guestUid:null,hostName:name(playerName,'Dreamwalker'),guestName:'',config:validateConfig(rawConfig),ready:[false,false],game:null,version:0,createdAt:now,updatedAt:now,expiresAt:now+ROOM_TTL_MS};
 }
+// Firestore transaction reads of newly generated room IDs require permission to
+// read documents that do not exist. Use a create-only, rules-guarded direct write.
+// If an ID already exists, setDoc becomes an UPDATE and the room rules reject it.
+// Retrying permission-denied also covers extremely rare random-code collisions;
+// persistent denials are reported as a configuration error, not as a collision.
+export async function allocateRoom(write,generateCode,uid,playerName,rawConfig,maxAttempts=8){
+  requireRule(typeof write==='function'&&typeof generateCode==='function','Invalid room allocator');
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    const code=generateCode(),room=makeRoom(code,uid,playerName,rawConfig);
+    try{await write(code,room);return code;}
+    catch(err){if(err?.code!=='permission-denied')throw err;}
+  }
+  const err=Error('Firestore denied room creation. In Firebase project onirama-5124e, enable Anonymous Authentication and publish firestore.rules under Firestore Database > Rules.');
+  err.code='permission-denied';throw err;
+}
 export function roomView(room,uid){
   const seat=seatFor(room,identity(uid));requireRule(seat>=0,'This room belongs to another browser session');
   return {room:{id:room.code,code:room.code,mode:'coop',seat,host:seat===0,ready:room.ready,connected:[true,!!room.guestUid],started:!!room.game,phase:room.game?.phase,status:room.game?.status,config:room.config},game:room.game?viewFor(room.game,seat):null,version:room.version};
