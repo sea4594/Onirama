@@ -3,7 +3,8 @@ import * as firebase from './firebase-room.js';
 import {renderCard,renderDoors} from './tabletop/cards.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
-import {createTabletopInteractions,soloLegalTargets,createDecisionReorder,moveOrderedCard} from './tabletop/interactions.js';
+import {renderCooperativeTabletop} from './tabletop/coop-board.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCard} from './tabletop/interactions.js';
 import {renderGameDialog,decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io');
@@ -168,6 +169,9 @@ function board(g,room){
   if(g.mode==='solo'){
     return renderSoloTabletop(g,{selectedId:selected,canAct:room.seat===g.active});
   }
+  if(g.mode==='coop'){
+    return renderCooperativeTabletop(g,{seat:room.seat,selectedId:selected,canAct:room.seat===g.active,connected:online});
+  }
   const canAct=room.seat===g.active,player=g.players[g.active],my=g.players[room.seat],isDraft=g.phase==='draft';
   let help=g.status==='won'?'Victory — all objectives completed!':g.status==='lost'?'Defeat — the deck was exhausted.':isDraft?'Select a Location from the public draft.':canAct?'Choose one of your available Locations to play or discard.':`Waiting for ${escape(player.name)}.`;
   const mine=g.mode==='solo'?player:my;
@@ -238,8 +242,7 @@ function render(){const focused=document.activeElement;const focusKind=['action'
   app.innerHTML=nav()+`<main class="page" id="main-content" tabindex="-1">${error?`<div class="notice error" role="alert">${escape(error)} <button class="mini ghost" data-action="clearError">Dismiss</button></div>`:''}${content}</main>`+bottomNav()+(typeof renderGameDialog==='function'&&state?.room?.started&&page==='#/game'?gameDialog(state.game,state.room):'');
   if(page==='#/game'&&state?.room.started){
     applyTabletopMetrics(app.querySelector?.('.tt2-root,.game-layout'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
-    const labyrinth=app.querySelector?.('[data-tabletop-scroll="labyrinth"]');
-    if(labyrinth)labyrinth.scrollLeft=labyrinth.scrollWidth;
+    for(const labyrinth of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){labyrinth.scrollLeft=labyrinth.scrollWidth;}
   }
   if(typeof dialogController!=='undefined'&&dialogController)dialogController.sync();
   if(focusKind){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
@@ -366,10 +369,12 @@ function installTabletopController(){
   tabletopController=createTabletopInteractions({
     root:app,getGame:()=>state?.game,getSeat:()=>state?.room?.seat??-1,
     isBusy:()=>busy||!state?.room?.started,
-    onSelect:id=>{if(page==='#/game'&&state?.game?.mode==='solo')pick(id);},
+    onSelect:id=>{if(page==='#/game'&&state?.game&&['solo','coop'].includes(state.game.mode))pick(id);},
     onCommand:(type,id)=>{
       if(page!=='#/game'||busy||!state?.game)return;
-      if(!soloLegalTargets(state.game,id,state.room?.seat).includes(type))return;
+      const targets=state.game.mode==='coop'?cooperativeLegalTargets(state.game,id,state.room?.seat):soloLegalTargets(state.game,id,state.room?.seat);
+      if(!targets.includes(type))return;
+      if(type==='discard'&&state.game.mode==='coop'){selected=id;swapDraft={cardId:id};return render();}
       if(type==='towerLeft'||type==='towerRight')return action({type:'playTower',id,side:type==='towerLeft'?'left':'right'});
       return action({type,id});
     }

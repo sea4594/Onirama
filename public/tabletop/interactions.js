@@ -16,6 +16,24 @@ export function soloLegalTargets(g, cardId, seat=0){
   return [...(previous?.symbol!==c.symbol?['play']:[]),'discard'];
 }
 
+// Same commands as solo, but only this seat's personal cards and the shared
+// resources are eligible. The other player's private card IDs are never targets.
+export function cooperativeLegalTargets(g,cardId,seat=0){
+  if(!g||g.mode!=='coop'||g.status!=='active'||g.phase!=='action'||seat!==g.active||![0,1].includes(seat))return [];
+  const available=[...(g.players?.[seat]?.hand||[]),...(g.shared||[])];
+  const c=available.find(card=>card.id===cardId);
+  if(!c||c.kind==='hidden'||c.kind==='deadEnd')return [];
+  if(c.kind==='tower'){
+    const alignment=g.expansion?.towers?.alignment||[];
+    const marks=v=>String(v||'').split('+').filter(Boolean);
+    const overlaps=(a,b)=>marks(a).some(x=>marks(b).includes(x));
+    return [...(!alignment.length||!overlaps(c.right,alignment[0].left)?['towerLeft']:[]),...(!alignment.length||!overlaps(alignment.at(-1).right,c.left)?['towerRight']:[]),'discard'];
+  }
+  if(c.kind!=='location')return [];
+  return [...(g.players[seat].labyrinth?.at(-1)?.symbol!==c.symbol?['play']:[]),'discard'];
+}
+export const tabletopLegalTargets=(g,id,seat=0)=>g?.mode==='coop'?cooperativeLegalTargets(g,id,seat):soloLegalTargets(g,id,seat);
+
 export function targetState(g, cardId, seat=0){
   const legal=soloLegalTargets(g,cardId,seat);
   return {play:legal.includes('play'),discard:legal.includes('discard')};
@@ -24,9 +42,9 @@ const DRAG_THRESHOLD=8;
 export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onInspect=()=>{}}){
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
-  const board=()=>$('.tt2-root[data-tabletop-solo="true"]');
+  const board=()=>$('.tt2-root[data-tabletop-solo="true"],.tt6-root[data-tabletop-coop="true"]');
   const selected=()=>board()?.dataset.selectedCard||'';
-  const legal=id=>isBusy()?[]:soloLegalTargets(getGame(),id,getSeat());
+  const legal=id=>isBusy()?[]:tabletopLegalTargets(getGame(),id,getSeat());
   function syncTargets(id=selected()){
     const b=board();if(!b)return;
     const targets=legal(id);

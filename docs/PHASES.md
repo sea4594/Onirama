@@ -57,7 +57,7 @@ The BibleGuessr reference project uses Firebase anonymous browser auth, Firestor
 - UI Phase 3: **implemented in v0.15.0** — hand-card pointer drag/drop or tap/click on physical targets, keyboard alternatives, legal target validation, and revealed-card order dragging without changing engine commands.
 - UI Phase 4: **implemented in v0.16.0** — mandatory overlays for all 23 pending effect types, four optional context dialogs, visual card choices, preserved ordering/interruptions, keyboard focus and responsive sheets.
 - UI Phase 5: **implemented in v0.17.0** — all solo expansion zones on a compact responsive tabletop; preserved dialogs, commands, and difficulty variants. Final browser screenshot QA remains Phase 8.
-- UI Phase 6: coherent cooperative two-player tabletop, drafting and Firebase reconnect.
+- UI Phase 6: **implemented in v0.18.0** — both player play areas, shared/personal cards, draft, legal pointer/tap actions, all expansion components, and unchanged Firebase synchronization.
 - UI Phase 7: simplify non-gameplay pages and shared navigation.
 - UI Phase 8: browser visual/interaction matrix, all modes and expansion densities.
 - UI Phase 9: remove legacy UI, run full regression gate and release.

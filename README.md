@@ -175,3 +175,8 @@ See `docs/UI_PHASE3_INTERACTIONS.md` and `docs/ui-phase3-baselines/` for the int
 ## UI Phase 5 — expansion tabletop (v0.17.0)
 
 All solo expansions use the compact physical tabletop, including Goals, Tower Alignment, Dreamcatchers, Premonitions, Denizens, Mirrors, special Door slots and Incubus. Card abilities use the existing engine and decision overlays. See `docs/UI_PHASE5_EXPANSION_TABLETOP.md`. Cooperative boards remain on the original layout until UI Phase 6.
+
+
+## UI Phase 6 — two-player cooperative tabletop (v0.18.0)
+
+The responsive two-player board now shares the solo tabletop's cards, zones, expansion components and contextual decision dialogs. Both players' Doors and Labyrinths, the face-down partner hand, private personal hand, shared resources, draw/discard/Limbo and every applicable expansion area remain visible. Drafting, Firestore transactions and cooperative discard-and-swap actions still use the existing engine commands; no room schema or save migration is required. Pointer drag/drop, tap selection and keyboard alternatives work with the active seat only. See `docs/UI_PHASE6_COOPERATIVE_TABLETOP.md`.
