@@ -130,7 +130,7 @@ function endpoint(req,res,url,data){
   if(req.method==='POST'&&operation==='start'){
     if(original.mode!=='coop'||seat!==(original.hostSeat??0)||original.ended)throw Error('Only the host can start the cooperative game');
     if(original.game)throw Error('Game already started');
-    if(!original.seats[1]||!original.ready.every(Boolean))throw Error('Both players must join and be ready');
+    if(!original.seats[1]||!original.ready[1-(original.hostSeat??0)])throw Error('The other player must join and be ready');
     const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true,manualTurnEnd:true});next.replay=recordReplay([],next.game,null);next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }

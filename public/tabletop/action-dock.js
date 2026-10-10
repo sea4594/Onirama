@@ -48,6 +48,11 @@ function inventoryPreview(row){
  return renderCard({kind,color,symbol,ability,number,expansion:row.section},{tiny:true});
 }
 export function renderPileInspector(game,pile,seat=null){
+ if(pile==='reserve'&&game.expansion?.premonitions){
+  const p=game.expansion.premonitions;
+  const descriptions={red2:'2 red Doors: discard red Locations',green2:'2 green Doors: return a Nightmare',blue2:'2 blue Doors: discard two Keys',brown2:'2 brown Doors: lose a Door',pair2:'2 matching Doors: lose one',doors5:'5 Doors: reveal two Premonitions',rainbow4:'4 colors: discard Happy Dreams',doors3:'3 Doors: redraw your hand'};
+  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="Reserve Premonitions"><header><strong>Reserve Premonitions</strong><span>${p.reserveCount} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll"><p class="tt14-reserve-note">These are the Premonitions waiting in reserve.</p><div class="tt14-reserve-list">${(p.reserve||[]).map(id=>`<div class="tt14-reserve-item"><span class="tt5-tile tt5-premonition"><span class="tt5-pm-face">${escape(id==='rainbow4'?'◆':id.slice(0,1).toUpperCase())}</span></span><span>${escape(descriptions[id]||id)}</span></div>`).join('')||'<span>Reserve empty</span>'}</div></div></aside>`;
+ }
  const catcherMatch=/^catcher:([0-3])$/.exec(pile);
  if(catcherMatch){
   const i=Number(catcherMatch[1]),stack=game.expansion?.dreamcatchers?.stacks?.[i];

@@ -36,7 +36,7 @@ test('Tower icon and number are separate fixed positions',()=>{
 test('Dreamcatcher compartments render each stored face without overlapping',()=>{
  const g={phase:'action',active:0,expansion:{dreamcatchers:{stacks:[[ {id:'l1',kind:'location',color:'red',symbol:'sun'}, {id:'l2',kind:'location',color:'blue',symbol:'key'} ],[],[],[]],active:[true,true,true,true],failsafes:2}}};
  const html=renderExpansionTabletop(g);
- assert.match(html,/tt11-catcher-content/);assert.match(html,/--tt11-cards:2/);assert.match(html,/data-tt-motion-id="l1"/);assert.match(html,/data-tt-motion-id="l2"/);
+ assert.match(html,/tt14-catcher-fan/);assert.match(html,/--tt14-held:2/);assert.match(html,/data-tt-motion-id="l1"/);assert.match(html,/data-tt-motion-id="l2"/);
 });
 test('Orientation, touch and animation destination-visibility protections are installed',()=>{
  const app=source('public/app.js'),css=source('public/tabletop/phase10c.css'),animation=source('public/tabletop/animation.js');

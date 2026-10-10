@@ -448,9 +448,9 @@ export function act(previous,command){
 export function viewFor(s,seat=null){const c=structuredClone(normalizeSave(s));delete c.rng;delete c.effects;delete c.continuations;delete c.events;delete c.interrupts;
  c.pileInventory=pileInventory(s);c.deckCount=c.deck.length;delete c.deck;
  c.objectives=objectives(s);
- // Public expansion state only: never expose pending hidden decks, removed-card identities, or future goals before revealed.
+ // Public expansion state: the player-inspectable Premonition reserve is included; hidden draw decks and private effects remain masked.
  c.expansion={};
- if(has(s,'premonitions'))c.expansion.premonitions={faceUp:[...prem(s).faceUp],reserveCount:prem(s).reserve.length,resolved:[...prem(s).resolved]};
+ if(has(s,'premonitions'))c.expansion.premonitions={faceUp:[...prem(s).faceUp],reserveCount:prem(s).reserve.length,reserve:[...prem(s).reserve],resolved:[...prem(s).resolved]};
  if(has(s,'oniverse'))c.expansion.oniverse={rallied:structuredClone(oni(s).zones.rallied),treasure:structuredClone(oni(s).zones.treasure.filter(x=>x.owner===seat||s.mode==='solo'))};
  if(has(s,'crossroads'))c.expansion.crossroads={hard:s.config.difficulties.crossroads==='hard'};
  if(has(s,'book'))c.expansion.book={goals:goals(s).map(g=>({color:g.color,done:g.done})),discardCount:book(s).zones.removed.length,removed:structuredClone(book(s).zones.removed),costs:spellCosts(s)};

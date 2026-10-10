@@ -68,7 +68,7 @@ test('Book Goal acquisition uses physical Door color, not the active player sear
 test('Cooperative hidden state masks partner hands and their effect decisions at all points',()=>{
  let s=make(['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx'],{},'coop');
  while(s.phase==='draft')s=act(s,{type:'draft',id:s.draft[0].id});
- for(const seat of [0,1]){const v=viewFor(s,seat);assert.equal(v.deck,undefined);assert.ok(v.players[1-seat].hand.every(c=>c.kind==='hidden'));assert.equal(v.moduleState,undefined);assert.equal(v.rng,undefined);assert.equal(v.expansion.premonitions.reserve,undefined);}
+ for(const seat of [0,1]){const v=viewFor(s,seat);assert.equal(v.deck,undefined);assert.ok(v.players[1-seat].hand.every(c=>c.kind==='hidden'));assert.equal(v.moduleState,undefined);assert.equal(v.rng,undefined);assert.deepEqual(v.expansion.premonitions.reserve,s.moduleState.premonitions.reserve);}
  s.pending={type:'happyFetch',options:s.deck.map(c=>({...c}))};s.phase='decision';const other=viewFor(s,1);assert.equal(other.pending.type,'private-decision');assert.ok(!JSON.stringify(other).includes(s.deck[0]?.id||'not-in-deck'));
 });
 

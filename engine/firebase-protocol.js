@@ -48,7 +48,7 @@ export function setReady(room,uid,value,now=Date.now()){
 }
 export function startRoom(room,uid,now=Date.now()){
  requireRule(seatFor(room,uid)===hostSeat(room),'Only the host can start');
- requireRule(!room.ended&&!room.game&&occupied(room)&&room.ready.every(Boolean),'Both players must join and be ready');
+ requireRule(!room.ended&&!room.game&&occupied(room)&&room.ready[1-hostSeat(room)],'The other player must join and be ready');
  const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName],interactiveDraw:true,manualTurnEnd:true});assertConserved(game);
  return {...room,game:clone(game),replay:recordReplay([],game,null),updatedAt:now,version:room.version+1};
 }

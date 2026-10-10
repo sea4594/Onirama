@@ -37,7 +37,7 @@ service cloud.firestore {
       function starting() {
         return host() && !ended() && resource.data.game == null &&
           resource.data.hostUid != null && resource.data.guestUid != null &&
-          resource.data.ready == [true,true] && request.resource.data.game is map &&
+          resource.data.ready[1-resource.data.hostSeat] == true && request.resource.data.game is map &&
           request.resource.data.game.mode == 'coop' && request.resource.data.replay is list && changedOnly(['game','replay','updatedAt','version']);
       }
       function playing() {

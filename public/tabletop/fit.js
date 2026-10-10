@@ -10,8 +10,8 @@ export function tabletopShape(width,height){
 }
 export function tabletopDimensions(width,height,mode='solo',zoneCount=0){
   const shape=tabletopShape(width,height),coop=mode==='coop';
-  const card=shape==='wide'?clamp(width*.057,68,91):shape==='medium'?clamp(width*.07,55,79):shape==='short'?clamp(Math.min(width*.069,height*.145),34,64):clamp(width*(coop?.125:.172),40,75);
-  const mini=shape==='wide'?clamp(width*.036,41,57):shape==='medium'?clamp(width*.047,34,49):shape==='short'?clamp(Math.min(width*.044,height*.092),25,39):clamp(width*(coop?.078:.089),25,43);
+  const card=shape==='wide'?clamp(width*.057,68,91):shape==='medium'?clamp(width*.07,55,79):shape==='short'?clamp(Math.min(width*.069,height*.145),34,64):clamp(width*(coop?.145:.172),44,75);
+  const mini=shape==='wide'?clamp(width*.036,41,57):shape==='medium'?clamp(width*.047,34,49):shape==='short'?clamp(Math.min(width*.044,height*.092),25,39):clamp(width*(coop?.094:.089),30,43);
   const columns=Math.max(1,Math.min(zoneCount,shape==='portrait'?2:shape==='wide'?4:3));
   return {shape,card:Math.round(card),mini:Math.round(mini),columns};
 }
@@ -29,7 +29,7 @@ function reflowLabyrinths(table){
 function fitExpansionContents(table){
  for(const zone of table.querySelectorAll('.tt5-zone')){
   // Towers occupy a dedicated Door-sized shelf; never miniaturize it as an expansion tile.
-  if(zone.closest('.tt8-towers-slot'))continue;
+  if(zone.closest('.tt8-towers-slot')||zone.matches('.tt5-catchers,.tt5-premonitions'))continue;
   const inner=zone.querySelector('.tt5-contents'),head=zone.querySelector('header');if(!inner||!head)continue;
   inner.style.transform='';inner.style.left='0px';inner.style.top='0px';
   const w=Math.max(inner.scrollWidth,inner.offsetWidth),h=Math.max(inner.scrollHeight,inner.offsetHeight),
@@ -47,7 +47,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   if(!width||!height)return null;
   const zones=table.querySelectorAll('.tt5-zone').length;
   const plan=tabletopDimensions(width,height,mode,zones);
-  table.style.transform='';table.style.minHeight='0';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
+  table.style.transform='';table.style.minHeight='0';table.style.height='';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
   table.dataset.tt4Shape=plan.shape;
   table.dataset.tt4ExpansionCount=String(zones);
   table.style.setProperty('--tt4-exp-columns',plan.columns);
@@ -87,7 +87,10 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
     if(Math.abs(corrected-scale)<.003)break;
     scale=Math.min(scale,corrected);
   }
-  table.style.minHeight=`${Math.floor(height/scale)}px`;
+  // Stretch the available board vertically so the hand ends at the fixed action dock.
+  // Extra room goes to the Labyrinth/active player area, never to an empty footer.
+  table.style.height=`${Math.floor(height/scale)}px`;
+  table.style.minHeight='0';
   table.style.transform=scale<1?`scale(${scale})`:'';
   const zoom=scale;
   reflowLabyrinths(table);
