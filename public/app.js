@@ -12,6 +12,7 @@ import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
 import {renderOverlay} from './game-overlay.js';
+import {GUIDE_CHAPTERS,renderRulesReference,renderGuideTutorial,filterGuide} from './rules-guide.js';
 import {opponentReplay,replayOverlay,fitReplay,replayStage,replayCaption} from './multiplayer-replay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io');
@@ -32,7 +33,7 @@ let selectedExpansions=new Set(),selectedDifficulties={},spellSelected=new Set()
 const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{id:'copper',name:'Copper'},{id:'lagoon',name:'Lagoon'},{id:'heather',name:'Heather'},{id:'sandstone',name:'Sandstone'}];
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
-let tutorialStep=0,lastAnnouncement='';
+let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
 let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
@@ -322,25 +323,9 @@ function gameWorkspace(g,room){
  return contextualDialog(g,room);
 }
 function closeOptionalDialog(){mirrorTarget=null;mirrorPairSelection.clear();cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();render();}
-function rules(){return `<div class="route shell shell-rules"><h1 class="shell-title">Rules</h1><p class="shell-rules-intro">Collect all eight Doors before the deck runs out.</p>
-<details class="shell-card shell-rule"><summary>Each turn</summary><ol><li>Play or discard one Location.</li><li>Refill your hand, resolving each Door or Nightmare immediately.</li><li>Shuffle Limbo into the deck.</li></ol></details>
-<details class="shell-card shell-rule"><summary>Labyrinth & Doors</summary><p>Adjacent played Locations must have different symbols. Three consecutive Locations of the same color unlock a matching Door from the deck. The fourth starts a new sequence.</p><p>Solo: two Doors of each color. Co-op: one per player.</p></details>
-<details class="shell-card shell-rule"><summary>Keys & Prophecy</summary><p>Discard a Key to inspect the top five deck cards. Discard one; return the rest to the top in any order. A matching Key can claim a Door drawn while refilling.</p></details>
-<details class="shell-card shell-rule"><summary>Nightmares</summary><ol><li>Discard a Key.</li><li>Return an acquired Door to Limbo.</li><li>Reveal up to five cards; discard Locations, put Doors and Dreams in Limbo.</li><li>Discard your entire hand and refill, setting aside Dreams and Doors without resolving them.</li></ol></details>
-<details class="shell-card shell-rule"><summary>Two-player co-op</summary><p>Draft eight visible Locations, alternating until each player has three personal cards. The remaining two are shared. Take turns using personal or shared Locations, with separate Labyrinths and Door collections. After discarding, optionally swap one personal and one shared card.</p></details>
-<details class="shell-card shell-rule"><summary>Expansions & difficulty</summary><p>Choose expansions and difficulty variants in New game. Goals, spells, new Dreams and cards, Towers, Dreamcatchers, Mirrors and Denizens appear on the tabletop; complex effects open a decision sheet. The Little Incubus is base-game-only in official mode.</p></details>
-<footer class="shell-rules-footer"><a href="https://www.rulespal.com/onirim/rulebook" target="_blank" rel="noopener noreferrer">Official base rules ↗</a><span>Independent adaptation; unresolved combination rulings are documented in the repo.</span></footer></div>`;}
+function rules(){return `<div class="route shell shell-rules"><div class="shell-title-line"><h1 class="shell-title">Rules & card guide</h1><span class="shell-count">All modules</span></div>${renderRulesReference()}</div>`;}
 function roadmap(){const phases=['Foundation','Base tabletop','Card gestures','Decision dialogs','Expansion tabletop','Co-op tabletop','Minimal app shell','Visual QA','Final cleanup'];return `<div class="route shell"><div class="shell-title-line"><h1 class="shell-title">UI roadmap</h1><span class="shell-count">9 of 9</span></div><section class="shell-card shell-roadmap">${phases.map((title,i)=>`<div><span>${i+1}</span><strong>${title}</strong><small>${i<9?'✓':'Pending'}</small></div>`).join('')}</section></div>`;}
-const TUTORIAL=[
- ['The objective','Collect all eight Doors before the deck runs out.'],
- ['Your hand','Play or discard one Location each turn.'],
- ['Symbols','Adjacent played cards must have different symbols.'],
- ['Doors','Three consecutive Locations of one color unlock a matching Door.'],
- ['Keys','Discard a Key to inspect five cards, discard one and reorder the rest.'],
- ['Nightmares','Choose one penalty when a Nightmare appears during a refill.'],
- ['Expansions','Turn on optional expansions before starting a new game.']
-];
-function tutorial(){const [heading,body]=TUTORIAL[tutorialStep];return `<div class="route shell shell-tutorial"><div class="shell-title-line"><h1 class="shell-title">Guided tutorial</h1><span class="shell-count">${tutorialStep+1}/${TUTORIAL.length}</span></div><section class="shell-card shell-tutorial-card"><div class="shell-tutorial-symbol" aria-hidden="true">${icon(['diamond','users','sun','door','key','sparkle','leaf'][tutorialStep])}</div><h2>${escape(heading)}</h2><p>${escape(body)}</p><div class="tutorial-track" role="progressbar" aria-label="Tutorial progress" aria-valuenow="${tutorialStep+1}" aria-valuemin="1" aria-valuemax="${TUTORIAL.length}"><div style="width:${(tutorialStep+1)/TUTORIAL.length*100}%"></div></div><div class="shell-tutorial-nav">${tutorialStep>0?btn('←','tutorialBack','shell-arrow'):''}${tutorialStep<TUTORIAL.length-1?btn('Next →','tutorialNext','primary'):btn('Play','tutorialStart','primary')}</div></section><div class="shell-foot-actions">${btn('Full rules','rules','shell-text-button')}</div></div>`;}
+function tutorial(){return renderGuideTutorial(tutorialChapter,tutorialStep);}
 function historyPage(){const list=readHistory(localStorage),stats=summarizeHistory(list);return `<div class="route shell"><div class="shell-title-line"><h1 class="shell-title">History</h1><span class="shell-count">Local</span></div>
  <section class="shell-stats">${[['Games',stats.played],['Wins',stats.wins],['Win rate',stats.winRate+'%'],['Solo · Co-op',stats.solo+' · '+stats.coop]].map(([name,value])=>`<div class="shell-card shell-stat"><strong>${value}</strong><span>${name}</span></div>`).join('')}</section>
  <section class="shell-card shell-history"><h2 class="shell-section-title">Games</h2>${list.length?`<div class="shell-history-list">${list.map(r=>`<div class="shell-history-row"><span class="shell-result ${r.status}">${icon(r.status==='won'?'check':'close')}</span><div><strong>${r.mode==='solo'?'Solo':'Co-op'} · ${r.status==='won'?'Win':'Loss'}</strong><small>${new Date(r.finishedAt).toLocaleDateString()} · Turn ${r.turn}${r.config.expansions.length?' · '+r.config.expansions.length+' expansions':''}</small></div></div>`).join('')}</div>`:'<p class="shell-empty">No completed games</p>'}${list.length?btn('Clear history','historyClear','shell-text-button'):''}</section>
@@ -433,9 +418,9 @@ async function handle(actionName){
   if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;return setRoute('#/');}
   if(actionName==='soloStart'){selectedMode='solo';return create('solo');}if(actionName==='coopStart'){selectedMode='coop';return create('coop');}
   if(actionName==='history')return setRoute('#/history');
-  if(actionName==='tutorial'){tutorialStep=0;return setRoute('#/tutorial');}
-  if(actionName==='tutorialBack'){tutorialStep=Math.max(0,tutorialStep-1);return render();}
-  if(actionName==='tutorialNext'){tutorialStep=Math.min(TUTORIAL.length-1,tutorialStep+1);return render();}
+  if(actionName==='tutorial'){tutorialStep=0;tutorialChapter=0;return setRoute('#/tutorial');}
+  if(actionName==='tutorialBack'){if(tutorialStep>0)tutorialStep--;else if(tutorialChapter>0)tutorialStep=GUIDE_CHAPTERS[--tutorialChapter].entries.length-1;return render();}
+  if(actionName==='tutorialNext'){if(tutorialStep<GUIDE_CHAPTERS[tutorialChapter].entries.length-1)tutorialStep++;else if(tutorialChapter<GUIDE_CHAPTERS.length-1){tutorialChapter++;tutorialStep=0;}return render();}
   if(actionName==='tutorialStart'){selectedMode='solo';selectedExpansions.clear();selectedDifficulties={};return setRoute('#/setup');}
   if(actionName==='historyClear'){if(confirm('Delete all completed game summaries stored in this browser?')){clearHistory(localStorage);return render();}return;}
   if(actionName==='presetSave'){try{const preset=savePreset(localStorage,document.querySelector('#presetName')?.value,currentSetup());return render();}catch(e){return setError(e.message);}}
@@ -593,13 +578,14 @@ function installTabletopController(){
     }
   });
 }
-app.addEventListener('input',e=>{if(e.target?.id==='name')playerDisplayName=String(e.target.value).slice(0,40);if(e.target?.id==='joinname')partnerDisplayName=String(e.target.value).slice(0,40);});
-app.addEventListener('change',e=>{if(e.target?.id==='freeOnSearch'){freeSearchId=e.target.value;return;}if(e.target?.dataset?.mirrorPair){if(e.target.checked)mirrorPairSelection.add(e.target.dataset.mirrorPair);else mirrorPairSelection.delete(e.target.dataset.mirrorPair);return;}if(e.target?.dataset?.mirrorChoice){if(e.target.checked)mirrorSelection.add(e.target.dataset.mirrorChoice);else mirrorSelection.delete(e.target.dataset.mirrorChoice);return;}if(e.target?.dataset?.expansion){const id=e.target.dataset.expansion;if(e.target.checked){if(id==='incubus')selectedExpansions.clear();else selectedExpansions.delete('incubus');selectedExpansions.add(id);}else{selectedExpansions.delete(id);delete selectedDifficulties[id];}return render();}if(e.target?.dataset?.difficulty){selectedDifficulties[e.target.dataset.difficulty]=e.target.value;return render();}if(e.target?.dataset?.spellChoice){spellChoice=e.target.value;spellSelected.clear();spellGoals=[];choicePage=0;return render();}const key=e.target?.dataset?.setting;if(!['theme','motion','cardSize','contrast','textSize'].includes(key))return;const value=e.target.value;if(key==='theme'&&!THEME_PRESETS.some(t=>t.id===value))return;if(key==='motion'&&!['normal','reduced'].includes(value))return;if(key==='cardSize'&&!['normal','large'].includes(value))return;if(key==='contrast'&&!['normal','high'].includes(value))return;if(key==='textSize'&&!['normal','large'].includes(value))return;uiSettings[key]=value;localStorage.setItem(SETTINGS_KEY,JSON.stringify(uiSettings));applySettings();render();});
+app.addEventListener('input',e=>{if(e.target?.matches?.('[data-guide-search]')){filterGuide(e.target.closest('[data-guide-root]'),e.target.value);return;}if(e.target?.id==='name')playerDisplayName=String(e.target.value).slice(0,40);if(e.target?.id==='joinname')partnerDisplayName=String(e.target.value).slice(0,40);});
+app.addEventListener('change',e=>{if(e.target?.matches?.('[data-tutorial-chapter]')){const chapter=Number(e.target.value);if(Number.isInteger(chapter)&&chapter>=0&&chapter<GUIDE_CHAPTERS.length){tutorialChapter=chapter;tutorialStep=0;render();}return;}if(e.target?.id==='freeOnSearch'){freeSearchId=e.target.value;return;}if(e.target?.dataset?.mirrorPair){if(e.target.checked)mirrorPairSelection.add(e.target.dataset.mirrorPair);else mirrorPairSelection.delete(e.target.dataset.mirrorPair);return;}if(e.target?.dataset?.mirrorChoice){if(e.target.checked)mirrorSelection.add(e.target.dataset.mirrorChoice);else mirrorSelection.delete(e.target.dataset.mirrorChoice);return;}if(e.target?.dataset?.expansion){const id=e.target.dataset.expansion;if(e.target.checked){if(id==='incubus')selectedExpansions.clear();else selectedExpansions.delete('incubus');selectedExpansions.add(id);}else{selectedExpansions.delete(id);delete selectedDifficulties[id];}return render();}if(e.target?.dataset?.difficulty){selectedDifficulties[e.target.dataset.difficulty]=e.target.value;return render();}if(e.target?.dataset?.spellChoice){spellChoice=e.target.value;spellSelected.clear();spellGoals=[];choicePage=0;return render();}const key=e.target?.dataset?.setting;if(!['theme','motion','cardSize','contrast','textSize'].includes(key))return;const value=e.target.value;if(key==='theme'&&!THEME_PRESETS.some(t=>t.id===value))return;if(key==='motion'&&!['normal','reduced'].includes(value))return;if(key==='cardSize'&&!['normal','large'].includes(value))return;if(key==='contrast'&&!['normal','high'].includes(value))return;if(key==='textSize'&&!['normal','large'].includes(value))return;uiSettings[key]=value;localStorage.setItem(SETTINGS_KEY,JSON.stringify(uiSettings));applySettings();render();});
 app.addEventListener('click',e=>{
   if(e.target.closest?.('[data-replay-stage]')){e.preventDefault();return;}
   if(replayFrames.length&&!e.target.closest?.('[data-replay-layer]')){e.preventDefault();return;}
   if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
   if(pileOpen&&!e.target.closest?.('[data-pile-inspector],[data-action^="inspectPile:"],[data-action^="inspectCatcher:"]')){pileOpen=null;render();return;}
+  const jump=e.target.closest?.('[data-guide-jump]');if(jump){const root=jump.closest('[data-guide-root]'),chapter=[...(root?.querySelectorAll('[data-guide-chapter]')||[])].find(el=>el.dataset.guideChapter===jump.dataset.guideJump);if(chapter){if(chapter.hidden){const search=root?.querySelector('[data-guide-search]');if(search)search.value='';filterGuide(root,'');}chapter.querySelector('[data-guide-entry]')?.setAttribute('open','');chapter.scrollIntoView?.({block:'start',behavior:'smooth'});}return;}
   const target=e.target.closest('[data-action],[data-pick]');if(!target||target.getAttribute('aria-disabled')==='true')return;
   if(gameOverlay&&!target.closest?.('[data-game-menu-dialog]'))return;
   if(target.dataset.pick){if(state?.game?.phase==='draft')handle(`draft:${target.dataset.pick}`);else pick(target.dataset.pick);return;}

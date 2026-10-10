@@ -34,9 +34,9 @@ test('in-game rules show all base sections and active expansions only',()=>{
  const coop=rulesSections(['incubus'],true);assert.equal(coop.length,7);
  const output=renderOverlay('rules',['book','towers'],false);
  assert.match(output,/Book of Steps/);assert.match(output,/Towers/);
- assert.doesNotMatch(output,/Little Incubus/);
- assert.doesNotMatch(output,/Two-player co-op/);
- assert.match(renderOverlay('rules',[],true),/Two-player co-op/);
+ assert.doesNotMatch(output,/data-guide-chapter="incubus"/);
+ assert.doesNotMatch(output,/data-guide-chapter="coop"/);
+ assert.match(renderOverlay('rules',[],true),/data-guide-chapter="coop"/);
  assert.match(output,/data-rule-index="/);
  assert.match(output,/data-game-menu-dismiss/);
  assert.match(output,/data-action="closeGameOverlay"/);
