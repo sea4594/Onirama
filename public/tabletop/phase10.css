@@ -1,0 +1,24 @@
+/* Phase 10: small-screen space allocation and consistently physical card groups.
+   None of these rules depends on selection, dragging, or the current turn. */
+.game-viewport .tt2-root .tt8-doors-row{justify-content:center;gap:clamp(1px,.45vw,8px)}
+.game-viewport .tt2-root .tt8-door-slot{flex:0 1 var(--tt4-mini);width:var(--tt4-mini);min-width:0}
+.game-viewport .tt2-root .tt2-pile-row{justify-content:center;gap:clamp(5px,1.25vw,16px)}
+.game-viewport .tt2-root .tt2-pile-row>.tt2-pile{flex:0 1 auto;min-width:0}
+.game-viewport .tt2-root .tt2-pile-row>.tt8-spell-button{flex:0 0 auto}
+/* Compact portrait: two short expansion shelves instead of four full-width
+   shelves. This increases the usable card scale without scrolling or hiding. */
+@media (orientation:portrait) and (max-width:359px){
+  .game-viewport .tt2-root[data-tabletop-solo] :is(.tt9-exp-primary,.tt9-exp-secondary){grid-template-columns:repeat(2,minmax(0,1fr))!important;--tt4-exp-height:62px}
+  .game-viewport .tt2-root[data-tabletop-solo] .tt5-zone>.tt5-contents{gap:2px}
+  .game-viewport .tt2-root[data-tabletop-solo] .tt8-doors-row{gap:1px}
+}
+/* A visible outline must never modify the intrinsic face color or dimensions. */
+.game-viewport .tt2-root :is(.tt5-premonition.tt7-premonition-selected,.tt8-goal-spot.tt8-goal-chosen,.tt5-order-selected,.tt9-discard-gesture){filter:none!important;transform:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
+.game-viewport .tt2-root :is(.tt5-premonition,.tt8-goal-spot,.tt2-pile,.tt5-tile){box-sizing:border-box}
+/* Give keyboard focus the same high-contrast, paint-only treatment as touch. */
+.game-viewport :is([data-tt-card-info],.tt5-tile[role="button"],.tt6-pile-inspect):focus-visible{outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
+/* Narrow overlays stay within the viewport, with controls remaining tappable. */
+.tt9-replay-controls{min-width:0}
+.tt9-replay-controls button{flex:0 1 auto;min-width:0;padding-inline:clamp(6px,1.4vw,15px)}
+@media(max-width:359px){.tt9-replay-head{gap:5px}.tt9-replay-count{font-size:.71rem}.tt9-replay-controls{gap:4px}}
+@media(orientation:landscape) and (max-height:380px){.tt9-replay-head,.tt9-replay-controls{min-height:29px;padding:2px 6px}.tt9-replay-controls button{min-height:29px}}

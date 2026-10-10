@@ -344,6 +344,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const expandedRules=[...(previousOverlay?.querySelectorAll?.('details[open][data-rule-index]')||[])].map(el=>el.dataset.ruleIndex);
   const settingsExpanded=!!previousOverlay?.querySelector?.('[data-pause-settings][open]');
   const overlayFocused=focused?.closest?.('[data-game-menu-dialog]')?focused?.dataset?.action||focused?.dataset?.setting:null;
+  const replayFocused=focused?.closest?.('[data-replay-layer]')?focused?.dataset?.action:null;
   page=location.hash||'#/';if(page!=='#/game'){gameOverlay=null;gameRulesFromPause=false;}let content;
   if(page==='#/setup')content=setup();else if(page==='#/join'||roomCodeFromHash())content=joinPage();else if(page==='#/rules')content=rules();else if(page==='#/roadmap')content=roadmap();else if(page==='#/multiplayer')content=multiplayer();else if(page==='#/settings')content=settings();else if(page==='#/history')content=historyPage();else if(page==='#/tutorial')content=tutorial();else if(page==='#/game')content=!state?'<div class="loading">Loading the dream…</div>':state.room.started?board(state.game,state.room):lobby(state.room);else content=home();
   const inGame=page==='#/game'&&!!state?.room?.started;
@@ -376,7 +377,8 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
     (match||openMenu.querySelector?.('button,[href],summary,select')||openMenu)?.focus?.({preventScroll:true});
   }else if(overlayReturnAction){(app.querySelector?.(`.tt4-overlay [data-action="${overlayReturnAction}"]`)||app.querySelector?.(`[data-action="${overlayReturnAction}"]`))?.focus?.({preventScroll:true});overlayReturnAction=null;}
   for(const node of app.querySelectorAll?.('.page,.tt4-overlay')||[]){if(gameOverlay||replayFrames.length)node.setAttribute?.('inert','');else node.removeAttribute?.('inert');}
-  if(focusKind&&!gameOverlay){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
+  if(replayFrames.length&&replayFocused){(app.querySelector?.(`[data-replay-layer] [data-action="${replayFocused}"]`)||app.querySelector?.('[data-replay-layer] [data-action="replayClose"]'))?.focus?.({preventScroll:true});}
+  if(focusKind&&!gameOverlay&&!replayFrames.length){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
 }
 function pick(id){
  const g=state?.game;if(g&&state?.room?.seat===g.active){
@@ -397,7 +399,7 @@ function pick(id){
 }
 async function handle(actionName){
   if(actionName==='replayOpen'){if(page!=='#/game'||state?.room?.mode!=='coop')return;const frames=opponentReplay(state.replay,state.room.seat);if(frames.length<2)return;stopReplay();gameOverlay=null;pileOpen=null;replayFrames=frames;replayIndex=0;render();app.querySelector?.('[data-replay-layer] .tt9-replay-dialog')?.focus?.();return;}
-  if(actionName==='replayClose'){stopReplay();return render();}
+  if(actionName==='replayClose'){stopReplay();render();app.querySelector?.('[data-action="replayOpen"]')?.focus?.({preventScroll:true});return;}
   if(actionName==='replayPrev'||actionName==='replayNext'){replayPlaying=false;if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayIndex=Math.max(0,Math.min(replayFrames.length-1,replayIndex+(actionName==='replayNext'?1:-1)));return updateReplayStage();}
   if(actionName==='replayPlay'){replayPlaying=!replayPlaying;updateReplayStage();scheduleReplay();return;}
   if(replayFrames.length)return;
@@ -585,7 +587,23 @@ app.addEventListener('click',e=>{
   handle(target.dataset.action);
 });
 app.addEventListener('keydown',e=>{
-  if(replayFrames.length){if(e.key==='Escape'){e.preventDefault();stopReplay();render();}return;}
+  if(replayFrames.length){
+    if(e.key==='Escape'){e.preventDefault();handle('replayClose');return;}
+    if(e.key==='Tab'){
+      const dialog=app.querySelector?.('[data-replay-layer] .tt9-replay-dialog');
+      const items=[...(dialog?.querySelectorAll?.('button:not([disabled])')||[])].filter(el=>el.getClientRects?.().length!==0);
+      if(!items.length)return;
+      const first=items[0],last=items.at(-1),active=document.activeElement;
+      if(e.shiftKey&&(active===first||!dialog.contains(active))){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&(active===last||!dialog.contains(active))){e.preventDefault();first.focus();}
+    }
+    return;
+  }
+  // Expansion tiles are intentionally not nested buttons (some contain an
+  // independent action button). Make their button roles operable from a keyboard.
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.tt5-tile[role="button"][data-action]')){
+    if(!gameOverlay){e.preventDefault();handle(e.target.dataset.action);}return;
+  }
   if(pileOpen&&e.key==='Escape'&&!gameOverlay){e.preventDefault();pileOpen=null;render();return;}
   const popup=app.querySelector?.('[data-game-menu-dialog]');if(!popup)return;
   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation?.();handle('closeGameOverlay');return;}

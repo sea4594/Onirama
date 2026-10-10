@@ -53,7 +53,8 @@ export function createCardInspector({root}){
    document.body.appendChild(pop);
    const size=pop.getBoundingClientRect(),pad=8;
    const left=Math.max(pad,Math.min(window.innerWidth-size.width-pad,x+12));
-   const top=y+size.height+16>window.innerHeight?Math.max(pad,y-size.height-12):Math.max(pad,y+12);
+   const desired=y+size.height+16>window.innerHeight?y-size.height-12:y+12;
+   const top=Math.max(pad,Math.min(Math.max(pad,window.innerHeight-size.height-pad),desired));
    pop.style.left=`${left}px`;pop.style.top=`${top}px`;
    pop.querySelector('button').addEventListener('click',e=>{e.stopPropagation();close();});
    if(focus)pop.querySelector('button')?.focus?.({preventScroll:true});
@@ -78,11 +79,13 @@ export function createCardInspector({root}){
  function click(e){if(ignoreClick){ignoreClick=false;e.preventDefault();e.stopImmediatePropagation();return;}
    if(pop&&!pop.contains(e.target)){close();}
  }
+ const popupKey=e=>{if(pop&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}};
+ document.addEventListener('keydown',popupKey,true);
  root.addEventListener('contextmenu',context);root.addEventListener('pointerdown',down);
  window.addEventListener('pointermove',move,{passive:true});window.addEventListener('pointerup',up);
  window.addEventListener('pointercancel',cancelHold);window.addEventListener('blur',cancelHold);
  const outside=e=>{if(pop&&!pop.contains(e.target))close();};
  document.addEventListener('pointerdown',outside);
  root.addEventListener('click',click,true);root.addEventListener('keydown',key,true);
- return {close,dispose(){cancelHold();close();document.removeEventListener('pointerdown',outside);root.removeEventListener('contextmenu',context);root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancelHold);window.removeEventListener('blur',cancelHold);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key,true);}};
+ return {close,dispose(){cancelHold();close();document.removeEventListener('keydown',popupKey,true);document.removeEventListener('pointerdown',outside);root.removeEventListener('contextmenu',context);root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancelHold);window.removeEventListener('blur',cancelHold);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key,true);}};
 }
