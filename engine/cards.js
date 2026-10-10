@@ -27,7 +27,7 @@ export function createDeck(expansions=[]){
  const cards=[];let index=0;const add=(kind,color=null,symbol=null,extra={})=>cards.push({id:`c${++index}`,kind,color,symbol,...extra});
  for(const color of COLORS){for(const symbol of SYMBOLS)for(let n=0;n<LOCATION_COUNTS[color][symbol];n++)add('location',color,symbol);for(let n=0;n<2;n++)add('door',color);}
  for(let n=0;n<10;n++)add('nightmare');
- if(expansions.includes('glyphs'))for(const color of COLORS){for(let n=0;n<2;n++)add('location',color,'glyph',{expansion:'glyphs'});add('door',color,null,{expansion:'glyphs'});}
+ if(expansions.includes('glyphs'))for(const color of COLORS){for(let n=0;n<2;n++)add('location',color,'glyph',{expansion:'glyphs'});add('door',color,null);}
  if(expansions.includes('dreamcatchers'))for(let n=0;n<4;n++)add('lostDream',null,null,{expansion:'dreamcatchers'});
  if(expansions.includes('premonitions'))for(let n=0;n<4;n++)add('happyDream',null,null,{expansion:'premonitions'});
  if(expansions.includes('crossroads')){for(const symbol of ['sun','sun','sun','moon','moon','key'])add('location','wild',symbol,{expansion:'crossroads'});for(let n=0;n<10;n++)add('deadEnd',null,null,{expansion:'crossroads'});}

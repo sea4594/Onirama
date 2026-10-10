@@ -26,10 +26,9 @@ test('Claimed Incantation Door moves to Doors, never Limbo, when no Steps restri
  const final=act(s,{type:'incantation',doorId:door.id,order:rest});
  assert(final.players[final.active].doors.some(c=>c.id===door.id));assert(!final.limbo.some(c=>c.id===door.id));assertConserved(final);
 });
-test('Pass is allowed with revealed Doors and returns ALL cards to deck bottom',()=>{
- const {s,door}=setIncantation();const ids=s.pending.cards.map(c=>c.id);
- const final=act(s,{type:'incantation',doorId:null,order:ids});
- assert(!final.players[final.active].doors.some(c=>c.id===door.id));assert(!final.limbo.some(c=>c.id===door.id));assert(final.deck.some(c=>c.id===door.id));assertConserved(final);
+test('Pass is rejected with revealed Doors, preserving state and physical inventory',()=>{
+ const {s}=setIncantation();const ids=s.pending.cards.map(c=>c.id);
+ assert.throws(()=>act(s,{type:'incantation',doorId:null,order:ids}),/passing is allowed only/);assertConserved(s);
 });
 test('Book of Steps claims matching Goal but routes wrong-color Door to Limbo',()=>{
  for(const match of [true,false]){
@@ -55,7 +54,7 @@ test('Only active-player Doors are a highlighted Incantation drop target, with p
 });
 test('UI action stage disallows ordering before claim/pass; mouse/touch drop only accepts revealed Door',()=>{
  const app=src('public/app.js'),gestures=src('public/tabletop/interactions.js'),styles=src('public/tabletop/phase10d.css');
- assert.match(app,/incantationStage!=='order'/);assert.match(app,/incantationPass/);assert.match(app,/incantationBack/);assert.match(app,/incantationSelect:/);
+ assert.match(app,/incantationStage!=='order'/);assert.doesNotMatch(app,/incantationPass/);assert.match(app,/incantationBack/);assert.match(app,/incantationSelect:/);
  assert.match(gestures,/createIncantationClaim/);assert.match(gestures,/data-tt-incantation-card/);assert.match(gestures,/data-tt-incantation-drop/);
  assert.match(styles,/\.tt12-claim-zone/);assert.match(styles,/outline-offset:-3px/);
 });

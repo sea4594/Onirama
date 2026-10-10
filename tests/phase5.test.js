@@ -33,7 +33,9 @@ test('Crossroad completes colored Door set in any position, but hard mode requir
   for(const c of choices){const hi=p.hand.findIndex(x=>x.id===c.id);if(hi>=0){const di=s.deck.findIndex(x=>!choices.some(v=>v.id===x.id));[p.hand[hi],s.deck[di]]=[s.deck[di],p.hand[hi]];}}
   const seq=where===0?[choices[2],choices[0],choices[1]]:where===1?[choices[0],choices[2],choices[1]]:[choices[0],choices[1],choices[2]];
   for(const c of seq.slice(0,2)){const i=s.deck.findIndex(x=>x.id===c.id);p.labyrinth.push(s.deck.splice(i,1)[0]);}p.series=seq.slice(0,2).map(c=>({id:c.id,color:c.color}));
-  replaceHand(s,seq[2]);const next=act(s,{type:'play',id:seq[2].id});
+  replaceHand(s,seq[2]);
+  if(hard&&where===2){assert.throws(()=>act(s,{type:'play',id:seq[2].id}),/only second/);assertConserved(s);continue;}
+  const next=act(s,{type:'play',id:seq[2].id});
   if(!hard||where===1)assert.equal(next.pending?.type,'doorSearch');else assert.notEqual(next.pending?.type,'doorSearch');assertConserved(next);
  }
 });

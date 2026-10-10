@@ -11,7 +11,7 @@ export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,
   const classes=`card ${c.color||c.kind}${tiny?' tiny':''}${selectedId===c.id?' selected':''}${highlight?' tt7-eligible':''}`;
   // Inspect metadata only for a card already visible to this viewer. Never
   // serialize IDs, private hands, deck order, or unrevealed card details.
-  const visible={kind:c.kind,color:c.color||'',symbol:c.symbol||'',expansion:c.expansion||'',ability:c.ability||'',number:c.number||'',left:c.left||'',right:c.right||''};
+  const visible={kind:c.kind,color:c.color||'',symbol:c.symbol||'',expansion:c.kind==='door'&&c.expansion!=='oniverse'?'':c.expansion||'',ability:c.ability||'',number:c.number||'',left:c.left||'',right:c.right||''};
   const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"${c.kind!=='hidden'&&c.id?` data-tt-motion-id="${htmlEscape(c.id)}"`:``}`;
   const towerEdge=(marks,side)=>`<span class="tt8-tower-marks tt8-tower-${side}">${marks.split('+').filter(Boolean).map(mark=>`<span class="tt8-tower-mark" data-tower-mark="${htmlEscape(mark)}">${cardSymbol(mark)}</span>`).join('')}</span>`;
   const face=c.kind==='tower'?`<span class="tt5-tower-face">${towerEdge(c.left||'', 'left')}<span class="tt11-tower-emblem" aria-hidden="true">${cardSymbol('tower')}</span><strong class="tt11-tower-number">${htmlEscape(c.number)}</strong>${towerEdge(c.right||'', 'right')}</span>`:`<span class="symbol">${symbol}</span>`;

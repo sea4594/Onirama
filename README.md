@@ -84,7 +84,7 @@ scripts/         Optional safe git initialization / push helper
 
 ## Development phases
 
-See **[docs/PHASES.md](docs/PHASES.md)** for the phase-by-phase plan, acceptance gates, and exact expansion coverage; **[docs/RULES_AUDIT.md](docs/RULES_AUDIT.md)** for rule coverage and unresolved official clarifications.
+See **[docs/PHASES.md](docs/PHASES.md)** for the phase-by-phase plan, acceptance gates, and exact expansion coverage; **[docs/RULES_AUDIT.md](docs/RULES_AUDIT.md)** for historical rule coverage, and **[docs/RULES_DECISIONS_AND_AMBIGUITIES.md](docs/RULES_DECISIONS_AND_AMBIGUITIES.md)** for current owner rulings, implemented fixes, and unresolved expansion combinations.
 
 ## Rules references
 

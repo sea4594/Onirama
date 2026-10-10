@@ -21,8 +21,9 @@ function useDenizen(s,cmd){need(has(s,'oniverse'),'Door to the Oniverse is disab
  if(ability==='architect'){
    const f=spots(s).find(x=>x.id===cmd.cardId);need(f?.card.kind==='location','Choose a Location for the Architect');
    need(own(s).labyrinth.length&&own(s).labyrinth.at(-1).symbol===f.card.symbol,'Architect must override a matching adjacent symbol');
+   need(canPlayLocation(s,f.card,true),'Difficult Crossroads allows a Crossroad only second in a series');
    spendDenizen(s,d.id,ability);const c=takeSpot(s,cmd.cardId);own(s).labyrinth.push(c);const color=runLocation(s,c);note(s,`Architect played ${c.color} ${c.symbol}.`);
-   if(color&&doorSearchTargets(s,color).length){s.pending={type:'doorSearch',color};s.phase='decision';return;}
+   if(color){s.pending={type:'doorSearch',color};s.phase='decision';return;}
    refill(s);return;
  }
  if(ability==='cyclobot'){
@@ -77,6 +78,11 @@ function applyPremonition(s,id,after){const p=prem(s);need(activePremonitions(s)
  premonitionLoop(s,after);
 }
 function finishAcquisition(s){if(s.status==='active')premonitionLoop(s,'refill');}
+function canPlayLocation(s,c,allowMatchingSymbol=false){
+ if(!allowMatchingSymbol&&own(s).labyrinth.at(-1)?.symbol===c.symbol)return false;
+ return c.color!=='wild'||s.config.difficulties.crossroads!=='hard'||(own(s).series?.length===1&&own(s).series[0].color!=='wild');
+}
+function matchesAspect(c,aspect){return COLORS.includes(aspect)?(c.color===aspect||c.color==='wild'):c.symbol===aspect;}
 function runLocation(s,c){const p=own(s);p.series??=[];let series=p.series;
  const real=series.find(x=>x.color!=='wild');if(real&&c.color!=='wild'&&c.color!==real.color)series=[];
  if(c.color==='wild'&&series.some(x=>x.color==='wild'))series=[];
@@ -208,8 +214,8 @@ function playTower(s,cmd){const found=spots(s).find(x=>x.id===cmd.id);need(found
  if(a.length){const neighbor=cmd.side==='left'?a[0]:a.at(-1);need(!edgesConflict(...(cmd.side==='left'?[c.right,neighbor.left]:[neighbor.right,c.left])),'Tower edge symbols cannot match');}
  takeSpot(s,cmd.id);if(cmd.side==='left')a.unshift(c);else a.push(c);note(s,`Played ${c.color} Tower on the ${cmd.side}.`);if(checkWin(s))return;completeAction(s);
 }
-function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromatic').length>0;const targets=s.deck.filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'deck'}));
- if(has(s,'dreamcatchers'))for(const i of catcherIds(s))targets.push(...stacks(s)['catch'+i].filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'catch'+i})));
+function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromatic').length>0;const targets=s.deck.filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'deck',color:c.color}));
+ if(has(s,'dreamcatchers'))for(const i of catcherIds(s))targets.push(...stacks(s)['catch'+i].filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'catch'+i,color:c.color})));
  return targets;
 }
 function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(o.source!=='deck'&&freeId!==undefined&&freeId!==null){
@@ -221,20 +227,24 @@ function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color)
 const MIRROR_NAMES=['red','blue','green','brown','sun','moon','key','glyph','rainbow'];
 function mirrorEnabled(s,name){return MIRROR_NAMES.includes(name)&&(name!=='glyph'||has(s,'glyphs'))&&(name!=='rainbow'||s.config.difficulties.mirrors==='hard');}
 function mirrorMatch(c,name){if(c.kind!=='location')return false;if(name==='rainbow')return COLORS.includes(c.color);if(COLORS.includes(name))return c.color===name||c.color==='wild';return c.symbol===name;}
+function finishMirror(s){
+ const m=mirrors(s),name=m.resolving;if(!name)return;
+ s.discard.push(...m.zones[name].splice(0));m.resolving=null;
+}
 function playMirrorPair(s,cmd){need(has(s,'mirrors')&&mirrorEnabled(s,cmd.mirror),'Mirror unavailable');need(!mirrors(s).completed.includes(cmd.mirror),'Mirror already explored');const ids=cmd.ids;need(Array.isArray(ids)&&ids.length===2&&ids[0]!==ids[1],'Choose two distinct Location cards');const first=spots(s).find(x=>x.id===ids[0]),second=spots(s).find(x=>x.id===ids[1]);need(first&&second&&mirrorMatch(first.card,cmd.mirror)&&mirrorMatch(second.card,cmd.mirror),'Both cards must match one Mirror');const a=mirrors(s).zones[cmd.mirror];need(a.length<=2,'Mirror is already full');if(cmd.mirror==='rainbow')need(new Set([...a.map(c=>c.color),first.card.color,second.card.color]).size===a.length+2,'Rainbow Mirror requires one card of each color');a.push(takeSpot(s,ids[0]),takeSpot(s,ids[1]));note(s,`Placed two Locations under ${cmd.mirror} Mirror.`);
- if(a.length!==4){refill(s);return;}mirrors(s).completed.push(cmd.mirror);s.discard.push(...a.splice(0));note(s,`Explored ${cmd.mirror} Mirror.`);
+ if(a.length!==4){refill(s);return;}mirrors(s).completed.push(cmd.mirror);mirrors(s).resolving=cmd.mirror;note(s,`Explored ${cmd.mirror} Mirror.`);
  if(cmd.mirror==='green'){const i=s.deck.findIndex(c=>c.kind==='nightmare');if(i>=0)s.discard.push(...s.deck.splice(i,1));shuffleAfterSearch(s,cmd.freeId);}
  if(['red','blue','brown','key','glyph'].includes(cmd.mirror)){s.pending={type:'mirrorReward',mirror:cmd.mirror,options:(cmd.mirror==='blue'?s.discard:s.deck).map(c=>({...c}))};s.phase='decision';return;}
- if(checkWin(s))return;refill(s);
+ finishMirror(s);if(checkWin(s))return;refill(s);
 }
 function continueMirrorDoors(s){
  // Resolving several Mirror Doors is sequential: each acquisition must trigger
  // Premonitions and immediate victory before the next Door may be awarded.
  if(s.status!=='active')return;
  const waiting=mirrors(s).zones.queuedDoors;
- if(!waiting.length){s.pending=null;refill(s);return;}
+ if(!waiting.length){finishMirror(s);s.pending=null;if(!checkWin(s))refill(s);return;}
  const door=waiting.shift();acquireDoor(s,door,'Mirror');
- if(s.status!=='active'){s.limbo.push(...waiting.splice(0));return;}
+ if(s.status!=='active'){s.limbo.push(...waiting.splice(0));finishMirror(s);return;}
  premonitionLoop(s,'mirrorDoors');
 }
 function resolveMirrorReward(s,cmd){const p=s.pending;need(cmd.type==='mirrorReward'&&p.type==='mirrorReward','Resolve the Mirror reward');const name=p.mirror;const source=name==='blue'?s.discard:s.deck;let picks=cmd.ids||[];need(Array.isArray(picks)&&new Set(picks).size===picks.length,'Select each card at most once');const cardFor=id=>source.find(c=>c.id===id);need(picks.every(id=>p.options.some(c=>c.id===id)&&cardFor(id)),'Select available cards from the indicated pile');const doors=source.filter(c=>c.kind==='door');
@@ -250,7 +260,7 @@ function resolveMirrorReward(s,cmd){const p=s.pending;need(cmd.type==='mirrorRew
    const gained=picks.map(id=>source.splice(source.findIndex(c=>c.id===id),1)[0]);shuffleAfterSearch(s,cmd.freeId);
    mirrors(s).zones.queuedDoors.push(...gained);s.pending=null;continueMirrorDoors(s);return;
  }else throw Error('Unknown Mirror');
- s.pending=null;if(s.status==='active')refill(s);
+ finishMirror(s);s.pending=null;if(s.status==='active'){if(!checkWin(s))refill(s);}
 }
 function activateIncubus(s){need(has(s,'incubus')&&incubus(s).level!=='easy','Incubus activation requires Apprentice or True level');need(!incubus(s).zones.stored.length,'Incubus already charged');const required=incubus(s).level==='true'?2:1;
  while(incubus(s).zones.stored.length<required){if(!s.deck.length){s.status='lost';s.phase='ended';return;}const c=takeTop(s);if(['location','tower','deadEnd'].includes(c.kind))incubus(s).zones.stored.push(c);else s.limbo.push(c);}
@@ -281,7 +291,7 @@ export function legalActions(s){if(s.status!=='active')return [];
   return [list[p.type]].filter(Boolean).concat(bonus);
  }
  if(s.phase!=='action')return [];
- const actions=spots(s).flatMap(x=>[...(x.card.kind==='location'&&own(s).labyrinth.at(-1)?.symbol!==x.card.symbol?[{type:'play',id:x.id}]:[]),...(x.card.kind==='tower'?[{type:'playTower',id:x.id}]:[]),...(x.card.kind!=='deadEnd'?[{type:'discard',id:x.id}]:[])]);
+ const actions=spots(s).flatMap(x=>[...(x.card.kind==='location'&&canPlayLocation(s,x.card)?[{type:'play',id:x.id}]:[]),...(x.card.kind==='tower'?[{type:'playTower',id:x.id}]:[]),...(x.card.kind!=='deadEnd'?[{type:'discard',id:x.id}]:[])]);
  if(has(s,'crossroads'))actions.push({type:'escape'});
  if(has(s,'mirrors'))for(const m of MIRROR_NAMES)if(mirrorEnabled(s,m)&&!mirrors(s).completed.includes(m))actions.push({type:'mirrorPair',mirror:m});
  if(has(s,'incubus')&&incubus(s).level!=='easy'&&!incubus(s).zones.stored.length)actions.push({type:'incubusActivate'});
@@ -329,8 +339,9 @@ export function act(previous,command){
   if(command.type==='playTower'){need(has(s,'towers'),'Towers expansion disabled');playTower(s,command);return s;}
   if(command.type==='play'){
    const f=spots(s).find(x=>x.id===command.id);need(f?.card.kind==='location','Choose a Location');const last=own(s).labyrinth.at(-1);need(!last||last.symbol!==f.card.symbol,'Adjacent Labyrinth cards must have different symbols');
+   need(canPlayLocation(s,f.card),'Difficult Crossroads allows a Crossroad only second in a series');
    const c=takeSpot(s,command.id);own(s).labyrinth.push(c);const p=own(s);const color=runLocation(s,c);note(s,`${p.name} played ${c.color} ${c.symbol}.`);
-   if(color){const targets=doorSearchTargets(s,color);if(targets.length){s.pending={type:'doorSearch',color};s.phase='decision';return s;}note(s,`No ${color} Door was available.`);}
+   if(color){s.pending={type:'doorSearch',color};s.phase='decision';return s;}
    completeAction(s);return s;
   }
   if(command.type==='discard'){
@@ -345,7 +356,7 @@ export function act(previous,command){
  }
  need(s.phase==='decision'&&s.pending,'Resolve the pending decision first');const p=s.pending;
  if(p.type==='sphinxName'){need(command.type==='sphinxName'&&([...COLORS,'moon','key',...(has(s,'glyphs')?['glyph']:[])].includes(command.aspect)),'Name a permitted color or symbol');s.pending={type:'sphinxResolve',card:p.card,aspect:command.aspect,cards:takeLook(s,5,'bottom')};return s;}
- if(p.type==='sphinxResolve'){need(command.type==='sphinxResolve','Resolve the Sphinx');const match=p.cards.some(c=>c.color===p.aspect||c.symbol===p.aspect);const ids=p.cards.map(c=>c.id);need(Array.isArray(command.order)&&command.order.length===ids.length&&new Set(command.order).size===ids.length&&command.order.every(id=>ids.includes(id)),'Return every revealed card exactly once');if(match){need(ids.includes(command.topId),'Choose any one revealed card for the top');putBottom(s,p.cards.filter(c=>c.id!==command.topId),command.order.filter(id=>id!==command.topId));s.deck.push(p.cards.find(c=>c.id===command.topId));}else putBottom(s,p.cards,command.order);s.discard.push(p.card);s.pending=null;if(!match){s.discard.push(...hand(s).splice(0));if(s.mode==='coop')s.discard.push(...s.shared.splice(0));if(fillSpecial(s))endTurn(s);}else refill(s);return s;}
+ if(p.type==='sphinxResolve'){need(command.type==='sphinxResolve','Resolve the Sphinx');const match=p.cards.some(c=>matchesAspect(c,p.aspect));const ids=p.cards.map(c=>c.id);need(Array.isArray(command.order)&&command.order.length===ids.length&&new Set(command.order).size===ids.length&&command.order.every(id=>ids.includes(id)),'Return every revealed card exactly once');if(match){need(ids.includes(command.topId),'Choose any one revealed card for the top');putBottom(s,p.cards.filter(c=>c.id!==command.topId),command.order.filter(id=>id!==command.topId));s.deck.push(p.cards.find(c=>c.id===command.topId));}else putBottom(s,p.cards,command.order);s.discard.push(p.card);s.pending=null;if(!match){s.discard.push(...hand(s).splice(0));if(s.mode==='coop')s.discard.push(...s.shared.splice(0));if(fillSpecial(s))endTurn(s);}else refill(s);return s;}
  if(p.type==='diver'){need(command.type==='diver','Resolve the Diver');const ids=p.cards.map(c=>c.id);if(command.option==='continue'){need(s.deck.length>0&&p.cards.at(-1)?.kind!=='nightmare','Cannot continue after Nightmare or deck end');p.cards.push(takeLook(s,1,'bottom')[0]);return s;}need(command.option==='stop'||command.option==='nightmare','Choose stop or Nightmare');const hit=p.cards.at(-1)?.kind==='nightmare';need((hit&&command.option==='nightmare')||(!hit&&command.option==='stop'),'Must resolve a revealed Nightmare');need(Array.isArray(command.order)&&command.order.length===ids.length-(hit?0:1)&&new Set(command.order).size===command.order.length&&command.order.every(id=>ids.includes(id)&&(!hit? id!==p.cards.at(-1).id:true)),'Invalid bottom order');putBottom(s,hit?p.cards:p.cards.slice(0,-1),command.order);if(hit){s.pending={type:'nightmare',card:p.card};return s;}s.deck.push(p.cards.at(-1));s.discard.push(p.card);s.pending=null;refill(s);return s;}
  if(p.type==='confusion'){need(command.type==='confusion','Resolve Confusion');const cards=[...hand(s),...(s.mode==='coop'?s.shared:[])];need(Array.isArray(command.order)&&command.order.length===cards.length&&new Set(command.order).size===cards.length&&command.order.every(id=>cards.some(c=>c.id===id)),'Choose bottom-deck order of entire hand');hand(s).length=0;if(s.mode==='coop')s.shared.length=0;putBottom(s,cards,command.order);s.discard.push(p.card);s.pending=null;if(fillSpecial(s))endTurn(s);return s;}
  if(p.type==='mirrorReward'){resolveMirrorReward(s,command);return s;}
@@ -381,12 +392,12 @@ export function act(previous,command){
 
  if(p.type==='moduleDecision'){need(command.type==='moduleDecision','Resolve the pending effect decision');resolveEffectDecision(s,command,s.active);return s;}
  if(p.type==='doorSearch'){
-   need(command.type==='doorSearch','Resolve Door search');need(['skip','claim'].includes(command.option),'Invalid Door search choice');
+   need(command.type==='doorSearch','Resolve Door search');need(['skip','claim','search'].includes(command.option),'Invalid Door search choice');
    if(command.option==='claim'){
-     // Legacy commands can omit doorId; engine chooses the first matching card.
+     // Legacy commands may omit doorId; select a physical matching Door.
      const targets=doorSearchTargets(s,p.color),chosen=command.doorId||targets[0]?.id;need(chosen,'No matching Door exists');
      claimSearch(s,p.color,chosen,command.freeId);
-   }
+   }else if(command.option==='search'){shuffleAfterSearch(s,command.freeId);note(s,`Searched the deck but took no ${p.color} Door.`);}
    if(s.status==='active'){s.pending=null;if(command.option==='claim')finishAcquisition(s);else refill(s);}return s;
  }
  if(p.type==='door'){
@@ -412,7 +423,7 @@ export function act(previous,command){
  if(p.type==='towerLook'){need(command.type==='towerLook','Reorder inspected cards');putTop(s,p.cards,command.order);s.pending=null;refill(s);return s;}
  if(p.type==='incantation'){
    need(command.type==='incantation','Resolve Incantation');const doors=p.cards.filter(c=>c.kind==='door');
-   const id=command.doorId;need(id===null||id===undefined||doors.some(c=>c.id===id),'Choose a revealed Door or pass');
+   const id=command.doorId;need(doors.length?doors.some(c=>c.id===id):(id===null||id===undefined),'Choose a revealed Door (passing is allowed only if none was revealed)');
    const rest=p.cards.filter(c=>c.id!==id);putBottom(s,rest,command.order);if(id){const d=doors.find(c=>c.id===id);acquireDoor(s,d,'Incantation');}
    if(s.status==='active'){s.pending=null;finishAcquisition(s);}return s;
  }
@@ -424,7 +435,7 @@ export function act(previous,command){
  }
  if(p.type==='catchOverload'){
    need(command.type==='catchOverload'&&p.choices.includes(command.index),'Choose a Dreamcatcher to sacrifice');
-   const catcher=stacks(s)['catch'+command.index];s.limbo.push(...catcher.splice(0));dream(s).active[command.index]=false;
+   for(const i of catcherIds(s))s.limbo.push(...stacks(s)['catch'+i].splice(0));dream(s).active[command.index]=false;
    s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,`Dreamcatcher ${command.index+1} was lost to overload.`);
    if(!catcherIds(s).length){s.status='lost';s.phase='ended';s.pending=null;note(s,'All Dreamcatchers have been lost.');return s;}
    s.pending=null;advanceTurn(s);return s;

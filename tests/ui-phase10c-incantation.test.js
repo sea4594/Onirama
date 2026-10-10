@@ -18,14 +18,14 @@ test('Incantation reveals five, optional Door when none available never traps re
 });
 test('Incantation claims one Door and returns all other revealed cards in order',()=>{
  let g=incantation(2);const revealed=g.pending.cards;const chosen=revealed.find(c=>c.kind==='door');
- assert.throws(()=>act(g,{type:'incantation',doorId:'not-revealed',order:revealed.map(x=>x.id)}),/Choose a revealed Door or pass/);
+ assert.throws(()=>act(g,{type:'incantation',doorId:'not-revealed',order:revealed.map(x=>x.id)}),/Choose a revealed Door/);
  g=act(g,{type:'incantation',doorId:chosen.id,order:revealed.filter(c=>c.id!==chosen.id).map(c=>c.id)});
  assert(g.players[0].doors.some(c=>c.id===chosen.id));assertConserved(g);
 });
-test('Incantation UI supports choosing or passing before reordering',()=>{
+test('Incantation UI requires choosing a revealed Door before reordering',()=>{
  const app=source('public/app.js');
- assert.match(app,/incantationStage==='claim'/);assert.match(app,/incantationPass/);
- assert.match(app,/incantationClaim/);assert.match(app,/Door → Doors \/ Pass/);assert.match(app,/Submit/);
+ assert.match(app,/incantationStage==='claim'/);assert.doesNotMatch(app,/incantationPass/);
+ assert.match(app,/incantationClaim/);assert.match(app,/Select a Door → Doors/);assert.match(app,/Submit/);
  assert.match(source('public/tabletop/phase10c.css'),/nth-child\(5\)/);
 });
 test('Tower icon and number are separate fixed positions',()=>{

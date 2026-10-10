@@ -1,6 +1,10 @@
 /* Phase 3 interaction controller. UI-only: never mutates engine state.
  * Pointer drops and keyboard/tap actions all dispatch the same validated command.
  */
+function allowsCrossroad(g,c,seat){
+  if(c.color!=='wild'||g.config?.difficulties?.crossroads!=='hard')return true;
+  const series=g.players?.[seat]?.series||[];return series.length===1&&series[0].color!=='wild';
+}
 export function soloLegalTargets(g, cardId, seat=0){
   if(!g||g.mode!=='solo'||g.status!=='active'||g.phase!=='action'||seat!==g.active)return [];
   const available=[...(g.players?.[0]?.hand||[]),...(g.expansion?.oniverse?.treasure||[])];
@@ -13,7 +17,7 @@ export function soloLegalTargets(g, cardId, seat=0){
   }
   if(c.kind!=='location')return [];
   const previous=g.players[0].labyrinth?.at(-1);
-  return [...(previous?.symbol!==c.symbol?['play']:[]),'discard'];
+  return [...(previous?.symbol!==c.symbol&&allowsCrossroad(g,c,seat)?['play']:[]),'discard'];
 }
 
 // Same commands as solo, but only this seat's personal cards and the shared
@@ -30,7 +34,7 @@ export function cooperativeLegalTargets(g,cardId,seat=0){
     return [...(!alignment.length||!overlaps(c.right,alignment[0].left)?['towerLeft']:[]),...(!alignment.length||!overlaps(alignment.at(-1).right,c.left)?['towerRight']:[]),'discard'];
   }
   if(c.kind!=='location')return [];
-  return [...(g.players[seat].labyrinth?.at(-1)?.symbol!==c.symbol?['play']:[]),'discard'];
+  return [...(g.players[seat].labyrinth?.at(-1)?.symbol!==c.symbol&&allowsCrossroad(g,c,seat)?['play']:[]),'discard'];
 }
 export const tabletopLegalTargets=(g,id,seat=0)=>g?.mode==='coop'?cooperativeLegalTargets(g,id,seat):soloLegalTargets(g,id,seat);
 
