@@ -16,7 +16,7 @@ let sessions=existsSync(path)?JSON.parse(readFileSync(path,'utf8')):{};
 if(!sessions||typeof sessions!=='object'||Array.isArray(sessions))throw Error('Invalid session store');
 const listeners=new Map();
 const token=()=>randomBytes(24).toString('base64url');
-const code=()=>randomBytes(4).toString('hex').toUpperCase();
+const code=()=>{let out='';while(out.length<4)for(const x of randomBytes(4))if(x<234&&out.length<4)out+=String.fromCharCode(65+x%26);return out;};
 function persist(next){
   const temp=join(store,`.sessions-${process.pid}-${token()}.tmp`);
   let fd;
@@ -32,7 +32,8 @@ const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; object-src 'none'"};
 const allowedOrigins=new Set((process.env.ONIRAMA_CORS_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
 const asError=e=>({error:e instanceof Error?e.message:'Request rejected'});
-const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===0,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status,config:x.config||validateConfig()});
+const roomGameView=(x,seat)=>{if(!x.game)return null;const v=viewFor(x.game,seat);for(let i=0;i<v.players.length;i++)if(x.seats[i]?.name)v.players[i].name=x.seats[i].name;return v;};
+const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===(x.hostSeat??0),hostSeat:x.hostSeat??0,paused:!!x.game&&x.seats.some(v=>!v)&&!x.ended,ended:!!x.ended,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status,config:x.config||validateConfig()});
 const limits=new Map();let requests=0;
 function rateLimit(req,pathname){
   const client=process.env.ONIRAMA_TRUST_PROXY==='1'?(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress):req.socket.remoteAddress;
@@ -65,13 +66,14 @@ function credentials(x,request){
 }
 function sendEvents(x){
   for(const record of listeners.get(x.id)||[])try{
-    record.res.write(`data: ${JSON.stringify({room:roomSummary(x,record.seat),game:x.game?viewFor(x.game,record.seat):null})}\n\n`);
+    if(x.seats[record.seat]?.token!==record.token){record.res.end();listeners.get(x.id)?.delete(record);continue;}
+    record.res.write(`data: ${JSON.stringify({room:roomSummary(x,record.seat),game:roomGameView(x,record.seat)})}\n\n`);
   }catch{record.res.end();listeners.get(x.id)?.delete(record);}
 }
 function create(mode,name,rawConfig){
   const config=validateConfig(rawConfig);let id=token().slice(0,12);while(sessions[id])id=token().slice(0,12);
   let roomCode=code();while(Object.values(sessions).some(x=>x.code===roomCode))roomCode=code();
-  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],game:mode==='solo'?newGame({mode:'solo',config,interactiveDraw:true}):null,version:0,createdAt:Date.now()};
+  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],hostSeat:0,ended:false,game:mode==='solo'?newGame({mode:'solo',config,interactiveDraw:true}):null,version:0,createdAt:Date.now()};
   commit(x);return {room:roomSummary(x,0),token:key};
 }
 async function body(req){
@@ -90,35 +92,45 @@ function endpoint(req,res,url,data){
   if(req.method==='POST'&&url.pathname==='/api/rooms')return json(res,201,create('coop',data.name,data.config));
   if(req.method==='POST'&&url.pathname==='/api/join'){
     const x=Object.values(sessions).find(x=>x.mode==='coop'&&x.code===String(data.code||'').trim().toUpperCase());
-    if(!x)throw Error('Room code not found');if(x.game)throw Error('This game has already started');if(x.seats[1])throw Error('Room is full');
-    const credential=token(),next=structuredClone(x);next.seats[1]={name:String(data.name||'Partner').slice(0,40),token:credential};next.version++;commit(next);
-    return json(res,200,{room:roomSummary(next,1),token:credential});
+    if(!x||x.ended)throw Error('Room code not found or game ended');const seat=x.seats.findIndex(v=>!v);if(seat<0)throw Error('Room is full');
+    const credential=token(),next=structuredClone(x);next.seats[seat]={name:String(data.name||'Partner').slice(0,40),token:credential};next.version++;commit(next);
+    return json(res,200,{room:roomSummary(next,seat),token:credential});
   }
   if(segments[0]!=='api'||segments[1]!=='rooms'||!segments[2])return json(res,404,{error:'Unknown API route'});
   const original=sessions[segments[2]];if(!original)return json(res,404,{error:'Game not found'});
   const seat=credentials(original,req),operation=segments[3];
-  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:original.game?viewFor(original.game,seat):null,version:original.version});
+  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:roomGameView(original,seat),version:original.version});
   if(req.method==='GET'&&operation==='stream'){
     if((listeners.get(original.id)?.size||0)>=12)throw Object.assign(Error('Too many open connections'),{status:429});
     res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
-    if(!listeners.has(original.id))listeners.set(original.id,new Set());const record={res,seat};listeners.get(original.id).add(record);
-    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:original.game?viewFor(original.game,seat):null})}\n\n`);
+    if(!listeners.has(original.id))listeners.set(original.id,new Set());const record={res,seat,token:original.seats[seat].token};listeners.get(original.id).add(record);
+    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:roomGameView(original,seat)})}\n\n`);
     const keepAlive=setInterval(()=>{try{res.write(': heartbeat\n\n');}catch{res.end();}},25000);
     req.on('close',()=>{clearInterval(keepAlive);listeners.get(original.id)?.delete(record);if(!listeners.get(original.id)?.size)listeners.delete(original.id);});return;
   }
+  if(req.method==='POST'&&operation==='leave'){
+    const next=structuredClone(original);next.seats[seat]=null;next.ready[seat]=false;
+    if(next.seats[1-seat])next.hostSeat=1-seat;else {next.ended=true;next.game=null;}
+    next.version++;commit(next);return json(res,200,{ok:true});
+  }
+  if(req.method==='POST'&&operation==='end'){
+    if(seat!==(original.hostSeat??0))throw Error('Only the host can end the game');
+    const next=structuredClone(original);next.ended=true;next.game=null;next.version++;commit(next);
+    return json(res,200,{ok:true});
+  }
   if(req.method==='POST'&&operation==='ready'){
-    if(original.game)throw Error('The game has already started');const next=structuredClone(original);next.ready[seat]=!!data.ready;next.version++;commit(next);
+    if(original.game||original.ended)throw Error('The game has already started');const next=structuredClone(original);next.ready[seat]=!!data.ready;next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   if(req.method==='POST'&&operation==='start'){
-    if(original.mode!=='coop'||seat!==0)throw Error('Only the host can start the cooperative game');
+    if(original.mode!=='coop'||seat!==(original.hostSeat??0)||original.ended)throw Error('Only the host can start the cooperative game');
     if(original.game)throw Error('Game already started');
     if(!original.seats[1]||!original.ready.every(Boolean))throw Error('Both players must join and be ready');
     const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true});next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   if(req.method==='POST'&&operation==='action'){
-    if(!original.game)throw Error('Game has not started');
+    if(!original.game)throw Error('Game has not started');if(original.ended||(original.mode==='coop'&&original.seats.some(v=>!v)))throw Error('Game paused until another player joins');
     if(seat!==original.game.active)throw Error('It is not your turn');
     if(!Number.isInteger(data.expectedVersion)||data.expectedVersion!==original.version)throw Error('State changed. The board has been refreshed; choose your action again.');
     const next=structuredClone(original);next.game=act(original.game,data.command);assertConserved(next.game);next.version++;commit(next);

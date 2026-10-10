@@ -27,7 +27,7 @@ test('Invalid invite code is rejected; server refuses room hijacking and start w
   const post=async(route,payload,token)=>{const r=await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(payload)});return {status:r.status,data:await r.json()};};
   const bad=await post('/api/join',{code:'NOTACODE'});assert.notEqual(bad.status,200);
   const created=await post('/api/rooms',{name:'Host'});const {id,code}=created.data.room;
-  assert.match(code,/^[A-F0-9]{8}$/);assert.notEqual((await post(`/api/rooms/${id}/start`,{},created.data.token)).status,200);
+  assert.match(code,/^[A-Z]{4}$/);assert.notEqual((await post(`/api/rooms/${id}/start`,{},created.data.token)).status,200);
   const joined=await post('/api/join',{code:code.toLowerCase(),name:'Guest'});assert.equal(joined.status,200);
   assert.notEqual((await post('/api/join',{code,name:'Intruder'})).status,200);
   assert.notEqual((await post(`/api/rooms/${id}/ready`,{ready:true},'forged')).status,200);

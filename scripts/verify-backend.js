@@ -19,7 +19,7 @@ try{
   const preflight=await fetch(`${apiOrigin}/api/rooms`,{method:'OPTIONS',headers:{Origin:pagesOrigin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,content-type'}});
   assert(preflight.status===204,'CORS preflight rejected');
   const host=await call('/api/rooms','POST',{name:'Launch verification host'});assert(host.status===201,'Room creation failed');
-  const {id,code}=host.data.room;assert(/^[A-F0-9]{8}$/.test(code),'Expected 8-character room code');
+  const {id,code}=host.data.room;assert( /^[A-Z]{4}$/.test(code),'Expected four-letter room code');
   assert((await call(`/api/rooms/${id}/state`)).status===401,'Unauthenticated user could see the room');
   const guest=await call('/api/join','POST',{name:'Launch verification guest',code:code.toLowerCase()});assert(guest.status===200,'Room-code join failed');
   assert(guest.data.token!==host.data.token,'Seats share a credential');

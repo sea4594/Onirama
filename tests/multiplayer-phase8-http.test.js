@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+const wait=t=>new Promise(r=>setTimeout(r,t));
+test('Node multiplayer: host leaves, replacement inherits seat, guest becomes host, host ends game',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'onirama-phase8-')),port=41000+Math.floor(Math.random()*1000);
+ const child=spawn(process.execPath,['server/index.js'],{env:{...process.env,PORT:String(port),ONIRAMA_DATA_DIR:directory},stdio:'ignore'});
+ const url=`http://127.0.0.1:${port}`;
+ const call=async(path,method='GET',body=null,token=null)=>{const res=await fetch(url+path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`}:{})},body:body?JSON.stringify(body):undefined});return {status:res.status,data:await res.json()};};
+ try{
+  let running=false;for(let i=0;i<80;i++){try{if((await call('/api/health')).status===200){running=true;break;}}catch{}await wait(40);}assert.ok(running,'Server must start');
+  const host=await call('/api/rooms','POST',{name:'First'});assert.equal(host.status,201);assert.match(host.data.room.code,/^[A-Z]{4}$/);
+  const {id,code}=host.data.room,token0=host.data.token;
+  const guest=await call('/api/join','POST',{code,name:'Second'});assert.equal(guest.status,200);const token1=guest.data.token;
+  assert.equal((await call(`/api/rooms/${id}/ready`,'POST',{ready:true},token0)).status,200);
+  assert.equal((await call(`/api/rooms/${id}/ready`,'POST',{ready:true},token1)).status,200);
+  assert.equal((await call(`/api/rooms/${id}/start`,'POST',{},token0)).status,200);
+  const before=(await call(`/api/rooms/${id}/state`,'GET',null,token1)).data;
+  assert.equal(before.game.phase,'draft');
+  assert.equal((await call(`/api/rooms/${id}/leave`,'POST',{},token0)).status,200);
+  assert.equal((await call(`/api/rooms/${id}/state`,'GET',null,token0)).status,401);
+  const paused=(await call(`/api/rooms/${id}/state`,'GET',null,token1)).data;
+  assert.equal(paused.room.host,true);assert.equal(paused.room.seat,1);assert.equal(paused.room.paused,true);
+  assert.deepEqual(paused.game.players[1].hand,before.game.players[1].hand);
+  assert.notEqual((await call(`/api/rooms/${id}/action`,'POST',{expectedVersion:paused.version,command:{type:'draft',id:paused.game.draft[0].id}},token1)).status,200);
+  const replacement=await call('/api/join','POST',{code,name:'Third'});assert.equal(replacement.status,200);assert.equal(replacement.data.room.seat,0);
+  const token2=replacement.data.token;
+  const joined=(await call(`/api/rooms/${id}/state`,'GET',null,token2)).data;
+  assert.equal(joined.room.host,false);assert.equal(joined.room.paused,false);
+  assert.equal(joined.game.players[0].name,'Third');
+  assert.equal(joined.game.players[0].hand.length,before.game.players[0].hand.length);
+  assert.equal(joined.game.draft.length,before.game.draft.length);
+  assert.equal((await call(`/api/rooms/${id}/end`,'POST',{},token2)).status,400,'Replacement is not host');
+  assert.equal((await call(`/api/rooms/${id}/end`,'POST',{},token1)).status,200);
+  const ended=(await call(`/api/rooms/${id}/state`,'GET',null,token2)).data;
+  assert.equal(ended.room.ended,true);assert.equal(ended.game,null);
+  assert.notEqual((await call('/api/join','POST',{code,name:'Again'})).status,200);
+ }finally{child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),wait(1500)]);rmSync(directory,{recursive:true,force:true});}
+});

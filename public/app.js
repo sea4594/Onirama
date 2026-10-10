@@ -39,7 +39,7 @@ let playerDisplayName='Dreamwalker',partnerDisplayName='Partner';
 function applySettings(){const preset=THEME_PRESETS.find(p=>p.id===uiSettings.theme)||THEME_PRESETS[0];Object.assign(document.documentElement.dataset,{theme:preset.id,motion:uiSettings.motion,cardSize:uiSettings.cardSize,contrast:uiSettings.contrast,textSize:uiSettings.textSize});const meta=document.querySelector('meta[name="theme-color"]');if(meta&&typeof getComputedStyle==='function')meta.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--ui-bg').trim());}
 applySettings();
 let state=null,selected=null,error='',busy=false,online=false,streamAbort=null,streamRetry=null,version=0,selectedMode='solo',page=location.hash||'#/';
-const roomCodeFromHash=()=>{const match=location.hash.match(/^#\/join\?code=([a-fA-F0-9]{8})$/);return match?match[1].toUpperCase():'';};
+const roomCodeFromHash=()=>{const match=location.hash.match(/^#\/join\?code=([A-Za-z]{4}|[a-fA-F0-9]{8})$/);return match?match[1].toUpperCase():'';};
 const inviteLink=code=>`${location.origin}${location.pathname}${location.search}#/join?code=${encodeURIComponent(code)}`;
 function cancelStream(){streamAbort?.abort();streamAbort=null;if(streamRetry!==null){clearTimeout(streamRetry);streamRetry=null;}}
 const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -62,7 +62,19 @@ async function api(route,method='GET',body=null){
   const res=await fetch(`${base}${route}`,{method,headers,body:body?JSON.stringify(body):undefined});const data=await res.json();
   if(!res.ok)throw Error(data.error||'Request failed');return data;
 }
-async function refresh(){if(IS_LOCAL_SOLO()){const raw=localStorage.getItem('onirama.solo.v1');if(raw&&localEngine){const game=JSON.parse(raw);state={room:{seat:0,mode:'solo',started:true},game:localEngine.viewFor(game,0),version:(version||0)+1};session={id:'local',seat:0};online=true;sessionMeta();recordCurrentResult();render();announceCurrent();}return;}if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){state=data;version=data.version;error='';recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
+async function refresh(){if(IS_LOCAL_SOLO()){const raw=localStorage.getItem('onirama.solo.v1');if(raw&&localEngine){const game=JSON.parse(raw);state={room:{seat:0,mode:'solo',started:true},game:localEngine.viewFor(game,0),version:(version||0)+1};session={id:'local',seat:0};online=true;sessionMeta();recordCurrentResult();render();announceCurrent();}return;}if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
+function closeEndedRoom(){cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the game.';setRoute('#/');}
+async function departRoom(end=false){
+ if(!session||session.id==='local')return;
+ if(end&&!state?.room?.host)return setError('Only the host can end the game.');
+ if(end&&!confirm('End the game for both players?'))return;
+ if(busy)return;busy=true;
+ try{
+  if(session.transport==='firebase'){if(end)await firebase.firebaseEnd(session.id);else await firebase.firebaseLeave(session.id);}
+  else await api(`/api/rooms/${session.id}/${end?'end':'leave'}`,'POST',{});
+  cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');setRoute('#/');
+ }catch(e){setError(e.message);}finally{busy=false;render();}
+}
 function saveSession(o){cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
 async function create(mode){
   const name=(document.querySelector('#name')?.value||playerDisplayName||'Dreamwalker').trim();const config={ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
@@ -71,16 +83,16 @@ async function create(mode){
 }
 async function join(){const code=document.querySelector('#roomcode')?.value;const name=(document.querySelector('#joinname')?.value||partnerDisplayName||'Partner').trim();
   if(!CAN_MULTIPLAYER)return setError('Multiplayer is not configured yet. Redeploy GitHub Pages with the built-in Firebase configuration.');
-  if(!/^[a-fA-F0-9]{8}$/.test(String(code||'').trim()))return setError('Enter the eight-character invitation code.');
+  if(!/^(?:[A-Za-z]{4}|[a-fA-F0-9]{8})$/.test(String(code||'').trim()))return setError('Enter a four-letter room code.');
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/game');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='start')await firebase.firebaseStart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy)return;busy=true;render();try{if(IS_LOCAL_SOLO()){localEngine??=await import('./engine/game.js');const original=JSON.parse(localStorage.getItem('onirama.solo.v1'));const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem('onirama.solo.v1',JSON.stringify(updated));selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_SOLO()){localEngine??=await import('./engine/game.js');const original=JSON.parse(localStorage.getItem('onirama.solo.v1'));const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem('onirama.solo.v1',JSON.stringify(updated));selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_SOLO()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
     cancelStream();const controller=new AbortController(),roomId=session.id,uid=session.uid;streamAbort=controller;online=false;render();
-    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){state=data;version=data.version;error='';online=true;recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;setError('Realtime Firebase connection: '+e.message);});
+    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';online=true;recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;setError('Realtime Firebase connection: '+e.message);});
       if(controller.signal.aborted){unsubscribe();return;}controller.signal.addEventListener('abort',unsubscribe,{once:true});online=true;render();
     }catch(e){if(!controller.signal.aborted){online=false;setError('Unable to connect to Firebase: '+e.message);}}return;
   }
@@ -99,7 +111,7 @@ async function startStream(){
         // Fetch the version and filtered state together, never pair an event with a stale version.
         const fresh=await api(`/api/rooms/${roomId}/state`);
         if(controller.signal.aborted||session?.id!==roomId||session?.token!==credential)return;
-        if(Number.isInteger(fresh.version)&&fresh.version>=version){state=fresh;version=fresh.version;error='';recordCurrentResult();render();announceCurrent();}
+        if(Number.isInteger(fresh.version)&&fresh.version>=version){if(fresh.room?.ended){closeEndedRoom();return;}state=fresh;version=fresh.version;error='';recordCurrentResult();render();announceCurrent();}
       }
     }
   }catch(e){if(!controller.signal.aborted&&session?.id===roomId){online=false;render();}}
@@ -125,7 +137,7 @@ function multiplayer(){return `<div class="route shell"><h1 class="shell-title">
    ${btn('Create room','coopStart','primary shell-wide')}
   </section>
   <section class="shell-card shell-room"><div class="shell-card-heading"><span class="shell-icon" aria-hidden="true">${icon('enter')}</span><h2>Join room</h2></div>
-   <label class="visually-hidden" for="roomcode">8-character room code</label><input id="roomcode" class="inline-input shell-code-input" placeholder="ROOM CODE" aria-label="8-character room code" maxlength="8" autocapitalize="characters" spellcheck="false" autocomplete="off" value="${escape(roomCodeFromHash())}">
+   <label class="visually-hidden" for="roomcode">Four-letter room code</label><input id="roomcode" class="inline-input shell-code-input" placeholder="ROOM CODE" aria-label="Four-letter room code" maxlength="8" autocapitalize="characters" spellcheck="false" autocomplete="off" value="${escape(roomCodeFromHash())}">
    <label class="visually-hidden" for="joinname">Your name</label><input id="joinname" class="inline-input" maxlength="40" placeholder="Your name" value="${escape(partnerDisplayName)}" autocomplete="nickname">
    ${btn('Join','join','primary shell-wide')}
   </section>
@@ -164,7 +176,7 @@ function lobby(room){return `<div class="route shell shell-lobby"><div class="sh
  <section class="shell-card shell-invite"><label class="visually-hidden" for="roomcodeDisplay">Room code</label><input id="roomcodeDisplay" class="shell-room-code" readonly value="${escape(room.code)}" aria-label="Room code"><div class="shell-invite-buttons">${btn('Copy code','copyCode')}<button type="button" data-action="copyInvite" aria-label="Copy invite link">Copy link</button></div><label class="visually-hidden" for="inviteUrl">Invite link</label><input id="inviteUrl" class="inline-input shell-invite-url" readonly aria-label="Invite link" value="${escape(inviteLink(room.code))}"></section>
  <section class="shell-card shell-lobby-players" aria-label="Player readiness">${[0,1].map((i)=>`<div class="shell-seat ${room.ready[i]?'ready':''}"><span class="shell-seat-icon" aria-hidden="true">${icon(room.ready[i]?'check':room.connected[i]?'dot':'circle')}</span><span>Player ${i+1}</span><small>${room.ready[i]?'Ready':room.connected[i]?'Joined':'Waiting'}</small></div>`).join('')}</section>
  <div class="shell-start">${btn(room.ready[room.seat]?'Not ready':'Ready','ready','primary shell-big')}${room.host?`<button type="button" data-action="start" class="shell-big" ${room.ready.every(Boolean)&&room.connected[1]?'':'disabled title="Both players must be ready"'}>Start</button>`:''}</div>
- </div>`;}
+ ${btn('Leave room','leaveRoom','shell-text-button')} </div>`;}
 function pagedCards(items,renderOne,pageSize=3){
  const pages=Math.max(1,Math.ceil(items.length/pageSize)),page=Math.max(0,Math.min(choicePage,pages-1));
  const cards=items.slice(page*pageSize,(page+1)*pageSize);
@@ -174,7 +186,7 @@ function orderSlice(ids){const page=Math.min(choicePage,Math.max(0,Math.ceil(ids
 function orderPages(ids){const {page,pages}=orderSlice(ids);return pages>1?`<div class="tt7-page-actions"><button data-action="choicePrev" ${page===0?'disabled':''} aria-label="Previous cards">‹</button><small>${page+1}/${pages}</small><button data-action="choiceNext" ${page===pages-1?'disabled':''} aria-label="Next cards">›</button></div>`:'';}
 function handAndShared(g){return [...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[]),...(g.expansion?.oniverse?.treasure||[]).filter(c=>g.mode==='solo'||c.owner===g.active)];}
 function eligibleDecisionCards(g){
- const ids=new Set();if(!g||g.status!=='active'||state?.room?.seat!==g.active)return ids;
+ const ids=new Set();if(!g||g.status!=='active'||state?.room?.paused||state?.room?.seat!==g.active)return ids;
  const p=g.pending||{},cards=handAndShared(g);
  if(g.phase==='decision'){
   if(p.type==='door')for(const k of p.keys||[])ids.add(k.id);
@@ -247,8 +259,8 @@ function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
 // The new solo and cooperative tabletops are the only supported gameplay surfaces.
 // Unknown modes fail visibly instead of silently falling back to obsolete controls.
 function board(g,room){
-  if(g.mode==='solo')return renderSoloTabletop(g,{selectedId:selected,canAct:room.seat===g.active,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
-  if(g.mode==='coop')return renderCooperativeTabletop(g,{seat:room.seat,selectedId:selected,canAct:room.seat===g.active,connected:online,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
+  if(g.mode==='solo')return renderSoloTabletop(g,{selectedId:selected,canAct:!room.paused&&room.seat===g.active,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
+  if(g.mode==='coop')return renderCooperativeTabletop(g,{seat:room.seat,selectedId:selected,canAct:!room.paused&&room.seat===g.active,connected:online,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
   throw new Error(`Unsupported game mode: ${g.mode}`);
 }
 // Phase 4: contextual UI lives outside the tabletop. All choices still dispatch
@@ -279,7 +291,7 @@ function contextualDialog(g,room){
  return null;
 }
 function gameWorkspace(g,room){
- if(!g||!room||g.status!=='active')return null;
+ if(!g||!room||g.status!=='active'||room.paused)return null;
  if(g.phase==='decision'&&['drawReady','drawn'].includes(g.pending?.type))return null;
  if(g.phase==='decision'&&spellOpen&&g.expansion?.book)return contextualDialog(g,room);
  if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,html:decision(g,true)}:null;}
@@ -329,9 +341,9 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const errorMessage=error?`<div class="notice error" role="alert">${escape(error)} <button class="mini ghost" data-action="clearError">Dismiss</button></div>`:'';
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
-  const dock=inGame&&typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard}):'';
+  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button><button type="button" data-action="openGamePause">Game menu</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard}):''):'';
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen):'';
-  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?`<div class="tt6-table-slot">${content}</div>${dock}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[]}):'');
+  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?`<div class="tt6-table-slot">${content}</div>${dock}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'');
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
@@ -381,6 +393,8 @@ async function handle(actionName){
     overlayReturnAction=gameOverlay==='pause'?'openGamePause':'openGameRules';
     gameOverlay=null;gameRulesFromPause=false;return render();
   }
+  if(actionName==='leaveRoom')return departRoom(false);
+  if(actionName==='endRoom')return departRoom(true);
   if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;return setRoute('#/');}
   if(actionName==='soloStart'){selectedMode='solo';return create('solo');}if(actionName==='coopStart'){selectedMode='coop';return create('coop');}
   if(actionName==='history')return setRoute('#/history');
@@ -412,7 +426,7 @@ async function handle(actionName){
   if(actionName==='dialogClose'){if(state?.game?.phase!=='decision'||spellOpen)closeOptionalDialog();return;}
   if(actionName==='openSpells'){spellOpen=true;spellSelected.clear();spellGoals=[];choicePage=0;freeSearchId='';return render();}
   if(actionName==='clearError'){error='';return render();}
-  if(!state?.game)return;
+  if(!state?.game||state.room?.paused)return;
   const g=state.game;if(state.room.seat!==g.active)return;
   if(['play','discard','towerLeft','towerRight'].includes(actionName)&&selected){
     const targets=g.mode==='coop'?cooperativeLegalTargets(g,selected,state.room.seat):soloLegalTargets(g,selected,state.room.seat);

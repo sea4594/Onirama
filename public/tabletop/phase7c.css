@@ -106,3 +106,13 @@
    Card count is game state, not a reason to move the adjacent zones. */
 .game-viewport .tt2-root .tt2-hand-row{min-height:calc(var(--tt2-card)*1.42 + 9px)}
 .game-viewport .tt2-root .tt6-hand-cards{min-height:calc(var(--tt6-card)*1.42 + 10px)}
+
+/* Recent discarded cards: latest/top card first, old cards tucked behind it. */
+.tt8-discard-history{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-start;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;padding:6px 8px 12px;scrollbar-width:thin;min-height:82px}
+.tt8-discard-history>.tt8-discard-item{flex:0 0 48px!important;width:48px!important;min-width:48px!important;margin-right:-16px!important;position:relative;pointer-events:auto}
+.tt8-discard-history>.tt8-discard-item>.card{width:48px!important;height:69px!important;pointer-events:auto}
+.tt8-discard-history>.tt8-discard-item:last-child{margin-right:0!important}
+.game-room-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.game-room-actions button[data-action=endRoom]{border-color:var(--ui-border);font-weight:700}
+/* Distribute spare viewport height among permanent rows, without shifting on selection. */
+.game-viewport .tt2-root .tt2-grid,.game-viewport .tt2-root .tt6-grid{align-content:space-between}

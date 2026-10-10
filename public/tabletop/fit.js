@@ -47,7 +47,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   if(!width||!height)return null;
   const zones=table.querySelectorAll('.tt5-zone').length;
   const plan=tabletopDimensions(width,height,mode,zones);
-  table.style.transform='';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
+  table.style.transform='';table.style.minHeight='0';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
   table.dataset.tt4Shape=plan.shape;
   table.dataset.tt4ExpansionCount=String(zones);
   table.style.setProperty('--tt4-exp-columns',plan.columns);
@@ -87,6 +87,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
     if(Math.abs(corrected-scale)<.003)break;
     scale=Math.min(scale,corrected);
   }
+  table.style.minHeight=`${Math.floor(height/scale)}px`;
   table.style.transform=scale<1?`scale(${scale})`:'';
   const zoom=scale;
   reflowLabyrinths(table);

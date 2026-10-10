@@ -63,7 +63,9 @@ test('Source security invariants: save-before-commit, no plaintext frontend toke
  const server=readFileSync('server/index.js','utf8'),web=readFileSync('public/app.js','utf8');
  assert.match(server,/persist\(next\);sessions=next;sendEvents\(x\)/);
  assert.match(server,/renameSync\(temp,path\)/);
- assert.match(server,/viewFor\(x.game,record.seat\)/);
+ assert.match(server,/roomGameView\(x,record.seat\)/);
+ assert.match(server,/viewFor\(x.game,seat\)/);
+ assert.match(server,/x.seats\[record.seat\]\?\.token!==record.token/);
  assert.match(web,/fetch\(`\$\{base\}\/api\/rooms\/\$\{roomId\}\/stream`/);
  assert.ok(!web.includes('token=${session.token}'));
 });

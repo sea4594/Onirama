@@ -1,6 +1,6 @@
 // BibleGuessr-style Firestore multiplayer: anonymous auth, transactions, onSnapshot.
 // No separate Node server is required. These client-side cooperative rooms assume trusted players.
-import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,startRoom,playRoom,roomView,seatFor} from './engine/firebase-protocol.js';
+import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,startRoom,playRoom,leaveRoom,endRoom,roomView,seatFor} from './engine/firebase-protocol.js';
 let clientPromise;
 function config(){const c=window.ONIRAMA_FIREBASE_CONFIG;return c&&['apiKey','authDomain','projectId','appId'].every(k=>typeof c[k]==='string'&&c[k].length)?c:null;}
 export function firebaseConfigured(){return !!config();}
@@ -23,7 +23,7 @@ async function connect(){
   return clientPromise;
 }
 function roomRef(c,code){return c.store.doc(c.db,ROOM_COLLECTION,String(code).toUpperCase());}
-function code8(){const a=new Uint8Array(4);crypto.getRandomValues(a);return [...a].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();}
+function code4(){let code='';while(code.length<4){const bytes=new Uint8Array(4);crypto.getRandomValues(bytes);for(const x of bytes){if(x<234&&code.length<4)code+=String.fromCharCode(65+x%26);}}return code;}
 async function update(code,transition){const c=await connect();const ref=roomRef(c,code);
   await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');const previous=snap.data(),next=transition(previous,c.uid);if(next!==previous)tx.set(ref,next);});
   return loadRoom(code);
@@ -33,13 +33,25 @@ export async function createFirebaseRoom(name,setup){
   // A transaction cannot read a non-existent code under the published room get rules.
   // A direct set is a rules-protected CREATE for new IDs; an existing ID is an
   // UPDATE, which the existing room security rules reject. Retry unlikely collisions.
-  const code=await allocateRoom((id,room)=>c.store.setDoc(roomRef(c,id),room),code8,c.uid,name,setup);
+  const code=await allocateRoom((id,room)=>c.store.setDoc(roomRef(c,id),room),code4,c.uid,name,setup);
   return loadRoom(code);
 }
-export async function joinFirebaseRoom(code,name){return update(code,(old,uid)=>joinRoom(old,uid,name));}
+// Blind, rules-validated claims do not grant nonmembers access to private hands.
+// Try empty seat 0 first, then seat 1; legacy 8-digit rooms remain joinable.
+export async function joinFirebaseRoom(code,name){
+ const c=await connect(),ref=roomRef(c,code),label=String(name||'Partner').trim().slice(0,40)||'Partner';
+ try{return await loadRoom(code);}catch(e){if(e?.code!=='permission-denied'&&!/another browser|Room not found/.test(e?.message||''))throw e;}
+ for(const [uidField,nameField] of [['hostUid','hostName'],['guestUid','guestName']]){
+  try{await c.store.updateDoc(ref,{[uidField]:c.uid,[nameField]:label,updatedAt:Date.now(),version:c.store.increment(1)});return loadRoom(code);}
+  catch(e){if(e?.code!=='permission-denied')throw e;}
+ }
+ throw Error('Room is full, ended, or the invitation code is invalid.');
+}
 export async function loadRoom(code){const c=await connect(),snap=await c.store.getDoc(roomRef(c,code));if(!snap.exists())throw Error('Room not found or expired');return roomView(snap.data(),c.uid);}
 export async function firebaseReady(code,ready){return update(code,(room,uid)=>setReady(room,uid,ready));}
 export async function firebaseStart(code){return update(code,(room,uid)=>startRoom(room,uid));}
+export async function firebaseLeave(code){const c=await connect(),ref=roomRef(c,code);await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');tx.set(ref,leaveRoom(snap.data(),c.uid));});}
+export async function firebaseEnd(code){return update(code,(room,uid)=>endRoom(room,uid));}
 export async function firebaseAction(code,version,command){return update(code,(room,uid)=>playRoom(room,uid,version,command));}
 export async function watchFirebaseRoom(code,onUpdate,onError){
   const c=await connect(),ref=roomRef(c,code);
