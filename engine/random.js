@@ -5,5 +5,6 @@ export function nextRandom(state) {
   return state.rng/4294967296;
 }
 export function shuffle(state,arr) {
+  if (arr===state.deck) state.shuffleSerial=(state.shuffleSerial||0)+1;
   for(let i=arr.length-1;i>0;i--) { const j=Math.floor(nextRandom(state)*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
 }

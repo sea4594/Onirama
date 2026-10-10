@@ -1,3 +1,4 @@
+import {renderCard} from './cards.js';
 /* Phase 7: presentation-only transitions from successive *public game views*.
    Never mutate the engine, issue actions, read the unrevealed deck, or replay
    an effect by re-submitting a command. The source of truth is always the view. */
@@ -28,7 +29,7 @@ const concealed = game => new Set((game?.players||[]).flatMap(p=>(p.hand||[]).fi
 function signature(game){
   if (!game) return '';
   return JSON.stringify([game.phase,game.status,game.turn,game.active,game.pending?.type,
-    game.deckCount,(game.discard||[]).length,(game.limbo||[]).length,
+    game.deckCount,game.shuffleSerial||0,(game.discard||[]).length,(game.limbo||[]).length,
     arrays(game).map(a=>cards(a).map(c=>c.id))]);
 }
 export function planGameTransitions(previous,next){
@@ -49,7 +50,8 @@ export function planGameTransitions(previous,next){
     toDiscard:removed.filter(id=>destinations.discard.has(id)),
     toLimbo:removed.filter(id=>destinations.limbo.has(id)),
     draw:Math.max(0,(previous.deckCount||0)-(next.deckCount||0)),
-    shuffle:(next.deckCount||0)>(previous.deckCount||0)&&(previous.limbo||[]).length>(next.limbo||[]).length,
+    shuffle:(next.shuffleSerial||0)>(previous.shuffleSerial||0)||((next.deckCount||0)>(previous.deckCount||0)&&(previous.limbo||[]).length>(next.limbo||[]).length),
+    premRevealed:(next.expansion?.premonitions?.faceUp||[]).filter(id=>!(previous.expansion?.premonitions?.faceUp||[]).includes(id)),
     turn:previous.turn!==next.turn||previous.active!==next.active,
     phase:previous.phase!==next.phase||previous.pending?.type!==next.pending?.type,
     finished:previous.status==='active'&&next.status!=='active',
@@ -91,6 +93,46 @@ function animateFlight(template,from,to,target,delay,active){
   ],{duration:290,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
   motion.finished.catch(()=>{}).then(cleanup);
 }
+
+// Reveal only faces that are already part of the authorized next public view.
+// Never reconstruct cards from a hidden deck, replay commands, or show a partner's private hand.
+const publicCardMap=game=>new Map(arrays(game).flatMap(a=>cards(a).map(c=>[c.id,c])));
+function revealGhost(card,from,to,delay,cleanups,{premonition=false}={}){
+ if(!rectOK(from)||!rectOK(to)||typeof document==='undefined')return;
+ const width=Math.min(148,Math.max(93,innerWidth*.26)),height=Math.round(width*1.42);
+ const cx=innerWidth/2,cy=innerHeight/2;
+ const overlay=document.createElement('div');overlay.className='tt10-reveal-flight';
+ Object.assign(overlay.style,{width:`${width}px`,height:`${height}px`,left:`${cx-width/2}px`,top:`${cy-height/2}px`});
+ const front=premonition?card.outerHTML:renderCard(card,{tiny:true});
+ overlay.innerHTML=`<div class="tt10-flipper"><div class="tt10-reveal-back"></div><div class="tt10-reveal-front">${front}</div></div>`;
+ document.body.appendChild(overlay);
+ const source=center(from),destination=center(to);
+ const move=(pos)=>`translate(${pos.x-cx}px,${pos.y-cy}px) scale(${Math.max(.13,Math.min(2,pos.width/width))})`;
+ const src={...source,width:from.width},dst={...destination,width:to.width};
+ let finished=false;
+ const cleanup=()=>{if(finished)return;finished=true;overlay.remove();const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
+ cleanups.push(cleanup);
+ if(!overlay.animate){cleanup();return;}
+ const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:940,delay,easing:'ease-in-out',fill:'both'});
+ motion.finished.catch(()=>{}).then(cleanup);
+}
+function premonitionNode(root,id){
+ for(const el of root.querySelectorAll?.('.tt5-premonition[data-tt-card-info]')||[]){
+  try{if(JSON.parse(el.dataset.ttCardInfo).premonitionId===id)return el;}catch{}
+ }
+ return null;
+}
+function shuffleOverlay(back,cleanups,delay=0){
+ const r=rect(back);if(!rectOK(r)||typeof document==='undefined')return;
+ const ghost=back.cloneNode(true);ghost.removeAttribute('data-action');ghost.removeAttribute('data-tt-drop');
+ ghost.classList.add('tt10-shuffle-overlay');ghost.setAttribute('aria-hidden','true');
+ Object.assign(ghost.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`,animationDelay:`${delay}ms`});
+ document.body.appendChild(ghost);
+ let timer;
+ const cleanup=()=>{clearTimeout(timer);ghost.remove();const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
+ cleanups.push(cleanup);timer=setTimeout(cleanup,delay+700);
+}
+
 export function createTabletopAnimator({root}){
   let last=null,key=null,pending=null,cleanups=[];
   const stop=()=>{for(const fn of cleanups.splice(0))fn();};
@@ -124,10 +166,23 @@ export function createTabletopAnimator({root}){
         const ca=center(a.r),cb=center(b.r);
         if(Math.hypot(ca.x-cb.x,ca.y-cb.y)>14)flies.push([b.template,a.r,b.r,b.el]);
       }
-      // Draw only from the deck when its count actually decreased. Do not
-      // reveal unidentified cards from a partner's concealed hand.
-      if(plan.draw&&rectOK(deck))for(const id of plan.drawn){
-        const b=now.get(id);if(b)flies.push([b.template,deck,b.r,b.el]);
+      // Flip each newly public card in the screen center, then send it to its
+      // actual zone (hand, Limbo, Discard or the fixed decision dock).
+      if(plan.draw&&rectOK(deck)){
+        const known=publicCardMap(game);
+        plan.drawn.slice(0,8).forEach((id,i)=>{
+          const c=known.get(id);if(!c)return;
+          const target=now.get(id),destination=target?.r||(membership(game,'discard').has(id)?discard:membership(game,'limbo').has(id)?limbo:null);
+          if(!rectOK(destination))return;
+          revealGhost(c,deck,destination,i*175,cleanups);
+        });
+      }
+      if(plan.premRevealed?.length){
+        const reserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;
+        for(const [i,id] of plan.premRevealed.slice(0,5).entries()){
+          const target=premonitionNode(root,id),dest=rect(target);
+          if(target&&rectOK(reserve)&&rectOK(dest))revealGhost(target,reserve,dest,i*180,cleanups,{premonition:true});
+        }
       }
       // A cooperative partner's concealed cards remain face down. Moves to
       // and from that hand use only already public information or card backs.
@@ -157,6 +212,7 @@ export function createTabletopAnimator({root}){
           animateFlight(back,origin,deck,null,25,cleanups);
           animateFlight(back,origin,deck,null,110,cleanups);
         }
+        shuffleOverlay(pile(root,'deck'),cleanups,plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
         flash(pile(root,'deck'),'tt8-shuffle-cue',750);
       }
       if(plan.turn||plan.phase||plan.finished)flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');

@@ -1,0 +1,35 @@
+/* Phase 10B: all paint-only changes keep zones and hit targets static. */
+.tt6-dock-decision .tt7-night-options{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;width:min(100%,540px);justify-items:stretch;align-items:center;overflow:visible!important;padding:3px!important;box-sizing:border-box}
+.tt6-dock-decision .tt7-night-options>.tt7-option{min-width:0!important;max-width:none!important;width:100%;box-sizing:border-box;white-space:nowrap;overflow:visible;border-radius:6px;line-height:1.2;padding:6px 5px!important;min-height:34px}
+.tt6-dock-decision .tt7-night-options>.tt7-option[aria-disabled="true"]{opacity:.36;cursor:default}
+.tt6-dock-decision .tt7-night-options>.tt7-option-active{outline:2px solid var(--table-gold)!important;outline-offset:-2px;background:transparent!important;box-shadow:none!important;filter:none!important}
+.game-viewport .tt8-drawn-card{transform:translateY(-6px)!important}
+.tt10-count-track{--tt10-slots:1;display:grid;grid-template-columns:repeat(var(--tt10-slots),minmax(0,1fr));gap:2px;width:100%;height:13px;padding:0 3px;box-sizing:border-box;min-width:0;align-self:center}
+.tt10-count-track i{display:block;border:1px solid var(--ui-border);border-radius:2px;min-width:0;background:var(--ui-accent);opacity:1}
+.tt10-count-track .tt10-count-empty{background:var(--ui-muted);opacity:.22}
+.tt6-inventory-line{display:grid!important;grid-template-columns:45px minmax(0,1fr);gap:8px;align-items:center;min-width:0}
+.tt6-inventory-line .tt7-inventory-card{min-width:0}
+.tt6-inventory-line .tt10-count-track{max-width:100%}
+.tt6-pile-inspector[aria-label="Limbo pile contents"] .tt6-pile-scroll>.tt6-inventory-group:first-child{border:0}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt2-deck-back{position:relative;overflow:hidden}
+.tt10-draw-count{position:absolute;inset:0;display:grid;place-items:center;color:var(--ui-text);font-weight:800;font-size:clamp(12px,2vw,19px);text-shadow:0 1px 3px #000,0 -1px 3px #000;pointer-events:none;z-index:2}
+.tt8-shuffle-cue .tt10-draw-count,.tt8-draw-cue .tt10-draw-count{animation:tt10-count-fade .45s ease-in-out}
+@keyframes tt10-count-fade{50%{opacity:0}}
+.game-viewport :is(.tt2-pile-row,.tt6-piles) :is(.tt2-deck-back,.tt2-pile-face,.tt6-pile-face){min-height:0}
+.game-viewport .tt2-pile .tt2-pile-label,.game-viewport .tt6-pile small{font-size:clamp(10px,1.5vw,14px)}
+/* Reveal overlays are inert and do not affect the established tabletop geometry. */
+.tt10-reveal-flight{position:fixed;left:0;top:0;z-index:2147483601;pointer-events:none;perspective:800px;transform-origin:center center;will-change:transform,opacity}
+.tt10-reveal-flight .tt10-flipper{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:tt10-flip .30s ease forwards}
+.tt10-reveal-front,.tt10-reveal-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:6px;overflow:hidden;display:grid;place-items:center}
+.tt10-reveal-front{transform:rotateY(180deg)}
+.tt10-reveal-front>.card,.tt10-reveal-front>.tt5-tile{width:100%!important;height:100%!important;max-width:none!important;min-width:0!important;pointer-events:none}
+.tt10-reveal-back{background:repeating-linear-gradient(135deg,var(--card-back-a),var(--card-back-a) 6px,var(--card-back-b) 6px,var(--card-back-b) 12px);border:2px solid var(--table-gold);box-sizing:border-box}
+@keyframes tt10-flip{from{transform:rotateY(0)}to{transform:rotateY(180deg)}}
+.tt10-shuffle-overlay{z-index:2147483600;pointer-events:none;position:fixed;transform-origin:center;box-shadow:0 9px 28px #0009;animation:tt10-shuffle-card .65s ease-in-out}
+@keyframes tt10-shuffle-card{0%,100%{transform:none}15%{transform:scale(1.32) translateX(-5px) rotate(-6deg)}36%{transform:scale(1.45) translateX(7px) rotate(7deg)}65%{transform:scale(1.18) translateX(-4px) rotate(-4deg)}}
+html[data-motion="reduced"] .tt10-reveal-flight,html[data-motion="reduced"] .tt10-shuffle-overlay{display:none!important}
+@media(prefers-reduced-motion:reduce){.tt10-reveal-flight,.tt10-shuffle-overlay{display:none!important}}
+@media(max-width:430px){.tt6-dock-decision .tt7-night-options{gap:4px!important}.tt6-dock-decision .tt7-night-options>.tt7-option{font-size:clamp(11px,3vw,14px)!important}}
+
+.tt6-dock-decision .tt7-option:focus:not(:focus-visible):not(.tt7-option-active){outline:none!important;box-shadow:none!important}
+.tt10-shuffle-overlay .tt10-draw-count{opacity:0}

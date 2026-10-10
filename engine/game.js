@@ -296,11 +296,11 @@ export function act(previous,command){
    need(command.type==='draw','Draw the next card');
    need(s.deck.length>0,'Deck empty');const c=takeTop(s);note(s,'Drew a card.');
    // Keep the revealed card in the authoritative pending zone until its destination is confirmed.
-   if(['location','tower','deadEnd'].includes(c.kind)){s.pending={type:'drawn',card:c,destination:'hand'};return s;}
-   if(c.kind==='lostDream'){s.pending={type:'drawn',card:c,destination:'limbo'};return s;}
+   if(['location','tower','deadEnd'].includes(c.kind)){if(hand(s).length<quota(s))hand(s).push(c);else s.shared.push(c);s.pending=null;refill(s);return s;}
+   if(c.kind==='lostDream'){s.limbo.push(c);s.pending=null;refill(s);return s;}
    if(c.kind==='door'){const keys=matchingKeys(s,c.color),chromatic=availableRallied(s,'chromatic');
      if(keys.length){s.pending={type:'door',card:c,keys,chromatic:chromatic.map(d=>d.id)};return s;}
-     s.pending={type:'drawn',card:c,destination:'limbo'};return s;
+     s.limbo.push(c);s.pending=null;refill(s);return s;
    }
    if(c.kind==='sphinx'){s.pending={type:'sphinxName',card:c};return s;}
    if(c.kind==='diver'){if(!s.deck.length){s.discard.push(c);s.status='lost';s.phase='ended';return s;}s.pending={type:'diver',card:c,cards:takeLook(s,1,'bottom')};return s;}
@@ -308,7 +308,7 @@ export function act(previous,command){
    if(c.kind==='happyDream'){s.pending={type:'happyDream',card:c};return s;}
    if(c.kind==='denizen'){const can=spots(s).filter(x=>x.card.kind!=='deadEnd').map(x=>x.id);
      if(can.length){s.pending={type:'rally',card:c,choices:can};return s;}
-     s.pending={type:'drawn',card:c,destination:'discard'};return s;
+     s.discard.push(c);s.pending=null;refill(s);return s;
    }
    if(c.kind==='nightmare'){s.pending={type:'nightmare',card:c};return s;}
    throw Error(`Unsupported drawn card: ${c.kind}`);

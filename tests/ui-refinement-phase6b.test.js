@@ -31,7 +31,7 @@ test('nightmare stage buttons, prophecy discard slot and dock scroll containment
 test('pile inventories show card pictures plus zero-inclusive counts, never text-only entries',()=>{
  const g=viewFor(newGame({seed:71,config:{expansions:['glyphs','towers']}}),0);
  const html=renderPileInspector(g,'deck');assert.match(html,/tt7-inventory-card/);assert.match(html,/class="card red tiny"/);
- assert.match(html,/aria-label="Red Sun Location: \d+ of \d+"/);assert.match(html,/small>\/\d+/);
+ assert.match(html,/aria-label="Red Sun Location: \d+ of \d+"/);assert.match(html,/tt10-count-track/);assert.doesNotMatch(html,/small>\/\d+/);
  assert.doesNotMatch(html,/>Red Sun Location<\/span>/);
 });
 test('compact status strings do not include unnecessary directions',()=>{

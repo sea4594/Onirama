@@ -10,20 +10,18 @@ import {cardHelp} from '../public/tabletop/card-inspection.js';
 const all=['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx'];
 function simpleDiscard(s){const c=s.players[s.active].hand.find(c=>c.kind==='location'&&!['key','glyph'].includes(c.symbol));assert.ok(c);return act(s,{type:'discard',id:c.id});}
 function moveTop(s,kind){const i=s.deck.findIndex(c=>c.kind===kind);assert.ok(i>=0,`No ${kind}`);const [card]=s.deck.splice(i,1);s.deck.push(card);return card;}
-test('new interactive solo games require an explicit draw and confirmation, conserving cards',()=>{
+test('interactive drawing automatically places an ordinary card in hand',()=>{
  let s=newGame({seed:32,interactiveDraw:true});const chosen=moveTop(s,'location');
- s=simpleDiscard(s);assert.equal(s.pending.type,'drawReady');assert.ok(legalActions(s).some(c=>c.type==='draw'));assertConserved(s);
- let v=viewFor(s,0);assert.match(renderActionDock(v,0),/data-action="draw"/);
- const count=s.deck.length;s=act(s,{type:'draw'});assert.equal(s.pending.type,'drawn');assert.equal(s.pending.card.id,chosen.id);assert.equal(s.pending.destination,'hand');assert.equal(s.deck.length,count-1);assertConserved(s);
- v=viewFor(s,0);const html=renderActionDock(v,0);assert.match(html,/tt8-drawn-card/);assert.match(html,/Add to hand/);
- assert.throws(()=>act(s,{type:'discard',id:s.players[0].hand[0].id}));
- s=act(s,{type:'confirmDraw'});assert.equal(s.phase,'action');assert.equal(s.players[0].hand.length,5);assertConserved(s);
+ s=simpleDiscard(s);assert.equal(s.pending.type,'drawReady');assertConserved(s);
+ assert.match(renderActionDock(viewFor(s,0),0),/data-action="draw"/);
+ const count=s.deck.length;s=act(s,{type:'draw'});assert.equal(s.phase,'action');
+ assert(s.players[0].hand.some(c=>c.id===chosen.id));assert.equal(s.deck.length,count-1);
+ assert.doesNotMatch(renderActionDock(viewFor(s,0),0),/Add to hand|Send to Limbo/);assertConserved(s);
 });
-test('drawn cards destined for Limbo wait for explicit confirmation',()=>{
- let s=newGame({seed:38,interactiveDraw:true});moveTop(s,'door');s=simpleDiscard(s);s=act(s,{type:'draw'});
- assert.equal(s.pending.type,'drawn');assert.equal(s.pending.destination,'limbo');
- const before=s.limbo.length;assert.match(renderActionDock(viewFor(s,0),0),/Send to Limbo/);
- s=act(s,{type:'confirmDraw'});assert.equal(s.limbo.length,before+1);assertConserved(s);
+test('drawn cards destined for Limbo automatically arrive there and require no confirm',()=>{
+ let s=newGame({seed:38,interactiveDraw:true});const card=moveTop(s,'door');s=simpleDiscard(s);s=act(s,{type:'draw'});
+ assert(s.limbo.some(c=>c.id===card.id));assert.equal(s.pending?.type,'drawReady');
+ assert.doesNotMatch(renderActionDock(viewFor(s,0),0),/Send to Limbo|confirmDraw/);assertConserved(s);
 });
 test('drawn Nightmare is explained and must be resolved before another draw',()=>{
  let s=newGame({seed:44,interactiveDraw:true});moveTop(s,'nightmare');s=simpleDiscard(s);s=act(s,{type:'draw'});
@@ -32,14 +30,12 @@ test('drawn Nightmare is explained and must be resolved before another draw',()=
  assert.match(panel,/tt8-drawn-card/);assert.match(panel,/tt8-required/);
  assert.throws(()=>act(s,{type:'draw'}));
 });
-test('cooperative drafting and refills retain seat privacy and manual prompts',()=>{
+test('cooperative drawing preserves hidden hands without a second confirmation',()=>{
  let s=newGame({mode:'coop',seed:48,interactiveDraw:true});while(s.phase==='draft')s=act(s,{type:'draft',id:s.draft[0].id});
- moveTop(s,'location');s=simpleDiscard(s);assert.equal(s.pending.type,'drawReady');
- let other=viewFor(s,1-s.active);assert.equal(other.pending.type,'private-decision');
- s=act(s,{type:'draw'});assert.equal(s.pending.type,'drawn');assertConserved(s);
- other=viewFor(s,1-s.active);assert.equal(other.pending.type,'private-decision');
- assert.ok(!JSON.stringify(other).includes(s.pending.card.id));
- s=act(s,{type:'confirmDraw'});assertConserved(s);
+ const card=moveTop(s,'location');s=simpleDiscard(s);assert.equal(s.pending.type,'drawReady');
+ const seat=s.active;s=act(s,{type:'draw'});assertConserved(s);
+ const other=viewFor(s,1-seat);assert(!JSON.stringify(other.players[seat].hand).includes(card.color));
+ assert(other.players[seat].hand.every(c=>c.kind==='hidden'));assert.notEqual(s.pending?.type,'drawn');
 });
 test('legacy saves and engine calls retain backward compatible auto-refill',()=>{
  let s=newGame({seed:49});s=simpleDiscard(s);assert.notEqual(s.pending?.type,'drawReady');assertConserved(s);

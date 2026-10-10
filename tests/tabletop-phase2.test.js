@@ -31,7 +31,7 @@ test('base solo board renders all physical tabletop areas, five cards and eight 
  assert.equal((html.match(/tt2-hand-card/g)||[]).length,5);
  assert.equal((html.match(/tt8-door-slot /g)||[]).length,8);
  assert.equal((html.match(/tt8-door-empty/g)||[]).length,8);
- assert.match(html,/Deck/);assert.match(html,/Discard/);assert.match(html,/Limbo/);
+ assert.match(html,/>Draw</);assert.match(html,/Discard/);assert.match(html,/Limbo/);
  assert.ok(!html.includes('board-side'));assertConserved(s);
 });
 test('playing/discarding via existing engine command remains valid with new renderer',()=>{

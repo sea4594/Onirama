@@ -240,9 +240,9 @@ function decision(g,canAct){
   if(p.type==='door')return `<section class="decision stack"><div class="actions">${p.keys.length?'<span class="tt7-micro">Tap a matching Key</span>':''}${btn('Limbo','useKey:limbo')}</div></section>`;
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
-    const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" ${enabled?'':'disabled'} aria-pressed="${chosen}">${name}</button>`;
+    const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" aria-disabled="${!enabled}" aria-pressed="${chosen}">${name}</button>`;
     const extras=`${g.expansion?.incubus&&!p.incubus&&(g.expansion.incubus.level==='easy'?!g.expansion.incubus.used:g.expansion.incubus.stored.length>0)?btn('Incubus','incubusCancel'):''}${(g.expansion?.oniverse?.rallied||[]).filter(d=>d.ability==='mirror'&&d.owner===g.active).map(d=>btn('Mirror',`mirror:${d.id}`)).join('')}`;
-    return `<section class="decision stack"><div class="actions tt7-night-options">${option('Key','nightChoose:key',keys.length>0,nightChoice==='key')}${option('Door','nightChoose:door',doors.length>0,nightChoice==='door')}${option('Reveal 5','nightReveal',true)}${option('Hand','nightHand',true)}${extras}</div></section>`;
+    return `<section class="decision stack"><div class="actions tt7-night-options">${option('Discard key','nightChoose:key',keys.length>0,nightChoice==='key')}${option('Remove door','nightChoose:door',doors.length>0,nightChoice==='door')}${option('5 from deck','nightReveal',true)}${option('Discard hand','nightHand',true)}${extras}</div></section>`;
   }
   if(p.type==='prophecy')return prophecy(g);
   if(p.type==='happyDream')return `<section class="decision stack"><div class="actions tt9-happy-actions">${happyBanishMode?`${btn('Cancel','happyBanishCancel')}<button type="button" class="primary" data-action="happyBanishConfirm" ${happyPremonitionChoice?'':'disabled'}>Submit</button>`:`${(g.expansion?.premonitions?.faceUp||[]).length?btn('Remove Premonition','happyBanishStart','primary'):''}${btn('Peek','happyPeek','primary')}${btn('Search','happyFetch','primary')}`}</div></section>`;
@@ -581,7 +581,7 @@ app.addEventListener('click',e=>{
   if(replayFrames.length&&!e.target.closest?.('[data-replay-layer]')){e.preventDefault();return;}
   if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
   if(pileOpen&&!e.target.closest?.('[data-pile-inspector],[data-action^="inspectPile:"],[data-action^="inspectCatcher:"]')){pileOpen=null;render();return;}
-  const target=e.target.closest('[data-action],[data-pick]');if(!target)return;
+  const target=e.target.closest('[data-action],[data-pick]');if(!target||target.getAttribute('aria-disabled')==='true')return;
   if(gameOverlay&&!target.closest?.('[data-game-menu-dialog]'))return;
   if(target.dataset.pick){if(state?.game?.phase==='draft')handle(`draft:${target.dataset.pick}`);else pick(target.dataset.pick);return;}
   handle(target.dataset.action);

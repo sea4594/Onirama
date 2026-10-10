@@ -36,7 +36,7 @@ test('zero-count pile cards are muted, their remaining count enlarged, and visib
  s.pileInventory=[{section:'base',key:'base:location:red:sun',label:'red sun',deck:0,discard:0,limbo:0,total:7},
  {section:'base',key:'base:location:blue:moon',label:'blue moon',deck:1,discard:0,limbo:1,total:7}];
  const markup=renderPileInspector(s,'limbo');assert.match(markup,/tt9-stack-details/);
- assert.match(markup,/tt9-empty-count/);assert.match(markup,/tt9-count-current/);
+ assert.doesNotMatch(markup,/tt10-count-track/);assert.match(markup,/Cards in Limbo/);
  assert.match(markup,/Blue|blue/);assert.match(text('public/tabletop/phase7c.css'),/filter:grayscale\(1\)/);
 });
 test('Dreamcatcher inspection shows all captured cards, not only their count',()=>{

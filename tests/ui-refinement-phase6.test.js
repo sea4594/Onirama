@@ -24,7 +24,7 @@ test('pile counts track actual moves and remain consistent in both player views'
  assert.deepEqual(v0.pileInventory,v1.pileInventory);
  for(const pile of ['deck','discard','limbo'])assert.equal(v0.pileInventory.reduce((n,r)=>n+r[pile],0),s[pile].length);
  for(const pile of ['deck','discard','limbo']){
-  const html=renderPileInspector(v0,pile);assert.match(html,/data-pile-inspector/);assert.match(html,/\/\d+/);assert.match(html,/tt7-inventory-card/);assert.doesNotMatch(html,/>Red Sun Location<\//);
+  const html=renderPileInspector(v0,pile);assert.match(html,/data-pile-inspector/);if(pile!=='limbo'){assert.match(html,/tt10-count-track/);assert.match(html,/tt7-inventory-card/);}else{assert.match(html,/Cards in Limbo/);assert.doesNotMatch(html,/tt10-count-track/);}assert.doesNotMatch(html,/>Red Sun Location<\//);
  }
 });
 test('all engine decision kinds have a user-facing prompt and decision controls stay in fixed dock',()=>{
