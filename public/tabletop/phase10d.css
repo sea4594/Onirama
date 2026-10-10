@@ -1,0 +1,34 @@
+/* Phase 10D: Incantation claim followed by bottom-deck ordering. No zone resizing. */
+.game-viewport .tt12-claim-zone{outline:2px dashed var(--table-gold,#decf95);outline-offset:-3px;box-shadow:inset 0 0 0 2px rgba(220,205,142,.12);cursor:pointer;box-sizing:border-box}
+.game-viewport .tt12-claim-zone.tt12-claim-drop-hover{outline-style:solid;box-shadow:inset 0 0 0 4px rgba(220,205,142,.26)}
+.tt12-incantation{display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center;width:100%;min-width:0;max-height:100%;overflow:hidden}
+.tt12-incantation-heading{font-size:clamp(11px,1.5vw,15px);line-height:1.15;text-align:center;white-space:normal}
+.tt12-goal-hint{font-size:.85em;opacity:.8;margin-left:8px;white-space:nowrap}
+.tt12-claim-cards{display:flex;gap:clamp(2px,0.5vw,8px);justify-content:center;align-items:center;width:100%;min-width:0;overflow:hidden}
+.tt12-incantation-card,.tt12-incantation-other{display:flex;align-items:center;justify-content:center;min-width:0;flex:0 1 52px;padding:2px;box-sizing:border-box;border:2px solid transparent;border-radius:5px;background:transparent;line-height:1;position:relative}
+.tt12-incantation-card{cursor:grab;touch-action:none}
+.tt12-incantation-card:active{cursor:grabbing}
+.tt12-incantation-card.tt12-picked,.tt12-incantation-card:focus-visible{outline:2px solid var(--table-gold,#decf95);outline-offset:-2px}
+.tt12-claim-cards .card.tiny{width:100%;max-width:47px;height:auto;aspect-ratio:.705;pointer-events:none}
+.tt12-claim-actions{display:flex;justify-content:center;align-items:center;gap:8px;min-height:30px;max-width:100%}
+.tt12-claim-status{font-size:11px;opacity:.88;line-height:1.1}
+.tt12-incantation[data-tt-incantation-step=order] .tt3-order-list{min-height:0;max-height:calc(100% - 56px);overflow:hidden}
+.tt12-incantation[data-tt-incantation-step=order] .tt3-order-item{min-width:0;flex:0 1 55px}
+.tt12-incantation[data-tt-incantation-step=order] .tt3-order-handle .card{max-width:46px;width:100%;height:auto;aspect-ratio:.705}
+.tt12-drag-preview{position:fixed!important;z-index:100000!important;pointer-events:none!important;opacity:.9;transform:translate(-50%,-50%);box-shadow:0 6px 20px #0007}
+@media(max-height:450px){.tt12-incantation-heading{font-size:11px}.tt12-claim-cards .card.tiny{max-width:35px}.tt12-incantation-card,.tt12-incantation-other{flex-basis:38px}.tt12-claim-actions{min-height:27px}}
+/* Pending claim is a preview inside an existing empty slot, not a new row. */
+.game-viewport .tt12-door-preview{display:block;width:100%;height:100%;max-width:100%;opacity:.86;outline:1px dashed var(--table-gold,#decf95);outline-offset:-2px;pointer-events:none}
+.game-viewport .tt12-door-preview .card{width:100%;height:100%;max-width:100%;max-height:100%;pointer-events:none}
+/* The claim row is horizontal: never clip the Pass action inside a fixed-height dock. */
+.tt12-incantation[data-tt-incantation-step=claim] .tt12-claim-cards{gap:2px;max-height:calc(100% - 20px)}
+.tt12-incantation[data-tt-incantation-step=claim] .tt12-incantation-card,
+.tt12-incantation[data-tt-incantation-step=claim] .tt12-incantation-other{flex:0 1 42px;max-width:42px}
+.tt12-incantation[data-tt-incantation-step=claim] .tt12-claim-actions{flex:0 0 auto;min-width:0}
+.tt12-incantation[data-tt-incantation-step=claim] .tt12-claim-actions button{min-height:30px;padding:3px 7px;font-size:12px}
+.tt12-incantation[data-tt-incantation-step=order]{gap:2px}
+.tt12-incantation[data-tt-incantation-step=order] .tt3-order-list{padding:0!important;max-height:calc(100% - 58px)}
+.tt12-incantation[data-tt-incantation-step=order] .tt3-order-handle .card{max-width:39px}
+.tt12-incantation[data-tt-incantation-step=order] .tt12-claim-actions{min-height:28px}
+.tt12-incantation[data-tt-incantation-step=order] .tt12-claim-actions button{min-height:28px;padding:2px 8px}
+.game-viewport .tt6-workspace .tt6-dock-decision .decision.tt12-incantation{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:center;justify-content:center;gap:3px;max-height:100%}

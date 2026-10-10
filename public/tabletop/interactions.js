@@ -272,3 +272,22 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
   root.addEventListener('click',click,true);root.addEventListener('keydown',key);
   return {dispose(){clear();cancelTap();root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key);}};
 }
+
+// Drag a revealed Incantation Door onto the active player's existing Door area.
+// The actual claim remains provisional until the remaining cards are submitted.
+export function createIncantationClaim({root,onClaim}){
+ let press=null,ghost=null,suppress=false;
+ const threshold=7;
+ function clear(){ghost?.remove();ghost=null;press=null;root.querySelectorAll('.tt12-claim-drop-hover').forEach(el=>el.classList.remove('tt12-claim-drop-hover'));}
+ function targetAt(x,y){const el=document.elementFromPoint(x,y)?.closest?.('[data-tt-incantation-drop]');return el&&root.contains(el)?el:null;}
+ function down(e){if(e.pointerType==='mouse'&&e.button!==0)return;const el=e.target.closest?.('[data-tt-incantation-card]');if(!el)return;press={id:el.dataset.ttIncantationCard,x:e.clientX,y:e.clientY,pointerId:e.pointerId,el,dragging:false};}
+ function move(e){if(!press||e.pointerId!==press.pointerId)return;if(!press.dragging&&Math.hypot(e.clientX-press.x,e.clientY-press.y)<threshold)return;
+  if(!press.dragging){press.dragging=true;const rect=press.el.getBoundingClientRect();ghost=press.el.cloneNode(true);ghost.classList.add('tt12-drag-preview');ghost.style.width=`${rect.width}px`;ghost.style.height=`${rect.height}px`;ghost.setAttribute('aria-hidden','true');ghost.removeAttribute('data-action');document.body.appendChild(ghost);}
+  e.preventDefault();ghost.style.left=`${e.clientX+12}px`;ghost.style.top=`${e.clientY+12}px`;
+  root.querySelectorAll('.tt12-claim-drop-hover').forEach(el=>el.classList.remove('tt12-claim-drop-hover'));targetAt(e.clientX,e.clientY)?.classList.add('tt12-claim-drop-hover');
+ }
+ function up(e){if(!press||e.pointerId!==press.pointerId)return;const id=press.id,dragging=press.dragging,target=dragging?targetAt(e.clientX,e.clientY):null;clear();if(dragging){suppress=true;setTimeout(()=>suppress=false,0);}if(target)onClaim(id);}
+ function click(e){if(!suppress||!e.target.closest?.('[data-tt-incantation-card]'))return;e.preventDefault();e.stopImmediatePropagation();suppress=false;}
+ root.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',clear);window.addEventListener('blur',clear);root.addEventListener('click',click,true);
+ return {dispose(){clear();root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);}};
+}

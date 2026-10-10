@@ -412,7 +412,7 @@ export function act(previous,command){
  if(p.type==='towerLook'){need(command.type==='towerLook','Reorder inspected cards');putTop(s,p.cards,command.order);s.pending=null;refill(s);return s;}
  if(p.type==='incantation'){
    need(command.type==='incantation','Resolve Incantation');const doors=p.cards.filter(c=>c.kind==='door');
-   const id=command.doorId;need(doors.length?(doors.some(c=>c.id===id)):(id===null||id===undefined),'Choose one revealed Door, if available');
+   const id=command.doorId;need(id===null||id===undefined||doors.some(c=>c.id===id),'Choose a revealed Door or pass');
    const rest=p.cards.filter(c=>c.id!==id);putBottom(s,rest,command.order);if(id){const d=doors.find(c=>c.id===id);acquireDoor(s,d,'Incantation');}
    if(s.status==='active'){s.pending=null;finishAcquisition(s);}return s;
  }

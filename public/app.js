@@ -7,7 +7,7 @@ import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
-import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap} from './tabletop/interactions.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,createIncantationClaim,moveOrderedCardToGap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
@@ -28,7 +28,7 @@ let mirrorSelection=new Set(),mirrorTarget=null,mirrorPairSelection=new Set(),cy
 let happyPremonitionChoice=null,happyBanishMode=false,nightChoice=null,choicePage=0,spellGoals=[],swapPersonalId=null,swapSharedId=null,freeSearchId="";
 let session=null;try{const saved=JSON.parse(localStorage.getItem('onirama.session')||'null');if(saved&&typeof saved.id==='string'&&saved.id.length<64&&(saved.id==='local'||typeof saved.token==='string'||saved.transport==='firebase'))session=saved;}catch{localStorage.removeItem('onirama.session');}
 if(STATIC_SITE&&USE_FIREBASE&&session?.id!=='local'&&session?.transport!=='firebase'){session=null;localStorage.removeItem('onirama.session');}
-let selectedExpansions=new Set(),selectedDifficulties={},spellSelected=new Set(),spellChoice='parallel',effectOrder=[],effectPick=null,effectDiscards=new Set();
+let selectedExpansions=new Set(),selectedDifficulties={},spellSelected=new Set(),spellChoice='parallel',effectOrder=[],effectPick=null,incantationStage='claim',effectDiscards=new Set();
 const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{id:'copper',name:'Copper'},{id:'lagoon',name:'Lagoon'},{id:'heather',name:'Heather'},{id:'sandstone',name:'Sandstone'}];
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
@@ -96,7 +96,7 @@ async function join(){const code=document.querySelector('#roomcode')?.value;cons
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/game');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='start')await firebase.firebaseStart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_SOLO()){localEngine??=await import('./engine/game.js');const original=JSON.parse(localStorage.getItem('onirama.solo.v1'));const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem('onirama.solo.v1',JSON.stringify(updated));selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_SOLO()){localEngine??=await import('./engine/game.js');const original=JSON.parse(localStorage.getItem('onirama.solo.v1'));const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem('onirama.solo.v1',JSON.stringify(updated));selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_SOLO()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -211,7 +211,20 @@ function eligibleDecisionCards(g){
 }
 function legalPenaltyTowers(g){const a=g.expansion?.towers?.alignment||[];return a.filter((t,i)=>i===0||i===a.length-1||!a[i-1].right||!a[i+1].left||!towerEdgeConflict(a[i-1].right,a[i+1].left));}
 function chosenDecisionCards(){return new Set([...mirrorPairSelection,...(swapPersonalId?[swapPersonalId]:[]),...(swapSharedId?[swapSharedId]:[])]);}
-function effectReorder(p){if(!p.cards)return '';const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
+function incantationDecision(p){
+ const ids=p.cards.map(c=>c.id),doors=p.cards.filter(c=>c.kind==='door');
+ const choosing=doors.length>0&&incantationStage!=='order';
+ if(choosing){
+  if(effectPick&&!doors.some(c=>c.id===effectPick))effectPick=null;
+  const next=state?.game?.expansion?.book?.goals?.find(g=>!g.done)?.color;
+  const hint=next?`<span class="tt12-goal-hint">Next Step: ${escape(next)}${effectPick&&doors.find(c=>c.id===effectPick)?.color!==next?' · mismatched Door → Limbo':''}</span>`:'';
+  return `<section class="decision stack tt12-incantation" data-tt-incantation-step="claim"><div class="tt12-incantation-heading">Door → Doors / Pass ${hint}</div><div class="tt12-claim-cards">${p.cards.map(c=>c.kind==='door'?`<button type="button" class="tt12-incantation-card ${effectPick===c.id?'tt12-picked':''}" data-action="incantationSelect:${escape(c.id)}" data-tt-incantation-card="${escape(c.id)}" aria-pressed="${effectPick===c.id}" aria-label="Select ${escape(c.color)} Door, then tap Doors or drag there">${card(c,{tiny:true})}</button>`:`<span class="tt12-incantation-other">${card(c,{tiny:true})}</span>`).join('')}<div class="tt12-claim-actions">${btn('Pass','incantationPass')}</div></div></section>`;
+ }
+ const chosen=effectPick&&p.cards.find(c=>c.id===effectPick),remaining=p.cards.filter(c=>c.id!==effectPick);
+ if(effectOrder.length!==remaining.length||effectOrder.some(id=>!remaining.some(c=>c.id===id)))effectOrder=remaining.map(c=>c.id);
+ return `<section class="decision stack tt12-incantation" data-tt-incantation-step="order"><div class="tt12-incantation-heading">Rearrange remaining cards (bottom → top)</div><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=remaining.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Reorder card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div><div class="tt12-claim-actions">${doors.length?btn('Back','incantationBack'):''}${btn('Submit','effectConfirm','primary')}</div></section>`;
+}
+function effectReorder(p){if(!p.cards)return '';if(p.type==='incantation')return incantationDecision(p);const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
  const modes={sphinxResolve:'Sphinx — choose the top card if your named aspect matched; arrange the others bottom-first.',diver:'Diver — stop and put last card on top, continue revealing, or resolve a Nightmare.',denizenPeek:'Denizen insight — reorder inspected cards.',happyPeek:'Happy Dream — choose zero or more cards to discard, then reorder the rest.',incantation:'Incantation — choose one Door (if available) and order the others from bottom to top.',towerLook:'Tower insight — order inspected cards from top to bottom.',spellPeek:'Paradoxical Prophecy — pick one card to put on top; order the others from bottom to top.'};
  const options=p.cards.filter(c=>p.type==='incantation'?c.kind==='door':['spellPeek','sphinxResolve'].includes(p.type));
  if(effectPick&&!options.some(c=>c.id===effectPick))effectPick=null;
@@ -268,8 +281,10 @@ function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
 // The new solo and cooperative tabletops are the only supported gameplay surfaces.
 // Unknown modes fail visibly instead of silently falling back to obsolete controls.
 function board(g,room){
-  if(g.mode==='solo')return renderSoloTabletop(g,{selectedId:selected,canAct:!room.paused&&room.seat===g.active,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
-  if(g.mode==='coop')return renderCooperativeTabletop(g,{seat:room.seat,selectedId:selected,canAct:!room.paused&&room.seat===g.active,connected:online,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode});
+  const incantationPreview=g.pending?.type==='incantation'&&incantationStage==='order'&&effectPick?g.pending.cards.find(c=>c.id===effectPick&&c.kind==='door'):null;
+  const incantationClaim=g.phase==='decision'&&g.pending?.type==='incantation'&&g.pending.cards.some(c=>c.kind==='door')&&incantationStage==='claim'&&room.seat===g.active&&!room.paused;
+  if(g.mode==='solo')return renderSoloTabletop(g,{selectedId:selected,canAct:!room.paused&&room.seat===g.active,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode,incantationClaim,incantationPreview});
+  if(g.mode==='coop')return renderCooperativeTabletop(g,{seat:room.seat,selectedId:selected,canAct:!room.paused&&room.seat===g.active,connected:online,decisionTargets:eligibleDecisionCards(g),decisionSelected:chosenDecisionCards(),spellGoalMode:spellOpen&&spellChoice==='parallel',spellGoals,selectedPremonition:happyBanishMode?happyPremonitionChoice:null,premonitionChoiceMode:happyBanishMode,incantationClaim,incantationPreview});
   throw new Error(`Unsupported game mode: ${g.mode}`);
 }
 // Phase 4: contextual UI lives outside the tabletop. All choices still dispatch
@@ -538,9 +553,13 @@ async function handle(actionName){
   if(actionName==='towerFake')return action({type:'towerPenalty',option:'fake'});
   if(actionName.startsWith('spellCost:')){const id=actionName.slice(10);if(spellSelected.has(id))spellSelected.delete(id);else spellSelected.add(id);return render();}
   if(actionName==='castSpell'){const goals=state.game.expansion?.book?.goals||[];const [a,b]=spellGoals;return action({type:'cast',spell:spellChoice,costIds:[...spellSelected],...(spellChoice==='parallel'?{first:a,second:b}:{})});}
+  if(actionName.startsWith('incantationSelect:')){if(g.pending?.type!=='incantation'||incantationStage!=='claim')return;const id=actionName.slice('incantationSelect:'.length);if(!g.pending.cards.some(c=>c.kind==='door'&&c.id===id))return;effectPick=effectPick===id?null:id;return render();}
+  if(actionName==='incantationClaim'){if(g.pending?.type!=='incantation'||incantationStage!=='claim'||!effectPick)return;effectOrder=g.pending.cards.filter(c=>c.id!==effectPick).map(c=>c.id);incantationStage='order';return render();}
+  if(actionName==='incantationPass'){if(g.pending?.type!=='incantation')return;effectPick=null;effectOrder=g.pending.cards.map(c=>c.id);incantationStage='order';return render();}
+  if(actionName==='incantationBack'){if(g.pending?.type!=='incantation')return;incantationStage='claim';effectOrder=g.pending.cards.map(c=>c.id);return render();}
   if(actionName.startsWith('effectPick:')){effectPick=actionName.slice(11);return render();}
   if(actionName.startsWith('moduleDecision:'))return action({type:'moduleDecision',decisionId:g.pending.id,choice:decodeURIComponent(actionName.slice(15))});
-  if(actionName==='effectConfirm'){const p=state.game.pending;const cards=p.cards;if(p.type==='happyPeek')return action({type:'happyPeek',discardIds:[...effectDiscards],order:effectOrder.filter(id=>!effectDiscards.has(id))});if(p.type==='denizenPeek')return action({type:'denizenPeek',order:effectOrder});return p.type==='towerLook'?action({type:'towerLook',order:effectOrder}):p.type==='spellPeek'?action({type:'spellPeek',topId:effectPick,bottomOrder:effectOrder.filter(id=>id!==effectPick)}):action({type:'incantation',doorId:effectPick||undefined,order:effectOrder.filter(id=>id!==effectPick)});}
+  if(actionName==='effectConfirm'){const p=state.game.pending;if(p.type==='incantation'&&p.cards.some(c=>c.kind==='door')&&incantationStage!=='order')return;const cards=p.cards;if(p.type==='happyPeek')return action({type:'happyPeek',discardIds:[...effectDiscards],order:effectOrder.filter(id=>!effectDiscards.has(id))});if(p.type==='denizenPeek')return action({type:'denizenPeek',order:effectOrder});return p.type==='towerLook'?action({type:'towerLook',order:effectOrder}):p.type==='spellPeek'?action({type:'spellPeek',topId:effectPick,bottomOrder:effectOrder.filter(id=>id!==effectPick)}):action({type:'incantation',doorId:effectPick||null,order:effectOrder.filter(id=>id!==effectPick)});}
   if(actionName==='prophecyConfirm'){if(!prophecyDiscard)return setError('Choose one card to discard.');return action({type:'prophecy',discardId:prophecyDiscard,order:prophecyOrder.filter(id=>id!==prophecyDiscard)});}
 }
 // Interaction adapter: gestures never mutate state. They produce the same
@@ -562,8 +581,9 @@ function installTabletopController(){
       return action({type,id});
     }
   });
+  if(typeof createIncantationClaim==='function')createIncantationClaim({root:app,onClaim:id=>{if(state?.game?.pending?.type==='incantation'&&incantationStage==='claim'){effectPick=id;effectOrder=state.game.pending.cards.filter(c=>c.id!==id).map(c=>c.id);incantationStage='order';render();}}});
   createDecisionReorder({root:app,
-    canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind),
+    canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&incantationStage!=='order'),
     onDiscard:id=>{if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
     onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
@@ -601,6 +621,7 @@ app.addEventListener('keydown',e=>{
   }
   // Expansion tiles are intentionally not nested buttons (some contain an
   // independent action button). Make their button roles operable from a keyboard.
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('[data-tt-incantation-drop][role="button"]')){e.preventDefault();handle('incantationClaim');return;}
   if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.tt5-tile[role="button"][data-action]')){
     if(!gameOverlay){e.preventDefault();handle(e.target.dataset.action);}return;
   }
