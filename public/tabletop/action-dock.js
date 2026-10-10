@@ -6,6 +6,7 @@ export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
 export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null}={}){
  if(game.status==='won')return {title:'Victory',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
+ if(game.phase==='turnComplete')return {title:seat===game.active?'Turn complete':'Waiting for partner',hint:''};
  if(game.phase==='draft')return {title:seat===game.active?'Draft':'Partner drafting',hint:''};
  if(game.phase==='refill')return {title:'Draw',hint:''};
  if(game.phase==='decision'){
@@ -24,6 +25,7 @@ const button=(label,action)=>`<button type="button" data-action="${escape(action
 export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null}={}){
  const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog});
  let controls='';
+ if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');
  if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawReady')controls=button('Draw','draw');
  // Legacy saves paused mid-draw need a one-time, neutral recovery action.
  if(!dialog&&game.status==='active'&&seat===game.active&&game.pending?.type==='drawn')controls=button('Continue','confirmDraw');
@@ -56,8 +58,10 @@ export function renderPileInspector(game,pile,seat=null){
  const inventory=Array.isArray(game.pileInventory)?game.pileInventory:[];
  const titles={deck:'Draw pile',discard:'Discard pile',limbo:'Limbo pile'};
  const sections=[['base','Base game'],['glyphs','Glyphs'],['dreamcatchers','Dreamcatchers'],['towers','Towers'],['premonitions','Happy Dreams'],['crossroads','Crossroads'],['oniverse','Oniverse'],['sphinx','Sphinx / Diver / Confusion']];
- const count=inventory.reduce((n,r)=>n+r[pile],0);
+ const removed=pile==='discard'?(game.expansion?.book?.removed||[]):[];
+ const count=inventory.reduce((n,r)=>n+r[pile],0)+removed.length;
  const visible=Array.isArray(game[pile])&&pile!=='deck'?`<section class="tt6-inventory-group"><h3>${pile==='discard'?'Recent discards':'Cards in Limbo'}</h3><div class="${pile==='discard'?'tt8-discard-history':'tt9-stack-details'}" ${pile==='discard'?'tabindex="0" role="region" aria-label="Recent discards, newest first"':''}>${(pile==='discard'?[...game[pile]].reverse():game[pile]).map((c,i)=>pile==='discard'?`<span class="tt8-discard-item" style="z-index:${game[pile].length-i}">${renderCard(c,{tiny:true})}</span>`:renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div></section>`:'';
- const body=pile==='limbo'?visible:visible+sections.map(([key,name])=>{const entries=inventory.filter(i=>i.section===key);if(!entries.length)return '';return `<section class="tt6-inventory-group"><h3>${escape(name)}</h3><div class="tt6-inventory-rows">${entries.map(i=>`<div class="tt6-inventory-line ${i[pile]===0?'tt9-empty-count':''}" aria-label="${escape(i.label)}: ${i[pile]} of ${i.total}"><span class="tt7-inventory-card">${inventoryPreview(i)}</span>${renderInventoryTrack(i[pile],i.total)}</div>`).join('')}</div></section>`;}).join('');
+ const removedSection=removed.length?`<section class="tt6-inventory-group tt-removed-group"><h3>Removed from the game · ${removed.length}</h3><p>These cards paid for Book of Steps spells and cannot be drawn again.</p><div class="tt9-stack-details">${removed.map(c=>renderCard(c,{tiny:true})).join('')}</div></section>`:'';
+ const body=pile==='limbo'?visible:visible+removedSection+sections.map(([key,name])=>{const entries=inventory.filter(i=>i.section===key);if(!entries.length)return '';return `<section class="tt6-inventory-group"><h3>${escape(name)}</h3><div class="tt6-inventory-rows">${entries.map(i=>`<div class="tt6-inventory-line ${i[pile]===0?'tt9-empty-count':''}" aria-label="${escape(i.label)}: ${i[pile]} of ${i.total}"><span class="tt7-inventory-card">${inventoryPreview(i)}</span>${renderInventoryTrack(i[pile],i.total)}</div>`).join('')}</div></section>`;}).join('');
  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="${titles[pile]} contents"><header><strong>${titles[pile]}</strong><span>${count} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll">${body||'<p>Card counts unavailable.</p>'}</div></aside>`;
 }

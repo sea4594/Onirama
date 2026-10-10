@@ -33,7 +33,7 @@ test('HTTP solo and cooperative authorization, game start, privacy, stale action
     const solo=await request('/api/solo','POST',{name:'Solo'});assert.equal(solo.status,201);const id=solo.data.room.id;
     const unauthorized=await request(`/api/rooms/${id}/state`);assert.equal(unauthorized.status,401);
     const initial=await request(`/api/rooms/${id}/state`,'GET',null,solo.data.token);assert.equal(initial.status,200);
-    assert.equal(initial.data.game.deck,undefined);assert.equal(initial.data.game.rng,undefined);
+    assert.equal(initial.data.game.deck,undefined);assert.equal(initial.data.game.rng,undefined);assert.equal(initial.data.game.players[0].name,'You');
     const chosen=initial.data.game.players[0].hand[0];const version=initial.data.version;
     const action=await request(`/api/rooms/${id}/action`,'POST',{expectedVersion:version,command:{type:'discard',id:chosen.id}},solo.data.token);
     assert.equal(action.status,200);
@@ -41,9 +41,13 @@ test('HTTP solo and cooperative authorization, game start, privacy, stale action
     assert.equal(replay.status,400); // stale state cannot be used twice
     const coop=await request('/api/rooms','POST',{name:'One'});const rid=coop.data.room.id;
     const joined=await request('/api/join','POST',{code:coop.data.room.code,name:'Two'});assert.equal(joined.status,200);
+    const guestSetup=await request(`/api/rooms/${rid}/setup`,'POST',{config:{expansions:['book']}},joined.data.token);assert.equal(guestSetup.status,400);
+    const hostSetup=await request(`/api/rooms/${rid}/setup`,'POST',{config:{expansions:['book']}},coop.data.token);assert.equal(hostSetup.status,200);
+    const setupState=await request(`/api/rooms/${rid}/state`,'GET',null,joined.data.token);assert.deepEqual(setupState.data.room.config.expansions,['book']);assert.deepEqual(setupState.data.room.ready,[false,false]);
     await request(`/api/rooms/${rid}/ready`,'POST',{ready:true},coop.data.token);
     await request(`/api/rooms/${rid}/ready`,'POST',{ready:true},joined.data.token);
     const begin=await request(`/api/rooms/${rid}/start`,'POST',{},coop.data.token);assert.equal(begin.status,200);
+    const lockedSetup=await request(`/api/rooms/${rid}/setup`,'POST',{config:{expansions:[]}},coop.data.token);assert.equal(lockedSetup.status,400);
     let active=await request(`/api/rooms/${rid}/state`,'GET',null,coop.data.token);assert.equal(active.data.game.phase,'draft');
     const draft=await request(`/api/rooms/${rid}/action`,'POST',{expectedVersion:active.data.version,command:{type:'draft',id:active.data.game.draft[0].id}},coop.data.token);assert.equal(draft.status,200);
     active=await request(`/api/rooms/${rid}/state`,'GET',null,joined.data.token);

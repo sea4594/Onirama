@@ -152,7 +152,8 @@ function endTurn(s){
  if(s.limbo.length){s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,'Limbo shuffled into deck.');event(s,'limboResolved');}
  advanceTurn(s);
 }
-function advanceTurn(s){if(checkWin(s)||s.status!=='active')return;s.active=s.mode==='coop'?1-s.active:0;s.turn++;s.phase='action';s.pending=null;note(s,`${own(s).name}'s turn.`);}
+function advanceTurn(s){if(checkWin(s)||s.status!=='active')return;if(s.mode==='coop'&&s.manualTurnEnd){s.phase='turnComplete';s.pending=null;note(s,'Ready to end turn.');return;}nextTurn(s);}
+function nextTurn(s){if(checkWin(s)||s.status!=='active')return;s.active=s.mode==='coop'?1-s.active:0;s.turn++;s.phase='action';s.pending=null;note(s,`${own(s).name}'s turn.`);}
 function afterNightmare(s,n,special=false){
  if(has(s,'towers')&&tower(s).length&&!hasAlignment(tower(s))||has(s,'towers')&&tower(s).length&&s.config.difficulties.towers==='hard'){
    s.pending={type:'towerPenalty',card:n,special};s.phase='decision';return;
@@ -197,7 +198,7 @@ function completeAction(s){refill(s);}
 function restoreInterrupt(s){const frame=s.interrupts.pop();if(frame){s.phase=frame.phase;s.pending=frame.pending;}else{s.pending=null;s.phase='action';}}
 function spellCosts(s){return s.config.difficulties.book==='hard'?{paradox:6,parallel:9,punishment:12}:{paradox:5,parallel:7,punishment:10};}
 function castSpell(s,cmd){need(has(s,'book'),'Book of Steps is not enabled');need(['paradox','parallel','punishment'].includes(cmd.spell),'Unknown spell');
- const cost=spellCosts(s)[cmd.spell];const ids=cmd.costIds;need(Array.isArray(ids)&&ids.length===cost&&new Set(ids).size===cost,'Select exactly the required number of discarded cards');
+ const cost=spellCosts(s)[cmd.spell];const ids=cmd.costIds??s.discard.slice(0,cost).map(c=>c.id);need(Array.isArray(ids)&&ids.length===cost&&new Set(ids).size===cost,'Select exactly the required number of discarded cards');
  need(ids.every(id=>s.discard.some(c=>c.id===id)),'Payment must be from the discard pile');
  if(cmd.spell==='punishment')need(s.pending?.type==='nightmare'&&!s.pending.incubus&&s.pending.card?.kind==='nightmare'&&s.phase==='decision','Punishment cancels a Nightmare just drawn, not an Incubus anticipation penalty');
  if(cmd.spell==='parallel'){need(Number.isInteger(cmd.first)&&Number.isInteger(cmd.second)&&cmd.first!==cmd.second&&cmd.first>=0&&cmd.second>=0&&cmd.first<goals(s).length&&cmd.second<goals(s).length,'Select two different Goals');}
@@ -267,10 +268,10 @@ function activateIncubus(s){need(has(s,'incubus')&&incubus(s).level!=='easy','In
  note(s,`Incubus charged with ${required} Location cards; pay a Nightmare penalty.`);s.pending={type:'nightmare',card:null,incubus:true};s.phase='decision';
 }
 function cancelWithIncubus(s){need(has(s,'incubus')&&s.pending?.type==='nightmare'&&!s.pending.incubus,'Can only cancel a drawn Nightmare');const i=incubus(s);if(i.level==='easy'){need(!i.used,'Incubus already used');i.used=true;}else{need(i.zones.stored.length===(i.level==='true'?2:1),'Incubus must be fully charged');s.discard.push(...i.zones.stored.splice(0));}s.discard.push(s.pending.card);s.pending=null;refill(s);}
-export function newGame({mode='solo',seed=Date.now(),names=['Dreamwalker','Partner'],config,interactiveDraw=false}={}){
+export function newGame({mode='solo',seed=Date.now(),names=['Dreamwalker','Partner'],config,interactiveDraw=false,manualTurnEnd=false}={}){
  need(['solo','coop'].includes(mode),'Invalid game mode');const rules=validateConfig(config);
  const players=names.slice(0,mode==='coop'?2:1).map((name,i)=>({id:i,name:String(name||`Player ${i+1}`).slice(0,40),hand:[],labyrinth:[],doors:[],streakColor:null,streak:0,series:[]}));
- const s={schema:3,rulesVersion:RULESET_VERSION,interactiveDraw:Boolean(interactiveDraw),config:rules,moduleState:{},effects:[],continuations:[],events:[],interrupts:[],mode,rng:(Number(seed)>>>0)||1,deck:createDeck(rules.expansions),discard:[],limbo:[],shared:[],draft:[],players,active:0,turn:1,phase:mode==='coop'?'draft':'action',pending:null,status:'active',log:[]};
+ const s={schema:3,rulesVersion:RULESET_VERSION,interactiveDraw:Boolean(interactiveDraw),manualTurnEnd:Boolean(manualTurnEnd)&&mode==='coop',config:rules,moduleState:{},effects:[],continuations:[],events:[],interrupts:[],mode,rng:(Number(seed)>>>0)||1,deck:createDeck(rules.expansions),discard:[],limbo:[],shared:[],draft:[],players,active:0,turn:1,phase:mode==='coop'?'draft':'action',pending:null,status:'active',log:[]};
  for(const mod of activeModules(rules))s.moduleState[mod.id]=mod.setup(s);
  if(has(s,'oniverse')){const denizens=s.deck.filter(c=>c.kind==='denizen');shuffle(s,denizens);const removed=new Set(denizens.slice(0,8).map(c=>c.id));oni(s).zones.unused.push(...s.deck.filter(c=>removed.has(c.id)));s.deck=s.deck.filter(c=>!removed.has(c.id));}
  if(has(s,'incubus'))incubus(s).level=rules.difficulties.incubus||'easy';
@@ -286,6 +287,7 @@ export function legalActions(s){if(s.status!=='active')return [];
  if(s.phase==='decision'&&s.pending?.type==='drawReady')return [{type:'draw'}];
  if(s.phase==='decision'&&s.pending?.type==='drawn')return [{type:'confirmDraw'}];
  const bonus=has(s,'book')&&s.discard.length>=Math.min(...Object.values(spellCosts(s)))?[{type:'cast',spells:Object.entries(spellCosts(s)).filter(([spell,cost])=>s.discard.length>=cost&&(spell!=='punishment'||s.pending?.type==='nightmare')).map(([spell])=>spell)}]:[];
+ if(s.phase==='turnComplete')return [{type:'endTurn'},...bonus];
  if(s.phase==='decision'){
   const p=s.pending;const list={door:{type:'door',choices:(p.keys||[]).map(x=>x.id).concat('limbo')},doorSearch:{type:'doorSearch',choices:doorSearchTargets(s,p.color)},nightmare:{type:'nightmare',choices:['key','door','reveal','hand']},prophecy:{type:'prophecy'},incantation:{type:'incantation'},towerLook:{type:'towerLook'},towerPenalty:{type:'towerPenalty'},catchChoose:{type:'catchChoose'},catchOverload:{type:'catchOverload'},spellPeek:{type:'spellPeek'},moduleDecision:{type:'moduleDecision'},happyDream:{type:'happyDream'},happyPeek:{type:'happyPeek'},happyFetch:{type:'happyFetch'},rally:{type:'rally'},premonitionPick:{type:'premonitionPick'},premonitionDoor:{type:'premonitionDoor'},denizenPeek:{type:'denizenPeek'},sphinxName:{type:'sphinxName'},sphinxResolve:{type:'sphinxResolve'},diver:{type:'diver'},confusion:{type:'confusion'},mirrorReward:{type:'mirrorReward'}};
   return [list[p.type]].filter(Boolean).concat(bonus);
@@ -301,7 +303,8 @@ export function legalActions(s){if(s.status!=='active')return [];
 }
 export function act(previous,command){
  const s=structuredClone(normalizeSave(previous));need(s.status==='active','Game has ended');need(command&&typeof command==='object','Missing command');
- if(command.type==='cast'){need(s.phase==='action'||s.phase==='decision','Spell unavailable during draft or refill');castSpell(s,command);return s;}
+ if(s.phase==='turnComplete'&&command.type!=='cast'){need(command.type==='endTurn','End this turn before the next player acts');nextTurn(s);return s;}
+ if(command.type==='cast'){need(['action','decision','turnComplete'].includes(s.phase),'Spell unavailable during draft or refill');castSpell(s,command);return s;}
  if(s.phase==='decision'&&s.pending?.type==='drawReady'){
    need(command.type==='draw','Draw the next card');
    need(s.deck.length>0,'Deck empty');const c=takeTop(s);note(s,'Drew a card.');
@@ -450,7 +453,7 @@ export function viewFor(s,seat=null){const c=structuredClone(normalizeSave(s));d
  if(has(s,'premonitions'))c.expansion.premonitions={faceUp:[...prem(s).faceUp],reserveCount:prem(s).reserve.length,resolved:[...prem(s).resolved]};
  if(has(s,'oniverse'))c.expansion.oniverse={rallied:structuredClone(oni(s).zones.rallied),treasure:structuredClone(oni(s).zones.treasure.filter(x=>x.owner===seat||s.mode==='solo'))};
  if(has(s,'crossroads'))c.expansion.crossroads={hard:s.config.difficulties.crossroads==='hard'};
- if(has(s,'book'))c.expansion.book={goals:goals(s).map(g=>({color:g.color,done:g.done})),discardCount:book(s).zones.removed.length,costs:spellCosts(s)};
+ if(has(s,'book'))c.expansion.book={goals:goals(s).map(g=>({color:g.color,done:g.done})),discardCount:book(s).zones.removed.length,removed:structuredClone(book(s).zones.removed),costs:spellCosts(s)};
  if(has(s,'dreamcatchers'))c.expansion.dreamcatchers={active:[...dream(s).active],failsafes:dream(s).failsafes,stacks:Object.values(stacks(s)).map(a=>structuredClone(a))};
  if(has(s,'mirrors'))c.expansion.mirrors={completed:[...mirrors(s).completed],stacks:Object.fromEntries(Object.entries(mirrors(s).zones).filter(([k])=>mirrorEnabled(s,k)).map(([k,v])=>[k,structuredClone(v)]))};
  if(has(s,'incubus'))c.expansion.incubus={level:incubus(s).level,used:incubus(s).used,stored:structuredClone(incubus(s).zones.stored)};

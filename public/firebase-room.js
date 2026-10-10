@@ -1,6 +1,6 @@
 // BibleGuessr-style Firestore multiplayer: anonymous auth, transactions, onSnapshot.
 // No separate Node server is required. These client-side cooperative rooms assume trusted players.
-import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,startRoom,playRoom,leaveRoom,endRoom,roomView,seatFor} from './engine/firebase-protocol.js';
+import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,updateSetup,startRoom,playRoom,leaveRoom,endRoom,roomView,seatFor} from './engine/firebase-protocol.js';
 let clientPromise;
 function config(){const c=window.ONIRAMA_FIREBASE_CONFIG;return c&&['apiKey','authDomain','projectId','appId'].every(k=>typeof c[k]==='string'&&c[k].length)?c:null;}
 export function firebaseConfigured(){return !!config();}
@@ -49,6 +49,7 @@ export async function joinFirebaseRoom(code,name){
 }
 export async function loadRoom(code){const c=await connect(),snap=await c.store.getDoc(roomRef(c,code));if(!snap.exists())throw Error('Room not found or expired');return roomView(snap.data(),c.uid);}
 export async function firebaseReady(code,ready){return update(code,(room,uid)=>setReady(room,uid,ready));}
+export async function firebaseSetup(code,config){return update(code,(room,uid)=>updateSetup(room,uid,config));}
 export async function firebaseStart(code){return update(code,(room,uid)=>startRoom(room,uid));}
 export async function firebaseLeave(code){const c=await connect(),ref=roomRef(c,code);await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');tx.set(ref,leaveRoom(snap.data(),c.uid));});}
 export async function firebaseEnd(code){return update(code,(room,uid)=>endRoom(room,uid));}

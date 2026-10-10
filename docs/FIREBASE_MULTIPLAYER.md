@@ -13,12 +13,18 @@ This matches the hosting model in the supplied BibleGuessr checkpoint: a static 
 ## Verify rooms / codes
 
 1. In Onirama Settings choose **Test multiplayer connection**. This verifies the browser can load the SDK and establish anonymous Firebase auth; it does **not** establish that every Firestore rule is correct.
-2. Browser A: Multiplayer → Create room, select expansions, copy the 8-character code or invitation link.
-3. Browser B: open invitation link **on a different device or separate browser profile/private window**. Enter a nickname and Join. Two tabs within the same browser profile share an anonymous Firebase UID and therefore occupy the same seat, not two seats.
-4. Both choose Ready; host starts. Each drafts three cards. Check separate hands, shared cards, alternating actions, expansion decision dialogs and reconnection after refresh.
+2. Browser A: Multiplayer → Online. Enter a display name, create a lobby, select expansions/difficulties, and share the four-letter code or invitation link.
+3. Browser B: Online → Join. Enter a display name and the four-letter code, or open the invitation link **on a different device or separate browser profile/private window**. The guest can view the shared expansion setup but only the host can edit it. Two tabs within the same browser profile share an anonymous Firebase UID and therefore occupy the same seat, not two seats.
+4. Both choose Ready; the host presses Start game. Each drafts three cards. Check separate hands, shared cards, expansion decision dialogs, the explicit End turn button, and reconnection after refresh. The host can end the lobby for both players.
 5. Confirm Firestore → Data contains `oniramaRooms/<CODE>` and that the room's `version` increases for accepted actions. Reload either tab. Test an incorrect code, third browser and simultaneous actions: these must not displace a member or override a version conflict.
 
-Room codes are randomly generated in the browser using `crypto.getRandomValues`, allocated transactionally, and checked for collisions. They are 8 uppercase hexadecimal characters. Firebase keeps the room document; there is **no separate code service**. Open rooms cannot accept new players after 30 days. Existing members can resume while their anonymous browser identity is retained. Clearing browser storage may lose that seat permanently.
+Room codes are randomly generated in the browser using `crypto.getRandomValues`, allocated transactionally, and checked for collisions. New lobbies use four uppercase letters; legacy eight-character hexadecimal invitations are still supported. Firebase keeps the room document; there is **no separate code service**. Open rooms cannot accept new players after 30 days. Existing members can resume while their anonymous browser identity is retained. Clearing browser storage may lose that seat permanently.
+
+## Hot seat and rules deployments
+
+The Multiplayer → Hot seat tab runs two-player cooperative play locally on one device, with two display-name fields and the same expansions and difficulty options. No Firebase connection is required. The pass-device screen hides the next player's private hand during draft and between turns; the active player confirms they are ready before their view is revealed. Completed turns wait for the End turn button.
+
+**After installing a hotfix that changes `firestore.rules`:** the GitHub Pages push does not update Firebase security rules. Open **Firebase Console → onirama-5124e → Firestore Database → Rules**, paste the current repository `firestore.rules`, and **Publish**. Otherwise online lobby setup changes can be rejected even after the release gate and Pages deployment pass. The local release gate cannot verify live Firestore permissions.
 
 ## Limits and security
 

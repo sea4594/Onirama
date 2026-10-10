@@ -33,7 +33,7 @@ const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; object-src 'none'"};
 const allowedOrigins=new Set((process.env.ONIRAMA_CORS_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
 const asError=e=>({error:e instanceof Error?e.message:'Request rejected'});
-const roomGameView=(x,seat)=>{if(!x.game)return null;const v=viewFor(x.game,seat);for(let i=0;i<v.players.length;i++)if(x.seats[i]?.name)v.players[i].name=x.seats[i].name;return v;};
+const roomGameView=(x,seat)=>{if(!x.game)return null;const v=viewFor(x.game,seat);for(let i=0;i<v.players.length;i++)if(x.mode==='coop'&&x.seats[i]?.name)v.players[i].name=x.seats[i].name;return v;};
 const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===(x.hostSeat??0),hostSeat:x.hostSeat??0,paused:!!x.game&&x.seats.some(v=>!v)&&!x.ended,ended:!!x.ended,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status,config:x.config||validateConfig()});
 const limits=new Map();let requests=0;
 function rateLimit(req,pathname){
@@ -74,7 +74,7 @@ function sendEvents(x){
 function create(mode,name,rawConfig){
   const config=validateConfig(rawConfig);let id=token().slice(0,12);while(sessions[id])id=token().slice(0,12);
   let roomCode=code();while(Object.values(sessions).some(x=>x.code===roomCode))roomCode=code();
-  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],hostSeat:0,ended:false,game:mode==='solo'?newGame({mode:'solo',config,interactiveDraw:true}):null,version:0,createdAt:Date.now()};
+  const key=token();const x={id,code:roomCode,mode,config,ready:[false,false],seats:[{name:String(name||'Dreamwalker').slice(0,40),token:key},null],hostSeat:0,ended:false,game:mode==='solo'?newGame({mode:'solo',config,interactiveDraw:true,names:['You']}):null,version:0,createdAt:Date.now()};
   commit(x);return {room:roomSummary(x,0),token:key};
 }
 async function body(req){
@@ -119,6 +119,10 @@ function endpoint(req,res,url,data){
     const next=structuredClone(original);next.ended=true;next.game=null;next.version++;commit(next);
     return json(res,200,{ok:true});
   }
+  if(req.method==='POST'&&operation==='setup'){
+    if(seat!==(original.hostSeat??0)||original.game||original.ended)throw Error('Only the host can configure a waiting room');
+    const next=structuredClone(original);next.config=validateConfig(data.config);next.ready=[false,false];next.version++;commit(next);return json(res,200,{ok:true});
+  }
   if(req.method==='POST'&&operation==='ready'){
     if(original.game||original.ended)throw Error('The game has already started');const next=structuredClone(original);next.ready[seat]=!!data.ready;next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
@@ -127,7 +131,7 @@ function endpoint(req,res,url,data){
     if(original.mode!=='coop'||seat!==(original.hostSeat??0)||original.ended)throw Error('Only the host can start the cooperative game');
     if(original.game)throw Error('Game already started');
     if(!original.seats[1]||!original.ready.every(Boolean))throw Error('Both players must join and be ready');
-    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true});next.replay=recordReplay([],next.game,null);next.version++;commit(next);
+    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true,manualTurnEnd:true});next.replay=recordReplay([],next.game,null);next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   if(req.method==='POST'&&operation==='action'){

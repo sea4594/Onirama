@@ -24,6 +24,11 @@ service cloud.firestore {
           request.resource.data.guestName.size() > 0 && request.resource.data.guestName.size() <= 40 &&
           changedOnly(['guestUid','guestName','updatedAt','version']);
       }
+      function setupChange() {
+        return host() && !ended() && resource.data.game == null &&
+          changedOnly(['config','ready','updatedAt','version']) &&
+          request.resource.data.config is map && request.resource.data.ready == [false,false];
+      }
       function readyChange() {
         return member() && !ended() && resource.data.game == null &&
           changedOnly(['ready','updatedAt','version']) && request.resource.data.ready.size() == 2 &&
@@ -74,7 +79,7 @@ service cloud.firestore {
         request.resource.data.ready == [false,false] &&
         request.resource.data.createdAt is int && request.resource.data.expiresAt is int;
       allow update: if signedIn() && nextVersion() &&
-        (claimSeat0() || claimSeat1() || readyChange() || starting() || playing() || departing() || ending());
+        (claimSeat0() || claimSeat1() || setupChange() || readyChange() || starting() || playing() || departing() || ending());
       allow delete: if false;
     }
     match /{document=**} { allow read, write: if false; }
