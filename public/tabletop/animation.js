@@ -97,10 +97,11 @@ function animateFlight(template,from,to,target,delay,active){
 // Reveal only faces that are already part of the authorized next public view.
 // Never reconstruct cards from a hidden deck, replay commands, or show a partner's private hand.
 const publicCardMap=game=>new Map(arrays(game).flatMap(a=>cards(a).map(c=>[c.id,c])));
-function revealGhost(card,from,to,delay,cleanups,{premonition=false}={}){
+function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null}={}){
  if(!rectOK(from)||!rectOK(to)||typeof document==='undefined')return;
  const width=Math.min(148,Math.max(93,innerWidth*.26)),height=Math.round(width*1.42);
  const cx=innerWidth/2,cy=innerHeight/2;
+ if(target)target.style.visibility='hidden';
  const overlay=document.createElement('div');overlay.className='tt10-reveal-flight';
  Object.assign(overlay.style,{width:`${width}px`,height:`${height}px`,left:`${cx-width/2}px`,top:`${cy-height/2}px`});
  const front=premonition?card.outerHTML:renderCard(card,{tiny:true});
@@ -110,7 +111,7 @@ function revealGhost(card,from,to,delay,cleanups,{premonition=false}={}){
  const move=(pos)=>`translate(${pos.x-cx}px,${pos.y-cy}px) scale(${Math.max(.13,Math.min(2,pos.width/width))})`;
  const src={...source,width:from.width},dst={...destination,width:to.width};
  let finished=false;
- const cleanup=()=>{if(finished)return;finished=true;overlay.remove();const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
+ const cleanup=()=>{if(finished)return;finished=true;overlay.remove();if(target)target.style.removeProperty('visibility');const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
  cleanups.push(cleanup);
  if(!overlay.animate){cleanup();return;}
  const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:940,delay,easing:'ease-in-out',fill:'both'});
@@ -174,14 +175,14 @@ export function createTabletopAnimator({root}){
           const c=known.get(id);if(!c)return;
           const target=now.get(id),destination=target?.r||(membership(game,'discard').has(id)?discard:membership(game,'limbo').has(id)?limbo:null);
           if(!rectOK(destination))return;
-          revealGhost(c,deck,destination,i*175,cleanups);
+          revealGhost(c,deck,destination,i*175,cleanups,{target:target?.el||null});
         });
       }
       if(plan.premRevealed?.length){
         const reserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;
         for(const [i,id] of plan.premRevealed.slice(0,5).entries()){
           const target=premonitionNode(root,id),dest=rect(target);
-          if(target&&rectOK(reserve)&&rectOK(dest))revealGhost(target,reserve,dest,i*180,cleanups,{premonition:true});
+          if(target&&rectOK(reserve)&&rectOK(dest))revealGhost(target,reserve,dest,i*180,cleanups,{premonition:true,target});
         }
       }
       // A cooperative partner's concealed cards remain face down. Moves to

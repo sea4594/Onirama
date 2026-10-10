@@ -45,12 +45,12 @@ function inventoryPreview(row){
  const [,kind='',color='',symbol='',ability='',number='']=row.key.split(':');
  return renderCard({kind,color,symbol,ability,number,expansion:row.section},{tiny:true});
 }
-export function renderPileInspector(game,pile){
+export function renderPileInspector(game,pile,seat=null){
  const catcherMatch=/^catcher:([0-3])$/.exec(pile);
  if(catcherMatch){
   const i=Number(catcherMatch[1]),stack=game.expansion?.dreamcatchers?.stacks?.[i];
   if(!Array.isArray(stack))return '';
-  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="Dreamcatcher ${i+1} contents"><header><strong>Dreamcatcher ${i+1}</strong><span>${stack.length} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll tt9-stack-details">${stack.map(c=>renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div></aside>`;
+  return `<aside class="tt6-pile-inspector" data-pile-inspector role="dialog" aria-modal="false" aria-label="Dreamcatcher ${i+1} contents"><header><strong>Dreamcatcher ${i+1}</strong><span>${stack.length} cards</span><button type="button" class="tt6-pile-close" data-action="closePile" aria-label="Close pile information">×</button></header><div class="tt6-pile-scroll tt9-stack-details">${stack.map(c=>renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div>${seat===game.active&&game.phase==='action'&&stack.length&&game.expansion.dreamcatchers.failsafes>0?`<div class="tt11-catcher-tools"><button type="button" data-action="freeCatcher:${i}">Free Dreamcatcher</button></div>`:''}</aside>`;
  }
  if(!['deck','discard','limbo'].includes(pile))return '';
  const inventory=Array.isArray(game.pileInventory)?game.pileInventory:[];

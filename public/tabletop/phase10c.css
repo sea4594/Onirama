@@ -1,0 +1,35 @@
+/* Phase 10C: stable tabletop, touch and visibility refinements. */
+html,body,#app,.game-viewport{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.game-viewport button,.game-viewport [data-tt-card-info],.game-viewport .tt2-pile,.game-viewport .tt6-pile{touch-action:manipulation}
+/* Keep every pile visually neutral after inspection or touch focus. */
+.game-viewport .tt2-pile:focus-within:not(:has(:focus-visible)),
+.game-viewport .tt6-pile:focus-within:not(:has(:focus-visible)),
+.game-viewport :is(.tt2-pile,.tt6-pile) :is(button,.tt2-deck-back,.tt2-pile-face,.tt6-pile-face):not(:focus-visible){outline:none!important;box-shadow:none!important;filter:none!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) :is(button:active,button:hover){transform:none!important}
+/* Keep an explicit keyboard outline, without a lingering pointer outline. */
+.game-viewport :is(.tt2-pile,.tt6-pile) button:focus-visible{outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
+/* Taller pile shelf gives all three stacks their full card footprint. */
+.game-viewport .tt2-piles,.game-viewport .tt6-piles{min-height:calc(var(--tt4-mini)*1.42 + 32px)!important}
+.game-viewport :is(.tt2-pile-row,.tt6-piles) :is(.tt2-deck-back,.tt2-pile-face,.tt6-pile-face){height:calc(var(--tt4-mini)*1.62)!important;min-height:0}
+.game-viewport .tt2-pile-row,.game-viewport .tt6-piles{align-items:center}
+/* Tower artwork: center icon and bottom-center number. Edge symbols retain
+   their fixed moon/sun heights and no card geometry changes. */
+.game-viewport .card .tt5-tower-face>.tt11-tower-emblem{position:absolute;left:28%;right:28%;top:32%;height:32%;display:grid;place-items:center;font-size:clamp(12px,1.8vw,24px)}
+.game-viewport .card .tt5-tower-face>.tt11-tower-number{position:absolute;bottom:3px;left:25%;right:25%;font-size:clamp(10px,1.2vw,16px);text-align:center;line-height:1.1}
+.game-viewport .card .tt5-tower-face>.tt11-tower-emblem .ui-icon{width:100%;height:100%}
+/* Each Dreamcatcher is its own compartment; all its cards remain individually
+   distinguishable without overlapping or changing the size of the shelf. */
+.game-viewport .tt5-catchers .tt5-contents{display:flex;flex-wrap:nowrap;gap:3px;min-width:0;align-items:stretch;width:100%;overflow:hidden}
+.game-viewport .tt5-catcher{flex:1 1 0;width:auto!important;min-width:0!important;min-height:58px;box-sizing:border-box;overflow:hidden}
+.game-viewport .tt11-catcher-content{display:block;width:100%;min-width:0;max-width:100%;height:43px;overflow:hidden}
+.game-viewport .tt11-catcher-content .tt5-preview{display:flex;gap:1px;align-items:center;justify-content:space-evenly;width:100%;height:42px;max-height:42px;overflow:hidden}
+.game-viewport .tt11-catcher-content .tt5-preview .card.tiny{margin:0!important;min-width:0!important;max-width:27px!important;width:calc((100% - (var(--tt11-cards) - 1)*1px)/var(--tt11-cards))!important;flex:0 1 auto!important;height:40px!important}
+.game-viewport .tt5-catcher .tt5-stack-count{position:absolute;bottom:0;right:2px;font-size:9px}
+/* Five Incantation cards belong to the same visible row, not a hidden page. */
+.tt6-dock-decision [data-tt-order-group=effect]:has([data-tt-order-id]:nth-child(5)){gap:2px;justify-content:center;min-width:0;overflow:hidden}
+.tt6-dock-decision [data-tt-order-group=effect]:has([data-tt-order-id]:nth-child(5)) .tt3-order-item{min-width:0;flex:0 1 55px}
+.tt6-dock-decision [data-tt-order-group=effect]:has([data-tt-order-id]:nth-child(5)) .tt3-order-handle .card{width:min(100%,45px);max-width:45px;height:auto;aspect-ratio:.705}
+
+/* Move the optional Free action into the inspection window so it cannot cover cards. */
+.tt11-catcher-tools{padding:5px 9px;display:flex;justify-content:center;border-top:1px solid var(--ui-border)}
+.tt11-catcher-tools button{min-height:32px;padding:5px 12px;border-radius:6px}

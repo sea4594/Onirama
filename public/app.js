@@ -215,7 +215,7 @@ function effectReorder(p){if(!p.cards)return '';const ids=p.cards.map(c=>c.id);i
  const modes={sphinxResolve:'Sphinx — choose the top card if your named aspect matched; arrange the others bottom-first.',diver:'Diver — stop and put last card on top, continue revealing, or resolve a Nightmare.',denizenPeek:'Denizen insight — reorder inspected cards.',happyPeek:'Happy Dream — choose zero or more cards to discard, then reorder the rest.',incantation:'Incantation — choose one Door (if available) and order the others from bottom to top.',towerLook:'Tower insight — order inspected cards from top to bottom.',spellPeek:'Paradoxical Prophecy — pick one card to put on top; order the others from bottom to top.'};
  const options=p.cards.filter(c=>p.type==='incantation'?c.kind==='door':['spellPeek','sphinxResolve'].includes(p.type));
  if(effectPick&&!options.some(c=>c.id===effectPick))effectPick=null;
- return `<section class="decision stack"><h2>${escape(modes[p.type])}</h2><div class="cards tt3-order-list" data-tt-order-group="effect">${orderSlice(effectOrder).visible.map(id=>{const c=p.cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div>${options.some(x=>x.id===id)?btn(effectPick===id?'✓ Top':'Top',`effectPick:${id}`,'mini'):''}${p.type==='happyPeek'?btn(effectDiscards.has(id)?'✓ Out':'Out',`effectDiscard:${id}`,'mini'):''}</div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${p.type==='sphinxResolve'?btn('Confirm','sphinxConfirm','primary'):p.type==='diver'?`<div class="actions">${p.cards.at(-1)?.kind==='nightmare'?btn('Nightmare','diverNightmare','danger'):btn('Stop','diverStop','primary')}${p.cards.at(-1)?.kind!=='nightmare'&&p.remaining!==0?btn('Reveal','diverContinue'):''}</div>`:btn('Confirm','effectConfirm','primary')}</section>`;
+ return `<section class="decision stack"><h2>${escape(modes[p.type])}</h2><div class="cards tt3-order-list" data-tt-order-group="effect">${(p.type==='incantation'?effectOrder:orderSlice(effectOrder).visible).map(id=>{const c=p.cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}" style="align-items:center"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div>${options.some(x=>x.id===id)?btn(p.type==='incantation'?(effectPick===id?'✓ Claim':'Claim'):(effectPick===id?'✓ Top':'Top'),`effectPick:${id}`,'mini'):''}${p.type==='happyPeek'?btn(effectDiscards.has(id)?'✓ Out':'Out',`effectDiscard:${id}`,'mini'):''}</div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${p.type==='sphinxResolve'?btn('Confirm','sphinxConfirm','primary'):p.type==='diver'?`<div class="actions">${p.cards.at(-1)?.kind==='nightmare'?btn('Nightmare','diverNightmare','danger'):btn('Stop','diverStop','primary')}${p.cards.at(-1)?.kind!=='nightmare'&&p.remaining!==0?btn('Reveal','diverContinue'):''}</div>`:p.type==='incantation'?`<button type="button" data-action="effectConfirm" class="primary" ${options.length&&!effectPick?'disabled aria-label="Select a revealed Door before confirming"':''}>Confirm</button>`:btn('Confirm','effectConfirm','primary')}</section>`;
 }
 function towerEdgeConflict(left,right){const marks=v=>Array.isArray(v)?v:typeof v==='string'?v.split(/[+|,/ ]+/).filter(Boolean):[];return marks(left).some(mark=>marks(right).includes(mark));}
 function catcherSearchChoice(g,searchesDeck){
@@ -355,7 +355,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
-  const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen):'';
+  const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
   app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
@@ -568,7 +568,7 @@ function installTabletopController(){
     onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
       if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){if(!prophecyDiscard)return;const ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);prophecyOrder=[...moved,...(prophecyDiscard?[prophecyDiscard]:[])];}
-      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,orderSlice(effectOrder).offset+gap);
+      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(state.game.pending?.type==='incantation'?0:orderSlice(effectOrder).offset)+gap);
       else return;
       render();
     }
@@ -622,5 +622,20 @@ render();if(typeof createCardInspector==='function')cardInspector=createCardInsp
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
 function resizeGameplay(){if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
-addEventListener('resize',resizeGameplay);
-if(typeof window!=='undefined')window.visualViewport?.addEventListener?.('resize',resizeGameplay);
+// iOS applies the new visual viewport in multiple passes during rotation.
+// Never rescale on card selection; refit only on actual viewport changes.
+let lastViewport='',orientationRefits=[];
+function settleViewport(){
+ const next=`${window.innerWidth}x${window.innerHeight}:${window.visualViewport?.width||0}x${window.visualViewport?.height||0}`;
+ if(next!==lastViewport){lastViewport=next;resizeGameplay();}
+ for(const timer of orientationRefits)clearTimeout(timer);
+ orientationRefits=[80,220,480].map(ms=>setTimeout(()=>{lastViewport='';settleViewportOnce();},ms));
+}
+function settleViewportOnce(){lastViewport=`${window.innerWidth}x${window.innerHeight}:${window.visualViewport?.width||0}x${window.visualViewport?.height||0}`;resizeGameplay();}
+addEventListener('resize',()=>{settleViewportOnce();});
+if(typeof window!=='undefined'){
+ window.visualViewport?.addEventListener?.('resize',resizeGameplay);
+ window.addEventListener?.('orientationchange',settleViewport);
+ window.addEventListener?.('pageshow',settleViewportOnce);
+}
+
