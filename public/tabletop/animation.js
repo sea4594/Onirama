@@ -44,6 +44,7 @@ export function planGameTransitions(previous,next){
   const destinations={discard:membership(next,'discard'),limbo:membership(next,'limbo')};
   return {
     moved,drawn,removed,toHidden,fromHidden,
+    draftToHand: cards(previous.draft).filter(c=>!ids(next.draft).has(c.id)&&!after.has(c.id)).map(c=>c.id),
     hiddenDraw:Math.max(0,hiddenAfter.size-hiddenBefore.size),
     toDiscard:removed.filter(id=>destinations.discard.has(id)),
     toLimbo:removed.filter(id=>destinations.limbo.has(id)),
@@ -131,6 +132,9 @@ export function createTabletopAnimator({root}){
       // A cooperative partner's concealed cards remain face down. Moves to
       // and from that hand use only already public information or card backs.
       const oldBack=old.backs.at(-1),newBack=now.backs.at(-1);
+      // Public draft cards can visibly enter a concealed hand without
+      // storing the concealed card's ID (which can disclose its face).
+      for(const id of plan.draftToHand||[]){const a=old.get(id);if(a&&newBack)flies.unshift([newBack.template,a.r,newBack.r,null]);}
       for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)flies.unshift([a.template,a.r,newBack.r,null]);}
       for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)flies.unshift([oldBack.template,oldBack.r,b.r,b.el]);}
       if(plan.draw&&plan.hiddenDraw&&rectOK(deck)&&newBack){

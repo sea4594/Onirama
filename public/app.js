@@ -12,6 +12,7 @@ import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
 import {renderOverlay} from './game-overlay.js';
+import {opponentReplay,replayOverlay,fitReplay,replayStage,replayCaption} from './multiplayer-replay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io');
 const REMOTE_API=typeof window!=='undefined'&&typeof window.ONIRAMA_API_ORIGIN==='string'&&/^https:\/\/[^/]+$/.test(window.ONIRAMA_API_ORIGIN)?window.ONIRAMA_API_ORIGIN:'';
@@ -33,6 +34,8 @@ const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,lastAnnouncement='';
 let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null;
+let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
+let reconnectAttempts=0;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'forest',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'forest',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
 let uiSettings=readSettings();
 let playerDisplayName='Dreamwalker',partnerDisplayName='Partner';
@@ -42,6 +45,12 @@ let state=null,selected=null,error='',busy=false,online=false,streamAbort=null,s
 const roomCodeFromHash=()=>{const match=location.hash.match(/^#\/join\?code=([A-Za-z]{4}|[a-fA-F0-9]{8})$/);return match?match[1].toUpperCase():'';};
 const inviteLink=code=>`${location.origin}${location.pathname}${location.search}#/join?code=${encodeURIComponent(code)}`;
 function cancelStream(){streamAbort?.abort();streamAbort=null;if(streamRetry!==null){clearTimeout(streamRetry);streamRetry=null;}}
+function stopReplay(){if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayFrames=[];replayIndex=0;replayPlaying=false;replayAnimator?.reset?.();replayAnimator=null;}
+function retryStream(){if(!session||IS_LOCAL_SOLO()||streamRetry!==null)return;streamAbort?.abort();streamAbort=null;const wait=Math.min(18000,1250*2**Math.min(4,reconnectAttempts++));streamRetry=setTimeout(()=>{streamRetry=null;if(session)startStream();},wait);}
+function nextReplay(){if(!replayFrames.length)return;replayIndex=Math.min(replayIndex+1,replayFrames.length-1);updateReplayStage();}
+function scheduleReplay(){if(!replayPlaying)return;if(replayTimer!==null)clearTimeout(replayTimer);if(replayIndex===replayFrames.length-1){replayPlaying=false;updateReplayStage();return;}replayTimer=setTimeout(()=>{replayTimer=null;nextReplay();scheduleReplay();},850);}
+function updateReplayStage(){const layer=app.querySelector?.('[data-replay-layer]'),entry=replayFrames[replayIndex];if(!layer||!entry)return;replayAnimator?.before?.(entry.frame,'replay','#/game');const stage=layer.querySelector('[data-replay-stage]');if(!stage)return;stage.innerHTML=replayStage(entry,state?.room?.seat??0);fitReplay(layer,entry);replayAnimator?.after?.(entry.frame,'replay','#/game');const count=layer.querySelector('.tt9-replay-count');if(count)count.textContent=`${replayIndex+1}/${replayFrames.length} · ${replayCaption(entry)}`;const buttons=['replayPrev','replayNext','replayPlay'].map(key=>layer.querySelector(`[data-action="${key}"]`));if(buttons[0])buttons[0].disabled=replayIndex===0;if(buttons[1])buttons[1].disabled=replayIndex===replayFrames.length-1;if(buttons[2])buttons[2].textContent=replayPlaying?'Pause':'Play';}
+
 const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 function sessionMeta(){if(!session)return null;try{const meta=JSON.parse(localStorage.getItem(SESSION_META_KEY)||'null');if(meta?.roomId===session.id&&typeof meta.gameId==='string')return meta;}catch{}const meta={roomId:session.id,gameId:newId(),startedAt:Date.now()};localStorage.setItem(SESSION_META_KEY,JSON.stringify(meta));return meta;}
 function beginGuestSession(){if(!session)return;localStorage.setItem(SESSION_META_KEY,JSON.stringify({roomId:session.id,gameId:newId(),startedAt:Date.now()}));}
@@ -54,7 +63,7 @@ const btn=(label,action,klass='')=>`<button type="button" class="${klass}" data-
 const card=(c,options={})=>renderCard(c,{...options,selectedId:selected});
 function nav(){return `<header class="nav shell-nav"><a class="brand" href="#/" aria-label="Onirama home">${icon('diamond')}<span>ONIRAMA</span></a><div class="nav-right"><a href="#/rules" title="Rules" aria-label="Rules">${icon('help')}</a><a href="#/settings" title="Settings" aria-label="Settings">${icon('settings')}</a></div></header>`;}
 function bottomNav(){if(page==='#/game')return '';const entries=[['#/','Single Player','single'],['#/multiplayer','Multiplayer','users'],['#/settings','Settings','settings']];const active=page==='#/multiplayer'||page.startsWith('#/join')?'#/multiplayer':(page==='#/settings'||page==='#/history'||page==='#/roadmap')?'#/settings':'#/';return `<nav class="bottom-nav" aria-label="Primary">${entries.map(([url,label,iconName])=>`<a href="${url}" class="bottom-nav-item${active===url?' active':''}" ${active===url?'aria-current="page"':''}><span aria-hidden="true" class="bottom-icon">${icon(iconName)}</span><span>${label}</span></a>`).join('')}</nav>`;}
-function setRoute(path){if(path!=='#/game'){gameOverlay=null;gameRulesFromPause=false;pileOpen=null;}location.hash=path;page=path;render();}
+function setRoute(path){if(path!=='#/game'){stopReplay();gameOverlay=null;gameRulesFromPause=false;pileOpen=null;}location.hash=path;page=path;render();}
 function setError(msg){error=msg;render();}
 async function api(route,method='GET',body=null){
   const headers={'Content-Type':'application/json'};if(session?.token)headers.Authorization=`Bearer ${session.token}`;
@@ -63,7 +72,7 @@ async function api(route,method='GET',body=null){
   if(!res.ok)throw Error(data.error||'Request failed');return data;
 }
 async function refresh(){if(IS_LOCAL_SOLO()){const raw=localStorage.getItem('onirama.solo.v1');if(raw&&localEngine){const game=JSON.parse(raw);state={room:{seat:0,mode:'solo',started:true},game:localEngine.viewFor(game,0),version:(version||0)+1};session={id:'local',seat:0};online=true;sessionMeta();recordCurrentResult();render();announceCurrent();}return;}if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
-function closeEndedRoom(){cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the game.';setRoute('#/');}
+function closeEndedRoom(){stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the game.';setRoute('#/');}
 async function departRoom(end=false){
  if(!session||session.id==='local')return;
  if(end&&!state?.room?.host)return setError('Only the host can end the game.');
@@ -72,10 +81,10 @@ async function departRoom(end=false){
  try{
   if(session.transport==='firebase'){if(end)await firebase.firebaseEnd(session.id);else await firebase.firebaseLeave(session.id);}
   else await api(`/api/rooms/${session.id}/${end?'end':'leave'}`,'POST',{});
-  cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');setRoute('#/');
+  stopReplay();cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');setRoute('#/');
  }catch(e){setError(e.message);}finally{busy=false;render();}
 }
-function saveSession(o){cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
+function saveSession(o){stopReplay();cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
 async function create(mode){
   const name=(document.querySelector('#name')?.value||playerDisplayName||'Dreamwalker').trim();const config={ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
   try{if(STATIC_SITE&&mode==='solo'){cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'solo',config,interactiveDraw:true});localStorage.setItem('onirama.solo.v1',JSON.stringify(game));session={id:'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));beginGuestSession();await refresh();setRoute('#/game');return;}const o=mode==='coop'&&USE_FIREBASE?{...(await firebase.createFirebaseRoom(name,config)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api(mode==='solo'?'/api/solo':'/api/rooms','POST',{name,config});saveSession(o);beginGuestSession();await refresh();setRoute('#/game');startStream();}
@@ -92,9 +101,9 @@ async function startStream(){
   if(IS_LOCAL_SOLO()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
     cancelStream();const controller=new AbortController(),roomId=session.id,uid=session.uid;streamAbort=controller;online=false;render();
-    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';online=true;recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;setError('Realtime Firebase connection: '+e.message);});
-      if(controller.signal.aborted){unsubscribe();return;}controller.signal.addEventListener('abort',unsubscribe,{once:true});online=true;render();
-    }catch(e){if(!controller.signal.aborted){online=false;setError('Unable to connect to Firebase: '+e.message);}}return;
+    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';online=true;reconnectAttempts=0;recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;console.warn('Realtime Firebase connection lost',e);render();retryStream();});
+      if(controller.signal.aborted){unsubscribe();return;}controller.signal.addEventListener('abort',unsubscribe,{once:true});
+    }catch(e){if(!controller.signal.aborted){online=false;console.warn('Unable to connect to Firebase',e);render();retryStream();}}return;
   }
   cancelStream();if(!session||!base)return;
   const roomId=session.id,credential=session.token,controller=new AbortController();streamAbort=controller;online=false;render();
@@ -102,7 +111,7 @@ async function startStream(){
     const response=await fetch(`${base}/api/rooms/${roomId}/stream`,{headers:{Authorization:`Bearer ${credential}`},signal:controller.signal,cache:'no-store'});
     if(!response.ok)throw Error(response.status===401?'Session expired or seat unavailable':'Connection unavailable');
     if(!response.body)throw Error('Streaming unsupported');
-    const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';online=true;render();
+    const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';online=true;reconnectAttempts=0;render();
     while(!controller.signal.aborted){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true}).replace(/\r\n/g,'\n');
       const chunks=buffer.split('\n\n');buffer=chunks.pop()||'';
       if(buffer.length>262144)throw Error('Event exceeds maximum size');
@@ -116,7 +125,7 @@ async function startStream(){
     }
   }catch(e){if(!controller.signal.aborted&&session?.id===roomId){online=false;render();}}
   finally{if(!controller.signal.aborted&&session?.id===roomId&&session?.token===credential){online=false;render();
-      streamRetry=setTimeout(()=>{streamRetry=null;if(session?.id===roomId&&session?.token===credential)startStream();},3500);
+      retryStream();
     }}
 }
 
@@ -342,13 +351,17 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
   const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button><button type="button" data-action="openGamePause">Game menu</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard}):''):'';
+  const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
+  const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
+  const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen):'';
-  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?`<div class="tt6-table-slot">${content}</div>${dock}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'');
+  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${errorMessage}${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}</main>`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
   }
   tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page);
+  if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator=createTabletopAnimator({root:replayLayer});replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');fitReplay(replayLayer,replayFrames[replayIndex]);}}
   const nextDock=app.querySelector?.('.tt6-dock-scroll');if(nextDock){nextDock.scrollTop=dockScroll;nextDock.scrollLeft=dockX;}
   const nextPile=app.querySelector?.('.tt6-pile-scroll');if(nextPile)nextPile.scrollTop=pileScroll;
   const nextWindow=app.querySelector?.('.shell-viewport-window');
@@ -362,7 +375,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
     const match=overlayFocused?[...(openMenu.querySelectorAll?.('[data-action],[data-setting]')||[])].find(el=>el.dataset.action===overlayFocused||el.dataset.setting===overlayFocused):null;
     (match||openMenu.querySelector?.('button,[href],summary,select')||openMenu)?.focus?.({preventScroll:true});
   }else if(overlayReturnAction){(app.querySelector?.(`.tt4-overlay [data-action="${overlayReturnAction}"]`)||app.querySelector?.(`[data-action="${overlayReturnAction}"]`))?.focus?.({preventScroll:true});overlayReturnAction=null;}
-  for(const node of app.querySelectorAll?.('.page,.tt4-overlay')||[]){if(gameOverlay)node.setAttribute?.('inert','');else node.removeAttribute?.('inert');}
+  for(const node of app.querySelectorAll?.('.page,.tt4-overlay')||[]){if(gameOverlay||replayFrames.length)node.setAttribute?.('inert','');else node.removeAttribute?.('inert');}
   if(focusKind&&!gameOverlay){const replacement=[...(app.querySelectorAll?.('[data-action],[data-pick],[data-setting],[data-expansion],[data-difficulty]')||[])].find(el=>el.dataset?.[focusKind]===focusValue);if(!app.querySelector?.('[data-tt4-dialog]')||app.querySelector('[data-tt4-dialog]').contains(replacement))replacement?.focus?.({preventScroll:true});}
 }
 function pick(id){
@@ -383,6 +396,11 @@ function pick(id){
  selected=selected===id?null:id;render();
 }
 async function handle(actionName){
+  if(actionName==='replayOpen'){if(page!=='#/game'||state?.room?.mode!=='coop')return;const frames=opponentReplay(state.replay,state.room.seat);if(frames.length<2)return;stopReplay();gameOverlay=null;pileOpen=null;replayFrames=frames;replayIndex=0;render();app.querySelector?.('[data-replay-layer] .tt9-replay-dialog')?.focus?.();return;}
+  if(actionName==='replayClose'){stopReplay();return render();}
+  if(actionName==='replayPrev'||actionName==='replayNext'){replayPlaying=false;if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayIndex=Math.max(0,Math.min(replayFrames.length-1,replayIndex+(actionName==='replayNext'?1:-1)));return updateReplayStage();}
+  if(actionName==='replayPlay'){replayPlaying=!replayPlaying;updateReplayStage();scheduleReplay();return;}
+  if(replayFrames.length)return;
   if(actionName==='openGamePause'||actionName==='openGameRules'){
     if(page!=='#/game'||!state?.room?.started)return;
     gameRulesFromPause=actionName==='openGameRules'&&gameOverlay==='pause';
@@ -557,6 +575,8 @@ function installTabletopController(){
 app.addEventListener('input',e=>{if(e.target?.id==='name')playerDisplayName=String(e.target.value).slice(0,40);if(e.target?.id==='joinname')partnerDisplayName=String(e.target.value).slice(0,40);});
 app.addEventListener('change',e=>{if(e.target?.id==='freeOnSearch'){freeSearchId=e.target.value;return;}if(e.target?.dataset?.mirrorPair){if(e.target.checked)mirrorPairSelection.add(e.target.dataset.mirrorPair);else mirrorPairSelection.delete(e.target.dataset.mirrorPair);return;}if(e.target?.dataset?.mirrorChoice){if(e.target.checked)mirrorSelection.add(e.target.dataset.mirrorChoice);else mirrorSelection.delete(e.target.dataset.mirrorChoice);return;}if(e.target?.dataset?.expansion){const id=e.target.dataset.expansion;if(e.target.checked){if(id==='incubus')selectedExpansions.clear();else selectedExpansions.delete('incubus');selectedExpansions.add(id);}else{selectedExpansions.delete(id);delete selectedDifficulties[id];}return render();}if(e.target?.dataset?.difficulty){selectedDifficulties[e.target.dataset.difficulty]=e.target.value;return render();}if(e.target?.dataset?.spellChoice){spellChoice=e.target.value;spellSelected.clear();spellGoals=[];choicePage=0;return render();}const key=e.target?.dataset?.setting;if(!['theme','motion','cardSize','contrast','textSize'].includes(key))return;const value=e.target.value;if(key==='theme'&&!THEME_PRESETS.some(t=>t.id===value))return;if(key==='motion'&&!['normal','reduced'].includes(value))return;if(key==='cardSize'&&!['normal','large'].includes(value))return;if(key==='contrast'&&!['normal','high'].includes(value))return;if(key==='textSize'&&!['normal','large'].includes(value))return;uiSettings[key]=value;localStorage.setItem(SETTINGS_KEY,JSON.stringify(uiSettings));applySettings();render();});
 app.addEventListener('click',e=>{
+  if(e.target.closest?.('[data-replay-stage]')){e.preventDefault();return;}
+  if(replayFrames.length&&!e.target.closest?.('[data-replay-layer]')){e.preventDefault();return;}
   if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
   if(pileOpen&&!e.target.closest?.('[data-pile-inspector],[data-action^="inspectPile:"],[data-action^="inspectCatcher:"]')){pileOpen=null;render();return;}
   const target=e.target.closest('[data-action],[data-pick]');if(!target)return;
@@ -565,6 +585,7 @@ app.addEventListener('click',e=>{
   handle(target.dataset.action);
 });
 app.addEventListener('keydown',e=>{
+  if(replayFrames.length){if(e.key==='Escape'){e.preventDefault();stopReplay();render();}return;}
   if(pileOpen&&e.key==='Escape'&&!gameOverlay){e.preventDefault();pileOpen=null;render();return;}
   const popup=app.querySelector?.('[data-game-menu-dialog]');if(!popup)return;
   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation?.();handle('closeGameOverlay');return;}
@@ -578,10 +599,10 @@ app.addEventListener('keydown',e=>{
 addEventListener('hashchange',render);
 addEventListener('online',()=>{if(session&&!IS_LOCAL_SOLO())startStream();});
 addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startStream();});
-document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()&&streamAbort===null)startStream();});
+document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()){if(streamAbort===null)startStream();else if(session.transport==='firebase')startStream();else refresh();}});
 render();if(typeof createCardInspector==='function')cardInspector=createCardInspector({root:app});installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE){import('./engine/game.js').then(async m=>{localEngine=m;if(session?.id==='local')return refresh();if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game')startStream();});}
 
 // Phase 1: attach layout metrics after orientation changes without changing game commands.
-function resizeGameplay(){if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
+function resizeGameplay(){if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
 addEventListener('resize',resizeGameplay);
 if(typeof window!=='undefined')window.visualViewport?.addEventListener?.('resize',resizeGameplay);

@@ -1,0 +1,18 @@
+/* Replay is a separate read-only tabletop. It never resizes or rearranges the live game. */
+.tt9-replay-layer{position:fixed;inset:0;z-index:1150;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);color:var(--ui-text,#f5e8c8)}
+.tt9-replay-scrim{position:absolute;inset:0;background:rgba(4,14,11,.86)}
+.tt9-replay-dialog{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:100%;height:100%;max-width:1500px;max-height:1000px;min-width:0;min-height:0;overflow:hidden;background:var(--ui-bg,#15392f);border:1px solid var(--ui-border,#637c66);border-radius:12px}
+.tt9-replay-head,.tt9-replay-controls{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.45rem .65rem;min-height:45px}
+.tt9-replay-head{justify-content:space-between;border-bottom:1px solid var(--ui-border,#637c66)}
+.tt9-replay-count{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt9-replay-head button{font-size:1.35rem;line-height:1;min-width:35px}
+.tt9-replay-stage{position:relative;overflow:hidden;min-width:0;min-height:0;width:100%;height:100%;pointer-events:none}
+.tt9-replay-controls{border-top:1px solid var(--ui-border,#637c66);flex-wrap:nowrap}
+.tt9-replay-controls button{min-height:37px;min-width:72px}
+.tt9-replay-launch{position:absolute;right:.55rem;top:.3rem;z-index:3;font-size:.8rem;min-height:27px;padding:.1rem .4rem}
+.tt9-replay-stage .tt2-root{pointer-events:none}
+@media (max-height:420px){.tt9-replay-head,.tt9-replay-controls{min-height:32px;padding:.15rem .5rem}.tt9-replay-controls button{min-height:30px}}
+
+.tt6-workspace{position:relative}
+.tt6-workspace .tt9-replay-launch{right:.4rem;top:.25rem}
+.tt6-workspace:has(.tt9-replay-launch) .tt6-dock-status{padding-right:3.8rem}

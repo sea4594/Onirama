@@ -5,6 +5,7 @@ import {join,extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {newGame,act,viewFor,assertConserved} from '../engine/game.js';
 import {validateConfig,EXPANSION_CATALOG} from '../engine/config.js';
+import {recordReplay,visibleReplay} from '../engine/replay.js';
 
 const root=resolve(fileURLToPath(new URL('../public/',import.meta.url)));
 const store=resolve(process.env.ONIRAMA_DATA_DIR||'server-data');
@@ -99,12 +100,12 @@ function endpoint(req,res,url,data){
   if(segments[0]!=='api'||segments[1]!=='rooms'||!segments[2])return json(res,404,{error:'Unknown API route'});
   const original=sessions[segments[2]];if(!original)return json(res,404,{error:'Game not found'});
   const seat=credentials(original,req),operation=segments[3];
-  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:roomGameView(original,seat),version:original.version});
+  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:roomGameView(original,seat),replay:visibleReplay(original.replay),version:original.version});
   if(req.method==='GET'&&operation==='stream'){
     if((listeners.get(original.id)?.size||0)>=12)throw Object.assign(Error('Too many open connections'),{status:429});
     res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
     if(!listeners.has(original.id))listeners.set(original.id,new Set());const record={res,seat,token:original.seats[seat].token};listeners.get(original.id).add(record);
-    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:roomGameView(original,seat)})}\n\n`);
+    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:roomGameView(original,seat),replay:visibleReplay(original.replay)})}\n\n`);
     const keepAlive=setInterval(()=>{try{res.write(': heartbeat\n\n');}catch{res.end();}},25000);
     req.on('close',()=>{clearInterval(keepAlive);listeners.get(original.id)?.delete(record);if(!listeners.get(original.id)?.size)listeners.delete(original.id);});return;
   }
@@ -126,14 +127,14 @@ function endpoint(req,res,url,data){
     if(original.mode!=='coop'||seat!==(original.hostSeat??0)||original.ended)throw Error('Only the host can start the cooperative game');
     if(original.game)throw Error('Game already started');
     if(!original.seats[1]||!original.ready.every(Boolean))throw Error('Both players must join and be ready');
-    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true});next.version++;commit(next);
+    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true});next.replay=recordReplay([],next.game,null);next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   if(req.method==='POST'&&operation==='action'){
     if(!original.game)throw Error('Game has not started');if(original.ended||(original.mode==='coop'&&original.seats.some(v=>!v)))throw Error('Game paused until another player joins');
     if(seat!==original.game.active)throw Error('It is not your turn');
     if(!Number.isInteger(data.expectedVersion)||data.expectedVersion!==original.version)throw Error('State changed. The board has been refreshed; choose your action again.');
-    const next=structuredClone(original);next.game=act(original.game,data.command);assertConserved(next.game);next.version++;commit(next);
+    const next=structuredClone(original);next.game=act(original.game,data.command);assertConserved(next.game);next.replay=recordReplay(original.replay,next.game,seat,data.command);next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   return json(res,404,{error:'Unknown room operation'});

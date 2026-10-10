@@ -33,13 +33,13 @@ service cloud.firestore {
         return host() && !ended() && resource.data.game == null &&
           resource.data.hostUid != null && resource.data.guestUid != null &&
           resource.data.ready == [true,true] && request.resource.data.game is map &&
-          request.resource.data.game.mode == 'coop' && changedOnly(['game','updatedAt','version']);
+          request.resource.data.game.mode == 'coop' && request.resource.data.replay is list && changedOnly(['game','replay','updatedAt','version']);
       }
       function playing() {
         return member() && !ended() && resource.data.hostUid != null && resource.data.guestUid != null &&
           resource.data.game is map && resource.data.game.status == 'active' &&
-          resource.data.game.active == seat() && request.resource.data.game is map &&
-          changedOnly(['game','updatedAt','version']);
+          resource.data.game.active == seat() && request.resource.data.game is map && request.resource.data.replay is list &&
+          changedOnly(['game','replay','updatedAt','version']);
       }
       function departing() {
         return member() && !ended() &&

@@ -1,6 +1,7 @@
 // Pure cooperative-room transitions shared by Firebase and offline regression tests.
 import {newGame,act,viewFor,assertConserved} from './game.js';
 import {validateConfig} from './config.js';
+import {recordReplay,visibleReplay} from './replay.js';
 export const ROOM_TTL_MS=30*24*60*60*1000;
 export const ROOM_COLLECTION='oniramaRooms';
 export const ROOM_CODE=/^(?:[A-Z]{4}|[A-F0-9]{8})$/; // Old invitation codes remain joinable.
@@ -28,7 +29,7 @@ export function roomView(room,uid){
  const ended=room.ended===true;
  const game=!ended&&room.game?viewFor(room.game,seat):null;
  if(game)for(const [i,display] of [room.hostName,room.guestName].entries())if((i===0?room.hostUid:room.guestUid)&&display)game.players[i].name=display;
- return {room:{id:room.code,code:room.code,mode:'coop',seat,host:seat===hostSeat(room),hostSeat:hostSeat(room),ready:room.ready,connected:[!!room.hostUid,!!room.guestUid],paused:!!room.game&&!occupied(room)&&!ended,ended,started:!!room.game||ended,phase:room.game?.phase,status:ended?'ended':room.game?.status,config:room.config},game,version:room.version};
+ return {replay:visibleReplay(room.replay),room:{id:room.code,code:room.code,mode:'coop',seat,host:seat===hostSeat(room),hostSeat:hostSeat(room),ready:room.ready,connected:[!!room.hostUid,!!room.guestUid],paused:!!room.game&&!occupied(room)&&!ended,ended,started:!!room.game||ended,phase:room.game?.phase,status:ended?'ended':room.game?.status,config:room.config},game,version:room.version};
 }
 export function joinRoom(room,uid,name,now=Date.now()){
  identity(uid);requireRule(room&&now<room.expiresAt,'Room has expired');requireRule(!room.ended,'Game has ended');
@@ -45,7 +46,7 @@ export function startRoom(room,uid,now=Date.now()){
  requireRule(seatFor(room,uid)===hostSeat(room),'Only the host can start');
  requireRule(!room.ended&&!room.game&&occupied(room)&&room.ready.every(Boolean),'Both players must join and be ready');
  const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName],interactiveDraw:true});assertConserved(game);
- return {...room,game:clone(game),updatedAt:now,version:room.version+1};
+ return {...room,game:clone(game),replay:recordReplay([],game,null),updatedAt:now,version:room.version+1};
 }
 export function playRoom(room,uid,expectedVersion,command,now=Date.now()){
  const seat=seatFor(room,uid);requireRule(seat>=0,'Not a room member');
@@ -53,7 +54,7 @@ export function playRoom(room,uid,expectedVersion,command,now=Date.now()){
  requireRule(room.version===expectedVersion,'State changed. Choose your action again.');
  requireRule(room.game?.status==='active','Game is not active');requireRule(room.game.active===seat,'It is not your turn');
  const next=act(room.game,command);assertConserved(next);
- return {...room,game:clone(next),updatedAt:now,version:room.version+1};
+ return {...room,game:clone(next),replay:recordReplay(room.replay,next,seat,command),updatedAt:now,version:room.version+1};
 }
 export function leaveRoom(room,uid,now=Date.now()){
  const seat=seatFor(room,uid);requireRule(seat>=0,'Not a room member');requireRule(!room.ended,'Game has ended');
