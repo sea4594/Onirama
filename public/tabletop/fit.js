@@ -19,6 +19,7 @@ function overlapRows(table){
  for(const row of table.querySelectorAll('[data-tabletop-scroll]')){
   const cards=[...row.children].filter(c=>c.matches('.card.tiny'));
   if(!cards.length)continue;
+  if(row.matches('.tt2-labyrinth-row,.tt6-labyrinth-cards')){cards.forEach(c=>c.style.marginRight='0px');row.scrollLeft=Math.max(0,row.scrollWidth-row.clientWidth);continue;}
   const avail=Math.max(0,row.clientWidth-6),w=cards[0].offsetWidth||cards[0].getBoundingClientRect().width;
   // Keep the last card fully visible; crop less important earlier faces first.
   const step=cards.length<2?w:clamp((avail-w)/(cards.length-1),0,w*.76);

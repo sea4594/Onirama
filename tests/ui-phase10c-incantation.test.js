@@ -25,7 +25,7 @@ test('Incantation claims one Door and returns all other revealed cards in order'
 test('Incantation UI requires choosing a revealed Door before reordering',()=>{
  const app=source('public/app.js');
  assert.match(app,/incantationStage==='claim'/);assert.doesNotMatch(app,/incantationPass/);
- assert.match(app,/incantationClaim/);assert.match(app,/Select a Door → Doors/);assert.match(app,/Submit/);
+ assert.match(app,/incantationClaim/);assert.match(app,/Incantation: take one revealed Door/);assert.match(app,/Submit/);
  assert.match(source('public/tabletop/phase10c.css'),/nth-child\(5\)/);
 });
 test('Tower icon and number are separate fixed positions',()=>{
