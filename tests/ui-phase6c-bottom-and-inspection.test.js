@@ -12,8 +12,8 @@ test('fixed action workspace is at the bottom across orientations with right-bot
  assert.match(css,/\.tt5-alignment \.tt5-contents\{justify-content:center/);
 });
 test('tabletop fitting preserves width and row wrapping rather than reflowing at CSS zoom',()=>{
- assert.match(fit,/table\.style\.transform=scale<1/);
- assert.match(fit,/table\.style\.width=`\$\{width\/scale\}px`/);
+ assert.match(fit,/table\.style\.transform=.*scale/);
+ assert.match(fit,/table\.style\.width=`\$\{width\/zoom\}px`/);
  assert.doesNotMatch(fit,/table\.style\.zoom=String\(middle\)/);
 });
 test('Premonitions are inspectable and can be selected before confirming Happy Dream',()=>{

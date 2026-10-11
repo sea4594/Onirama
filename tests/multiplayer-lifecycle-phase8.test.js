@@ -72,5 +72,5 @@ test('Server and UI explicitly distinguish leaving from ending; all orientations
  assert.match(server,/operation==='leave'/);assert.match(server,/operation==='end'/);
  assert.match(ui,/async function departRoom/);assert.match(ui,/data-action="copyInvite"/);
  assert.match(ui,/state\.room\.paused/);
- const fit=readFileSync('public/tabletop/fit.js','utf8');assert.match(fit,/height\/scale/);
+ const fit=readFileSync('public/tabletop/fit.js','utf8');assert.match(fit,/height-1/);assert.match(fit,/zoom/);
 });

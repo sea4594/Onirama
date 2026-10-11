@@ -1,101 +1,102 @@
-/* Responsive allocation for the live tabletop, independent of game rules.
-   First choose an arrangement, then reduce panel pressure only if required.
-   Zoom is an extreme-viewport fallback, never the primary layout mechanism. */
-const clamp=(n,low,high)=>Math.max(low,Math.min(high,n));
+/* One responsive allocation pipeline for solo and co-op. Geometry belongs to
+   adaptive.css; this module chooses its layout, sizes and density using the
+   actual board viewport, active zones and measured card content. */
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export function tabletopShape(width,height){
-  if(width>=1150&&height>=540)return 'wide';
-  if(width>height&&height<540)return 'short';
-  if(width>=680)return 'medium';
-  return 'portrait';
+ if(width>=1100&&height>=500)return 'wide';
+ if(width>height&&height<560)return 'short';
+ if(width>=675)return 'medium';
+ return 'portrait';
 }
 export function tabletopDimensions(width,height,mode='solo',zoneCount=0){
-  const shape=tabletopShape(width,height),coop=mode==='coop';
-  const card=shape==='wide'?clamp(width*.057,68,91):shape==='medium'?clamp(width*.07,55,79):shape==='short'?clamp(Math.min(width*.069,height*.145),34,64):clamp(width*(coop?.145:.172),44,75);
-  const mini=shape==='wide'?clamp(width*.036,41,57):shape==='medium'?clamp(width*.047,34,49):shape==='short'?clamp(Math.min(width*.044,height*.092),25,39):clamp(width*(coop?.094:.089),30,43);
-  const columns=Math.max(1,Math.min(zoneCount,shape==='portrait'?2:shape==='wide'?4:3));
-  return {shape,card:Math.round(card),mini:Math.round(mini),columns};
+ const shape=tabletopShape(width,height),coop=mode==='coop';
+ const card=shape==='wide'?clamp(width*.065,70,105):shape==='medium'?clamp(width*.095,65,94):shape==='short'?clamp(width*.105,46,80):clamp(width/(coop?6.0:5.5),49,75);
+ const mini=shape==='wide'?clamp(width*.036,43,60):shape==='medium'?clamp(width*.054,38,57):shape==='short'?clamp(width*.060,29,46):clamp(width/(coop?10.5:10.2),29,41);
+ const columns=zoneCount>=7?4:zoneCount>=4?3:2;
+ return {shape,card:Math.round(card),mini:Math.round(mini),columns};
 }
-function reflowLabyrinths(table){
-  for(const row of table.querySelectorAll('[data-tabletop-scroll]')){
-    const cards=[...row.children].filter(c=>c.matches('.card.tiny'));
-    if(!cards.length)continue;
-    const available=Math.max(0,row.clientWidth-8),cardWidth=cards[0].offsetWidth||cards[0].getBoundingClientRect().width;
-    const step=cards.length<2?cardWidth:clamp((available-cardWidth)/(cards.length-1),.15,cardWidth*.7);
-    const margin=Math.min(0,step-cardWidth);
-    cards.forEach((card,i)=>card.style.marginRight=i===cards.length-1?'0px':`${margin}px`);
-    row.scrollLeft=0;
-  }
-}
-function fitExpansionContents(table){
- for(const zone of table.querySelectorAll('.tt5-zone')){
-  // Towers occupy a dedicated Door-sized shelf; never miniaturize it as an expansion tile.
-  if(zone.closest('.tt8-towers-slot')||zone.matches('.tt5-catchers,.tt5-premonitions'))continue;
-  const inner=zone.querySelector('.tt5-contents'),head=zone.querySelector('header');if(!inner||!head)continue;
-  inner.style.transform='';inner.style.left='0px';inner.style.top='0px';
-  const w=Math.max(inner.scrollWidth,inner.offsetWidth),h=Math.max(inner.scrollHeight,inner.offsetHeight),
-    headBottom=head.offsetTop+head.offsetHeight,
-    availW=Math.max(1,zone.clientWidth-8),availH=Math.max(1,zone.clientHeight-headBottom-5),
-    scale=Math.max(.1,Math.min(1,availW/Math.max(1,w),availH/Math.max(1,h)));
-  inner.style.transform=`scale(${scale})`;
-  inner.style.left=`${Math.max(2,(zone.clientWidth-w*scale)/2)}px`;
-  inner.style.top=`${headBottom+Math.max(1,(availH-h*scale)/2)}px`;
+function overlapRows(table){
+ for(const row of table.querySelectorAll('[data-tabletop-scroll]')){
+  const cards=[...row.children].filter(c=>c.matches('.card.tiny'));
+  if(!cards.length)continue;
+  const avail=Math.max(0,row.clientWidth-6),w=cards[0].offsetWidth||cards[0].getBoundingClientRect().width;
+  // Keep the last card fully visible; crop less important earlier faces first.
+  const step=cards.length<2?w:clamp((avail-w)/(cards.length-1),0,w*.76);
+  cards.forEach((c,i)=>c.style.marginRight=i===cards.length-1?'0px':`${Math.min(0,step-w)}px`);
+  row.scrollLeft=0;
  }
 }
+function fitTiles(table){
+ for(const zone of table.querySelectorAll('.tt5-zone')){
+  if(zone.closest('.tt8-towers-slot')||zone.matches('.tt5-catchers,.tt5-premonitions'))continue;
+  const inner=zone.querySelector(':scope > .tt5-contents');if(!inner)continue;
+  inner.style.transform='';inner.style.left='0px';inner.style.top='18px';
+  const width=Math.max(inner.scrollWidth,inner.offsetWidth),height=Math.max(inner.scrollHeight,inner.offsetHeight);
+  const availableWidth=Math.max(1,zone.clientWidth-9),availableHeight=Math.max(1,zone.clientHeight-21);
+  const scale=clamp(Math.min(availableWidth/Math.max(1,width),availableHeight/Math.max(1,height)),.28,1);
+  inner.style.transform=scale<.995?`scale(${scale})`:'';
+  inner.style.left=`${Math.max(4,(zone.clientWidth-width*scale)/2)}px`;
+  inner.style.top=`${17+Math.max(1,(availableHeight-height*scale)/2)}px`;
+ }
+}
+function assign(table,plan,{mode,width,height,zoneCount,tier,cardFactor=1}={}){
+ const landscape=plan.shape==='short',tablet=plan.shape==='medium',layout=plan.shape==='wide'?'wide':landscape?'short':tablet?'tablet':'portrait';
+ const crowded=zoneCount>=5,veryCrowded=zoneCount>=8;
+ const multipliers={comfortable:1,compact:.89,dense:.79,ultra:.71};
+ const pressure=multipliers[tier]||1;
+ const pad=tier==='comfortable'?6:tier==='compact'?4:3;
+ const gap=tier==='comfortable'?7:tier==='compact'?5:3;
+ const baseCard=Math.round(plan.card*cardFactor*pressure),baseMini=Math.round(plan.mini*(.94+(cardFactor-1)*.45)*pressure);
+ const card=Math.max(33,baseCard),mini=Math.max(20,baseMini);
+ const catcher=Math.round((landscape?91:veryCrowded?100:112)*pressure+(tier==='dense'||tier==='ultra'?8:0));
+ const prem=Math.round((landscape?84:veryCrowded?93:101)*pressure+(tier==='dense'||tier==='ultra'?6:0));
+ const zone=Math.round((landscape?61:veryCrowded?67:73)*pressure+4);
+ const columns=landscape?Math.min(4,Math.max(2,zoneCount)):plan.shape==='wide'?Math.min(5,Math.max(2,zoneCount)):tablet?Math.min(4,Math.max(2,zoneCount)):zoneCount>=6?3:2;
+ table.dataset.tt15Layout=layout;table.dataset.tt15Tier=tier;table.dataset.tt4Shape=plan.shape;table.dataset.tt4Pressure=tier==='comfortable'?'normal':tier==='compact'?'tight':'minimum';
+ table.style.setProperty('--tt15-card',`${card}px`);table.style.setProperty('--tt15-mini',`${mini}px`);
+ table.style.setProperty('--tt15-tower',`${clamp(Math.round(mini*1.25),35,73)}px`);
+ table.style.setProperty('--tt15-pad',`${pad}px`);table.style.setProperty('--tt15-gap',`${gap}px`);
+ table.style.setProperty('--tt15-zone-h',`${Math.max(37,zone)}px`);
+ table.style.setProperty('--tt15-catcher-h',`${Math.max(62,catcher)}px`);
+ table.style.setProperty('--tt15-prem-h',`${Math.max(61,prem)}px`);
+ table.style.setProperty('--tt15-landscape-shelf',`${clamp(Math.round(88*pressure),56,92)}px`);
+ table.style.setProperty('--tt15-exp-cols',columns);
+ table.style.setProperty('--tt4-exp-columns',columns);
+ table.style.setProperty('--tt4-exp-height',`${zone}px`);
+ table.style.setProperty('--tt4-card',`${card}px`);table.style.setProperty('--tt4-mini',`${mini}px`);
+ return {layout,card,mini,columns};
+}
 export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
-  if(!viewport||!table)return null;
-  const width=viewport.clientWidth,height=viewport.clientHeight;
-  if(!width||!height)return null;
-  const zones=table.querySelectorAll('.tt5-zone').length;
-  const plan=tabletopDimensions(width,height,mode,zones);
-  table.style.transform='';table.style.minHeight='0';table.style.height='';table.style.zoom='1';table.style.left='0';table.style.width=`${width}px`;table.style.transformOrigin='top left';
-  table.dataset.tt4Shape=plan.shape;
-  table.dataset.tt4ExpansionCount=String(zones);
-  table.style.setProperty('--tt4-exp-columns',plan.columns);
-  let used='normal';
-  for(const [pressure,factor] of [['normal',1],['tight',.88],['minimum',.76]]){
-    used=pressure;table.dataset.tt4Pressure=pressure;
-    table.style.setProperty('--tt4-card',`${Math.round(plan.card*factor)}px`);
-    table.style.setProperty('--tt4-mini',`${Math.round(plan.mini*factor)}px`);
-    table.style.setProperty('--tt4-exp-height',`${Math.round((plan.shape==='short'?55:plan.shape==='portrait'?66:77)*factor)}px`);
-    table.style.setProperty('--tt4-gap',`${pressure==='normal'?7:pressure==='tight'?4:3}px`);
-    table.style.setProperty('--tt4-panel-pad',`${pressure==='normal'?6:pressure==='tight'?4:3}px`);
-    table.style.setProperty('--tt4-pad',`${pressure==='normal'?7:pressure==='tight'?4:3}px`);
-    reflowLabyrinths(table);
-    if(table.getBoundingClientRect().height<=height-1)break;
+ if(!viewport||!table)return null;
+ const width=viewport.clientWidth,height=viewport.clientHeight;
+ if(!width||!height)return null;
+ const zones=table.querySelectorAll('.tt5-expansions>.tt5-zone').length;
+ const plan=tabletopDimensions(width,height,mode,zones);
+ table.style.width=`${width}px`;table.style.height='auto';table.style.minHeight='0';table.style.transform='';table.style.zoom='1';table.style.left='0';table.style.transformOrigin='top left';
+ let choice,selected;
+ // Preserve usable card widths by changing composition and per-zone pressure
+ // first. Full-table downscaling is reserved for exceptionally small screens.
+ for(const tier of ['comfortable','compact','dense','ultra']){
+  const metrics=assign(table,plan,{mode,width,height,zoneCount:zones,tier});
+  overlapRows(table);fitTiles(table);
+  const actual=table.scrollHeight;
+  choice={...metrics,tier,actual};
+  if(actual<=height-2)break;
+ }
+ // If the compact arrangement fits comfortably, reinvest free room in cards
+ // rather than enormous empty panels. Never grow beyond legible practical sizes.
+ if(choice.actual<height-85){
+  for(const factor of [1.08,1.16,1.24]){
+   const metrics=assign(table,plan,{mode,width,height,zoneCount:zones,tier:choice.tier,cardFactor:factor});
+   overlapRows(table);fitTiles(table);
+   if(table.scrollHeight>height-20){assign(table,plan,{mode,width,height,zoneCount:zones,tier:choice.tier,cardFactor:factor-0.08});break;}
+   choice={...metrics,tier:choice.tier,actual:table.scrollHeight};
   }
-  // Lay out at an expanded logical width when height is scarce, then
-  // paint-scale *once*. Unlike CSS zoom, the columns cannot reflow after
-  // fitting, so compact phones do not suddenly become microscopic.
-  let scale=1;
-  for(let i=0;i<14;i++){
-    table.style.width=`${width/scale}px`;
-    reflowLabyrinths(table);
-    const natural=table.offsetHeight;
-    const next=Math.min(1,Math.max(.25,(height-1)/natural));
-    if(Math.abs(next-scale)<.003){scale=next;break;}
-    scale=(scale+next)/2;
-  }
-  // The final fit is determined using the *same* width used for measurement.
-  table.style.width=`${width/scale}px`;
-  reflowLabyrinths(table);
-  scale=Math.min(scale,(height-1)/table.offsetHeight,1);
-  // Final corrected scale may require one more layout-width update.
-  for(let i=0;i<3;i++){
-    table.style.width=`${width/scale}px`;
-    reflowLabyrinths(table);
-    const corrected=Math.min(1,(height-1)/table.offsetHeight);
-    if(Math.abs(corrected-scale)<.003)break;
-    scale=Math.min(scale,corrected);
-  }
-  // Stretch the available board vertically so the hand ends at the fixed action dock.
-  // Extra room goes to the Labyrinth/active player area, never to an empty footer.
-  table.style.height=`${Math.floor(height/scale)}px`;
-  table.style.minHeight='0';
-  table.style.transform=scale<1?`scale(${scale})`:'';
-  const zoom=scale;
-  reflowLabyrinths(table);
-  fitExpansionContents(table);
-  table.dataset.tt4Fit=used;
-  table.style.setProperty('--game-fit-scale',String(zoom));
-  return {...plan,pressure:used,zoom,tableHeight:table.getBoundingClientRect().height,viewportHeight:height};
+ }
+ let zoom=1;
+ if(table.scrollHeight>height){zoom=clamp((height-1)/table.scrollHeight,.5,1);table.style.width=`${width/zoom}px`;overlapRows(table);fitTiles(table);zoom=Math.min(zoom,(height-1)/table.scrollHeight);table.style.transform=`scale(${zoom})`;}
+ else {table.style.height=`${height}px`;}
+ overlapRows(table);fitTiles(table);
+ table.dataset.tt4Fit=choice.tier;table.style.setProperty('--game-fit-scale',String(zoom));
+ return {...plan,...choice,zoom,tableHeight:table.getBoundingClientRect().height,viewportHeight:height};
 }

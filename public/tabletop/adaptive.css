@@ -1,0 +1,196 @@
+/* Adaptive tabletop allocation. This is the sole post-legacy geometry layer:
+   board arrangements depend on available *board* dimensions, game mode and
+   expansion pressure, not isolated CSS viewport guesses. Card art stays 1:1.42.
+   All controls and piles remain reachable; dense areas have tap-to-inspect. */
+.game-viewport .tt2-root[data-tt15-layout]{--tt4-gap:var(--tt15-gap,5px);--tt4-pad:var(--tt15-pad,4px);--tt4-panel-pad:var(--tt15-pad,4px);--tt4-card:var(--tt15-card);--tt4-mini:var(--tt15-mini);--tt2-card:var(--tt15-card);--tt2-mini:var(--tt15-mini);--tt6-card:var(--tt15-card);--tt6-mini:var(--tt15-mini);--tt2-gap:var(--tt15-gap,5px);width:100%;max-width:none;min-width:0;box-sizing:border-box;padding:var(--tt15-pad,4px);margin:0;display:flex;flex-direction:column;gap:var(--tt15-gap,5px);height:auto;min-height:0;overflow:visible}
+.game-viewport .tt2-root[data-tt15-layout] .tt2-top,.game-viewport .tt2-root[data-tt15-layout] .tt6-top{flex:0 0 auto;min-height:26px;padding:0 2px 1px;gap:6px}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-grid,.tt6-grid){flex:1 1 auto;min-height:0;min-width:0;gap:var(--tt15-gap,5px);align-content:stretch}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-zone,.tt6-player,.tt6-hand-block,.tt6-draft,.tt6-piles){gap:3px;padding:var(--tt15-pad,4px);border-radius:8px;min-width:0;min-height:0}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-zone header,.tt5-zone header,.tt6-region-heading){font-size:10px;line-height:14px;min-height:14px!important;letter-spacing:.035em}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-zone header b,.tt6-region-heading b){font-size:10px;line-height:14px}
+.game-viewport .tt2-root[data-tt15-layout] .tt2-hand-row{min-height:calc(var(--tt15-card)*1.42 + 5px);align-items:center;justify-content:space-evenly;gap:3px;padding:3px 1px}
+.game-viewport .tt2-root[data-tt15-layout] .tt2-hand-card{flex:0 1 var(--tt15-card);min-width:0;max-width:var(--tt15-card)}
+.game-viewport .tt2-root[data-tt15-layout] .tt2-hand-card .card{width:100%;height:auto;aspect-ratio:1 / 1.42;max-width:100%;min-width:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-hand-cards{flex-wrap:nowrap;justify-content:space-evenly;gap:3px;min-height:calc(var(--tt15-card)*1.42 + 4px);padding:2px 1px}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-card-wrap{flex:0 1 var(--tt15-card);min-width:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-card-wrap .card{width:100%;min-width:0;max-width:var(--tt15-card);aspect-ratio:1 / 1.42;height:auto}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-card-back{width:var(--tt15-mini);height:calc(var(--tt15-mini)*1.42);min-width:0}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-labyrinth-row,.tt6-labyrinth-cards){height:calc(var(--tt15-mini)*1.42 + 9px);min-height:0;padding:3px 2px;flex:0 0 auto;max-width:100%;overflow:hidden}
+.game-viewport .tt2-root[data-tt15-layout] :is(.tt2-labyrinth-row,.tt6-labyrinth-cards) .card.tiny{width:var(--tt15-mini);height:calc(var(--tt15-mini)*1.42);flex:none;margin-right:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt14-empty-labyrinth{height:calc(var(--tt15-mini)*1.42);min-height:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt2-pile-row{min-height:0;gap:3px;justify-content:space-around;margin:0;align-items:center}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-piles{min-height:calc(var(--tt15-mini)*1.42 + 17px);flex:0 0 auto;gap:2px;justify-content:space-around;align-items:center;flex-wrap:nowrap}
+.game-viewport .tt2-root[data-tt15-layout] .tt8-spell-button{font-size:10px;line-height:1;min-height:23px;padding:2px 5px}
+/* The compact expansion atlas reserves exactly as many cells as active zones. */
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions{display:grid!important;grid-template-columns:repeat(var(--tt15-exp-cols,2),minmax(0,1fr))!important;grid-auto-flow:row dense;grid-auto-rows:max-content!important;align-content:start;gap:var(--tt15-gap,5px);min-width:0;min-height:0;height:auto;overflow:visible!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions:empty{display:none!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions>.tt5-zone{height:var(--tt15-zone-h,65px)!important;min-height:0!important;max-height:none!important;position:relative;align-self:stretch;padding:3px 5px;gap:2px;overflow:hidden!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-zone>.tt5-contents{position:absolute;top:18px;left:0;width:max-content;max-width:none;transform-origin:top left;overflow:visible!important;min-height:0;min-width:0;max-height:none;display:flex;align-items:center;flex-wrap:nowrap;gap:3px}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions>.tt5-zone.tt5-catchers{grid-column:1/-1!important;height:var(--tt15-catcher-h,96px)!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions>.tt5-zone.tt5-premonitions{grid-column:1/-1!important;height:var(--tt15-prem-h,88px)!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers>.tt5-contents,.game-viewport .tt2-root[data-tt15-layout] .tt5-premonitions>.tt5-contents{position:static!important;transform:none!important;top:auto!important;left:auto!important;width:100%!important;max-width:100%!important;height:calc(100% - 16px)!important;overflow:hidden!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt14-catcher-face{width:100%;max-width:calc((var(--tt15-catcher-h) - 22px)/1.42);height:100%}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-premonitions .tt5-premonition{height:min(100%,calc(var(--tt15-prem-h) - 23px))!important;width:auto!important;aspect-ratio:1/1.42;max-width:calc((var(--tt15-prem-h) - 23px)/1.42)!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt14-reserve{height:100%;max-height:100%}
+.game-viewport .tt2-root[data-tt15-layout] .tt14-reserve-back{max-height:calc(100% - 14px)}
+/* Dedicated Towers shelf remains larger than generic accessory tiles. */
+.game-viewport .tt2-root[data-tt15-layout] .tt8-towers-slot{--tt14-tower-card:var(--tt15-tower)}
+.game-viewport .tt2-root[data-tt15-layout] .tt8-towers-slot .tt5-alignment{height:calc(var(--tt15-tower)*1.42 + 22px)!important;min-height:0!important;padding:3px 5px}
+.game-viewport .tt2-root[data-tt15-layout] .tt8-towers-slot .tt5-alignment>.tt5-contents{top:17px!important;height:calc(var(--tt15-tower)*1.42)!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt8-towers-slot .tt5-tower-target{height:calc(var(--tt15-tower)*1.42)!important}
+/* SOLO: keep Doors beside Piles; expansion equipment goes before the Labyrinth,
+   with the Labyrinth immediately above the prominent hand. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)!important;grid-template-areas:'doors piles' 'towers towers' 'primary primary' 'secondary secondary' 'labyrinth labyrinth' 'hand hand'!important;grid-template-rows:auto auto auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors piles' 'primary primary' 'secondary secondary' 'labyrinth labyrinth' 'hand hand'!important;grid-template-rows:auto auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt2-doors{grid-area:doors!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt2-piles{grid-area:piles!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt2-labyrinth{grid-area:labyrinth!important;min-height:calc(var(--tt15-mini)*1.42 + 24px)}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt2-hand{grid-area:hand!important;margin-top:0!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt8-towers-slot{grid-area:towers!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt9-exp-primary{grid-area:primary!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-solo] .tt9-exp-secondary{grid-area:secondary!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-doors .tt8-doors-row{align-content:center;justify-content:center;gap:1px}
+/* COOP portrait: a compact opponent overview and shared tray; the lower half
+   is reserved for the active Labyrinth, Towers, and hand. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-areas:'opponent' 'center' 'draft' 'expansions' 'self'!important;grid-template-rows:auto auto auto auto minmax(0,1fr)!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent{grid-area:opponent!important;display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,1fr)!important;gap:var(--tt15-gap);align-items:stretch}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-center{grid-area:center!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:var(--tt15-gap)}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-center .tt6-piles{grid-column:1!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-center .tt6-shared-block{grid-column:2!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self{grid-area:self!important;display:flex!important;flex-direction:column;gap:var(--tt15-gap);min-height:0}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self>.tt6-hand-block{margin-top:auto;flex:0 0 auto;min-height:0}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self .tt6-player-fields{display:flex!important;flex-direction:column;gap:3px}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent .tt6-player-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.45fr)!important;gap:2px}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent .tt6-player-labyrinth{border:0;padding:0;min-height:0!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent .tt6-labyrinth-cards{min-height:0;width:100%}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent .tt6-hand-cards{min-height:calc(var(--tt15-mini)*1.42 + 4px);align-items:center}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-opponent .tt6-card-back{width:var(--tt15-mini);height:calc(var(--tt15-mini)*1.42)}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-grid>.tt6-draft{grid-area:draft!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-grid>.tt5-expansions{grid-area:expansions!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-player-doors .tt8-doors-row{justify-content:center;gap:1px}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-player-labyrinth{min-height:0!important}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self .tt6-hand-cards{justify-content:space-around}
+/* Wider portrait tablets: each player's own shelves stay together while all
+   shared piles remain central. The expansion atlas lives in the lower band. */
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-solo] .tt2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-areas:'doors piles' 'towers piles' 'primary secondary' 'labyrinth labyrinth' 'hand hand'!important;grid-template-rows:auto auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors piles' 'primary secondary' 'labyrinth labyrinth' 'hand hand'!important;grid-template-rows:auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'opponent center' 'draft draft' 'expansions expansions' 'self self'!important;grid-template-rows:auto auto auto minmax(0,1fr)!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-opponent{grid-area:opponent!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,.5fr)!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-center{grid-area:center!important;display:grid!important;grid-template-columns:1fr 1fr!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-self{grid-area:self!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,.6fr)!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-self>.tt6-hand-block{grid-column:1/-1}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-grid>.tt6-draft{grid-area:draft!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-coop] .tt6-grid>.tt5-expansions{grid-area:expansions!important}
+/* Landscape/desktop: distribute broad regions horizontally rather than shrink
+   everything to the height of a long vertical stack. */
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo] .tt2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,.8fr)!important;grid-template-areas:'doors labyrinth piles' 'towers hand piles' 'primary primary secondary'!important;grid-template-rows:minmax(0,1fr) auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors labyrinth piles' 'doors hand piles' 'primary primary secondary'!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-coop] .tt6-grid{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,.8fr) minmax(0,1.15fr)!important;grid-template-areas:'opponent center self' 'draft draft draft' 'expansions expansions expansions'!important;grid-template-rows:minmax(0,1fr) auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-coop] :is(.tt6-opponent,.tt6-self,.tt6-center){display:flex!important;flex-direction:column;gap:var(--tt15-gap);align-items:stretch}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-coop] .tt6-self>.tt6-hand-block{margin-top:auto}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-coop] .tt6-grid>.tt6-draft{grid-area:draft!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-coop] .tt6-grid>.tt5-expansions{grid-area:expansions!important}
+/* Landscape phones use two usable lanes, and accessories to the side rather
+   than a tall strip of undersized cards under the main play area. */
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo] .tt2-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)!important;grid-template-areas:'doors piles' 'towers primary' 'labyrinth secondary' 'hand secondary'!important;grid-template-rows:auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors piles' 'labyrinth primary' 'hand secondary'!important;grid-template-rows:auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'opponent self' 'center self' 'draft draft' 'expansions expansions'!important;grid-template-rows:auto minmax(0,1fr) auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-opponent{grid-area:opponent!important;display:grid!important;grid-template-columns:1fr minmax(0,.4fr)!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-center{grid-area:center!important;display:grid!important;grid-template-columns:1fr 1fr!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-self{grid-area:self!important;display:flex!important;flex-direction:column}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid>.tt6-draft{grid-area:draft!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid>.tt5-expansions{grid-area:expansions!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers>.tt5-contents{height:calc(100% - 16px)!important}
+/* An expanded hand on wide screens is useful; oversized empty gutters are not. */
+.game-viewport .tt2-root[data-tt15-layout] .tt6-shared-block .tt6-hand-cards{min-height:calc(var(--tt15-mini)*1.42 + 5px)}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-shared-block .tt6-hand-cards .card{max-width:var(--tt15-mini);height:auto}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-draft-cards{min-height:0;flex-wrap:nowrap;justify-content:center;gap:3px;padding:2px}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-draft-cards .card{width:var(--tt15-card);max-width:calc((100% - 21px)/8);height:auto;aspect-ratio:1/1.42;min-width:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-player-fields{min-height:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-doors-row{gap:2px}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-player-doors{min-width:0}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-player-doors .tt8-doors-row{gap:1px}
+/* Refinement after the first browser screenshots: a horizontal Door/Labyrinth
+   pair saves a full row in portrait co-op without reducing Door card sizes. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self .tt6-player-fields{display:grid!important;grid-template-columns:minmax(0,1.58fr) minmax(0,1fr)!important;align-items:center;gap:3px}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self .tt6-player-labyrinth{border:0;padding:0}
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-player-labyrinth .tt6-labyrinth-cards{padding:2px 0;min-height:0}
+/* Draft cards in co-op always remain a full-width, legible physical row. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-draft-cards .card{max-width:calc((100% - 21px)/8)}
+/* In a short landscape viewport, treat all equipment as one cross-table shelf.
+   Different amounts of active equipment change width shares rather than rows. */
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions{display:flex!important;flex-flow:row nowrap!important;align-items:stretch;gap:var(--tt15-gap);width:100%;min-width:0}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone{flex:1 1 0;min-width:0;align-self:stretch;height:var(--tt15-landscape-shelf,77px)!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone.tt5-catchers{flex:2.3 1 0;height:var(--tt15-landscape-shelf,77px)!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone.tt5-premonitions{flex:2.1 1 0;height:var(--tt15-landscape-shelf,77px)!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers .tt5-catcher{padding:1px!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-premonitions .tt5-premonition{height:calc(var(--tt15-landscape-shelf,77px) - 22px)!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions .tt5-zone>.tt5-contents{max-width:none}
+/* Unused portrait solo grid rows must not reserve space for absent modules. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt5-expansions:empty{height:0!important;margin:0;padding:0}
+/* Ensure the 8-card co-op draft never expands its row to original unbounded size. */
+.game-viewport .tt2-root[data-tt15-layout] .tt6-draft{min-height:0;max-height:none}
+.game-viewport .tt2-root[data-tt15-layout] .tt6-draft-cards{flex-wrap:nowrap!important}
+/* Width-constrained landscape co-op: three parallel play lanes; one card shelf. */
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid{grid-template-columns:minmax(0,1fr) minmax(0,.85fr) minmax(0,1fr)!important;grid-template-areas:'opponent center self' 'expansions expansions expansions'!important;grid-template-rows:minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-opponent{grid-area:opponent!important;display:flex!important;flex-direction:column;gap:var(--tt15-gap)}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-opponent .tt6-player-fields{display:flex!important;flex-direction:column;gap:2px}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-opponent .tt6-hand-block{min-height:0}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-center{grid-area:center!important;display:flex!important;flex-direction:column;gap:var(--tt15-gap);min-width:0}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-center .tt6-piles{min-height:0;flex:0 0 auto;flex-wrap:wrap}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-center .tt6-shared-block{min-height:0;flex:1}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid>.tt6-draft{grid-area:center!important;align-self:end;z-index:1;background:var(--table-background);max-height:calc(var(--tt15-card)*1.42 + 22px);width:100%}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop]:has(.tt6-grid>.tt6-draft) .tt6-center{padding-bottom:calc(var(--tt15-card)*1.42 + 26px)}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-self{grid-area:self!important;display:flex!important;flex-direction:column;gap:var(--tt15-gap);min-height:0}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-self .tt6-player-fields{display:flex!important;flex-direction:column;gap:2px}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-self .tt6-hand-block{margin-top:auto}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-coop] .tt6-grid>.tt5-expansions{grid-area:expansions!important}
+/* Short solo: the core fits side by side above the same accessory shelf. */
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo] .tt2-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,.85fr)!important;grid-template-areas:'doors labyrinth piles' 'towers hand hand' 'primary primary primary' 'secondary secondary secondary'!important;grid-template-rows:minmax(0,1fr) auto auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors labyrinth piles' 'doors hand hand' 'primary primary primary' 'secondary secondary secondary'!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo] .tt2-hand{align-self:end}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo] .tt2-labyrinth{min-height:0}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt2-root .tt2-top{min-height:22px}
+/* A landscape phone is wider than tall: bottom controls use width far more
+   effectively than an always-on side rail, recovering ~200px for card faces. */
+@media (orientation:landscape) and (max-width:1000px) and (max-height:540px){
+ .game-viewport>.tt6-table-slot{left:0!important;right:0!important;top:0!important;bottom:94px!important}
+ .game-viewport>.tt6-workspace{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;height:94px!important;border-top:1px solid var(--ui-border);border-left:0!important;padding:3px 8px;gap:2px;display:flex;flex-direction:row;justify-content:space-evenly;align-items:center}
+ .game-viewport>.tt6-workspace .tt6-dock-status{flex:0 1 175px;min-width:0}
+ .game-viewport>.tt6-workspace .tt6-dock-decision{flex:1 1 auto;min-width:0}
+ .game-viewport>.tt6-workspace .tt6-dock-buttons{flex-wrap:wrap}
+ .game-viewport .tt6-pile-inspector{right:8px;bottom:99px;max-height:calc(100dvh - 110px)}
+}
+/* Wide screens can show catchers and active Premonitions on the same line;
+   otherwise two full-width empty compartments waste half the tabletop. */
+.game-viewport .tt2-root[data-tt15-layout="wide"] .tt5-expansions,
+.game-viewport .tt2-root[data-tt15-layout="tablet"] .tt5-expansions{grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-auto-flow:row dense!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"] .tt5-expansions>.tt5-zone.tt5-catchers,
+.game-viewport .tt2-root[data-tt15-layout="tablet"] .tt5-expansions>.tt5-zone.tt5-catchers{grid-column:span 7!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"] .tt5-expansions>.tt5-zone.tt5-premonitions,
+.game-viewport .tt2-root[data-tt15-layout="tablet"] .tt5-expansions>.tt5-zone.tt5-premonitions{grid-column:span 5!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"] .tt5-expansions>.tt5-zone:not(.tt5-catchers,.tt5-premonitions),
+.game-viewport .tt2-root[data-tt15-layout="tablet"] .tt5-expansions>.tt5-zone:not(.tt5-catchers,.tt5-premonitions){grid-column:span 6}
+/* Card faces in Dreamcatchers retain their physical aspect ratio even when the
+   four equally wide compartments have excess horizontal room. */
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt14-catcher-face{width:auto!important;height:100%!important;max-width:100%!important;aspect-ratio:1/1.42}
+/* In short co-op, unused Shared space is a compact tray rather than a tall box. */
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt6-center .tt6-shared-block:not(:has(.tt6-card-wrap)){flex:0 0 auto!important;min-height:0;max-height:59px}
+/* Explicit shelf-row geometry avoids a circular percentage-height resolution:
+   an empty catcher must never collapse to a two-pixel line in CSS Grid. */
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers>.tt5-contents{grid-template-rows:minmax(0,1fr)!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt5-catcher{height:100%!important;align-self:stretch;min-height:0!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt14-catcher-face{height:calc(var(--tt15-catcher-h) - 26px)!important;width:calc((var(--tt15-catcher-h) - 26px)*.705)!important;max-height:100%!important;max-width:100%!important;aspect-ratio:1/1.42}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers .tt14-catcher-face{height:calc(var(--tt15-landscape-shelf) - 25px)!important;width:calc((var(--tt15-landscape-shelf) - 25px)*.705)!important}
+/* Inspectors on short landscape screens must not slip above the safe viewport
+   when their card history is taller than the available board. */
+@media (orientation:landscape) and (max-width:1000px) and (max-height:540px){
+ .game-viewport .tt6-pile-inspector{top:max(8px,env(safe-area-inset-top,0px))!important;bottom:100px!important;max-height:calc(100dvh - 108px)!important}
+}
+/* Portrait action controls use one compact, stable footprint. Previously the
+   152px idle panel could waste nearly a fifth of a small phone's screen. */
+@media(orientation:portrait) and (max-width:650px){
+ #app>.page.game-viewport{--tt6-dock-height:112px}
+ .game-viewport>.tt6-workspace{padding:4px max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+ .game-viewport .tt6-dock-scroll{overflow-y:auto!important;overscroll-behavior:contain}
+}

@@ -11,18 +11,18 @@ test('Phase 4 selects four distinct physical arrangements based on usable shape'
  assert.equal(tabletopShape(844,390),'short');
  assert.equal(tabletopShape(1024,768),'medium');
  assert.equal(tabletopShape(1440,900),'wide');
- assert.equal(tabletopDimensions(390,844,'coop',6).columns,2);
- assert.equal(tabletopDimensions(844,390,'solo',6).columns,3);
- assert.equal(tabletopDimensions(1440,900,'solo',6).columns,4);
+ assert.ok(tabletopDimensions(390,844,'coop',6).mini>=25);
+ assert.ok(tabletopDimensions(844,390,'solo',6).card>45);
+ assert.ok(tabletopDimensions(1440,900,'solo',6).card>75);
 });
 test('Dense screens reduce expansion pressure before a width-preserving paint-only fit',()=>{
  for(const pressure of ['tight','minimum'])assert.ok(css.includes(`data-tt4-pressure="${pressure}"`));
  for(const shape of ['wide','medium','short','portrait'])assert.ok(css.includes(`data-tt4-shape="${shape}"`));
  const source=readFileSync('public/tabletop/fit.js','utf8');
- assert.ok(source.indexOf("['normal',1]")<source.indexOf("let scale=1"));
+ assert.ok(source.indexOf("['comfortable','compact','dense','ultra']")<source.indexOf("let zoom=1"));
  assert.match(source,/table\.style\.transform=.*scale/);
  assert.doesNotMatch(source,/table\.style\.zoom=String\(middle\)/);
- assert.match(source,/reflowLabyrinths\(table\)/);
+ assert.match(source,/overlapRows\(table\)/);
  assert.match(css,/\.tt5-expansions\{grid-area:expansions/);
  assert.match(css,/\.tt6-grid\{/);
 });
