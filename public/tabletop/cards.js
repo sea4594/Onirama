@@ -10,6 +10,7 @@ export function cardDescription(c){
 export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,interactive=false,highlight=false}={}){
   const symbol=cardSymbol(c.kind==='location'?c.symbol:c.kind==='denizen'?DENIZEN_ART[c.ability]||'leaf':c.kind);
   const text=htmlEscape(cardDescription(c));
+  const faceName=htmlEscape(c.kind==='denizen'&&c.ability==='keeper'?'Treasure Keeper':cardDescription(c));
   const classes=`card ${c.color||c.kind} card-kind-${c.kind}${c.kind==='door'&&c.color==='wild'?' card-oniverse':''}${tiny?' tiny':''}${selectedId===c.id?' selected':''}${highlight?' tt7-eligible':''}`;
   // Inspect metadata only for a card already visible to this viewer. Never
   // serialize IDs, private hands, deck order, or unrevealed card details.
@@ -17,7 +18,7 @@ export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,
   const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"${c.kind!=='hidden'&&c.id?` data-tt-motion-id="${htmlEscape(c.id)}"`:``}`;
   const towerEdge=(marks,side)=>`<span class="tt8-tower-marks tt8-tower-${side}">${marks.split('+').filter(Boolean).map(mark=>`<span class="tt8-tower-mark" data-tower-mark="${htmlEscape(mark)}">${cardSymbol(mark)}</span>`).join('')}</span>`;
   const face=c.kind==='tower'?`<span class="tt5-tower-face">${towerEdge(c.left||'', 'left')}<span class="tt11-tower-emblem" aria-hidden="true">${cardSymbol('tower')}</span><strong class="tt11-tower-number">${htmlEscape(c.number)}</strong>${towerEdge(c.right||'', 'right')}</span>`:`<span class="symbol">${symbol}</span>`;
-  return select?`<button class="${classes}" aria-pressed="${selectedId===c.id}" title="${text}" aria-label="${text}" data-pick="${htmlEscape(c.id)}"${inspect} ${interactive?`data-tt-card="${htmlEscape(c.id)}"`:``} ${dim?'disabled':''}>${face}${c.kind==='denizen'?`<span class="card-label">${text}</span>`:''}</button>`:`<div class="${classes}" title="${text}" aria-label="${text}"${inspect}>${face}${c.kind==='denizen'?`<span class="card-label">${text}</span>`:''}</div>`;
+  return select?`<button class="${classes}" aria-pressed="${selectedId===c.id}" title="${text}" aria-label="${text}" data-pick="${htmlEscape(c.id)}"${inspect} ${interactive?`data-tt-card="${htmlEscape(c.id)}"`:``} ${dim?'disabled':''}>${face}${c.kind==='denizen'?`<span class="card-label">${faceName}</span>`:''}</button>`:`<div class="${classes}" title="${text}" aria-label="${text}"${inspect}>${face}${c.kind==='denizen'?`<span class="card-label">${faceName}</span>`:''}</div>`;
 }
 export function renderDoors(player,card=renderCard){
   return `<div class="door-spots">${[...CARD_COLORS,'wild'].filter(color=>color!=='wild'||player.doors.some(d=>d.color==='wild')).map(color=>`<div class="door-group"><div class="eyebrow">${color==='wild'?'Oniverse':color}</div><div class="cards">${player.doors.filter(d=>d.color===color).map(d=>card(d,{tiny:true})).join('')||`<div class="door-slot">${cardSymbol('diamond')}</div>`}</div></div>`).join('')}</div>`;

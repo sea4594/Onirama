@@ -11,10 +11,10 @@ const premonitionText={red2:'2 red Doors: discard red Locations',green2:'2 green
 // No printed words or color initials; accessible names live on their buttons.
 export function premonitionFace(id){
  const color={red2:'red',green2:'green',blue2:'blue',brown2:'brown'}[id]||'neutral';
- const effect={red2:'discard-art',green2:'nightmare-art',blue2:'key',brown2:'portal',pair2:'broken-link',doors5:'paired-doors-art',rainbow4:'happy-dream-art',doors3:'confusion-art'}[id];
+ const effect={red2:'discard-art',green2:'return-nightmare-art',blue2:'broken-key-art',brown2:'broken-door-art',pair2:'double-door-loss-art',doors5:'premonition-reveal-art',rainbow4:'ban-dream-art',doors3:'redraw-hand-art'}[id];
  const count={red2:2,green2:2,blue2:2,brown2:2,pair2:2,doors5:5,rainbow4:4,doors3:3}[id]||1;
  const pipColors=id==='rainbow4'?['red','blue','green','brown']:Array.from({length:count},()=>color);
- const motif=effect==='broken-link'?icon('paired-doors-art'):icon(effect||'portal');
+ const motif=icon(effect||'portal');
  return `<span class="tt18-pm-art tt18-pm-${id}" aria-hidden="true"><span class="tt18-pm-pips">${pipColors.map(c=>`<i class="tt18-pip tt18-pip-${c}"></i>`).join('')}</span><span class="tt18-pm-door">${icon(id==='pair2'?'paired-doors-art':id==='doors5'?'multiple-doors-art':'portal')}</span><span class="tt18-pm-effect">${motif}</span></span>`;
 }
 const tile=(label,body,{className='',id='',title=label,actionId='',hideName=false}={})=>`<div class="tt5-tile ${className}" ${id?`data-tt-zone="${esc(id)}"`:''} ${actionId?`data-action="${esc(actionId)}" role="button" tabindex="0"`:''} title="${esc(title)}" aria-label="${esc(title)}">${body}${hideName?'':`<span class="tt5-tile-name">${esc(label)}</span>`}</div>`;

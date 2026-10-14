@@ -87,3 +87,46 @@
 .guide-object .guide-object-icon{display:grid;place-items:center;flex:1 1 auto;width:100%;min-height:0}
 .guide-object .guide-object-icon .tt18-pm-art{width:70%;height:95%}
 .guide-object .guide-object-icon .tt18-pm-door,.guide-object .guide-object-icon .tt18-pm-effect{max-width:100%}
+
+/* Co-op hand row: reset the legacy self/opponent grid areas at their actual
+   specificity. Without this, both player hands occupy the same implicit cell. */
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands{
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,.68fr) minmax(0,1fr)!important;
+ grid-template-rows:minmax(0,auto)!important;grid-auto-flow:column!important;align-items:stretch!important;
+ gap:clamp(3px,.65vw,10px)!important;min-width:0!important;width:100%!important
+}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands>.tt6-self,
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands>.tt6-opponent{
+ display:block!important;grid-area:auto!important;grid-template-columns:none!important;
+ grid-row:1!important;min-width:0!important;min-height:0!important;max-width:100%!important;
+ margin:0!important;order:0!important
+}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands>:nth-child(1){grid-column:1!important;grid-row:1!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands>:nth-child(2){grid-column:2!important;grid-row:1!important;grid-area:1 / 2!important;min-width:0!important;margin:0!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands>:nth-child(3){grid-column:3!important;grid-row:1!important}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands .tt6-hand-block{
+ box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+ width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important
+}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands .tt6-hand-cards{
+ width:100%!important;box-sizing:border-box!important;display:flex!important;flex-flow:row nowrap!important;
+ align-items:center!important;justify-content:space-evenly!important;gap:2px!important;
+ min-width:0!important;overflow:hidden!important;flex:1 1 auto!important
+}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands .tt6-card-wrap{
+ flex:1 1 0!important;max-width:var(--tt15-card)!important;min-width:0!important;min-height:0!important;
+ display:flex!important;align-items:center!important;justify-content:center!important
+}
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands .tt6-card-wrap>.card,
+.game-viewport .tt2-root[data-tt15-layout][data-tabletop-coop] .tt17-coop-hands .tt6-card-wrap>.tt6-card-back{
+ box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ height:auto!important;aspect-ratio:1/1.42!important;flex:0 1 auto!important
+}
+/* Miniature Denizens are illustrated only: unreadably tiny labels should not
+   obscure the image. The full name remains in the card's title/aria label and
+   is displayed on normal cards and in the card inspector. */
+.card.card-kind-denizen .card-label{overflow-wrap:normal!important;word-break:normal!important;hyphens:none!important}
+@container (max-width:54px){
+ .card.card-kind-denizen .card-label{display:none!important}
+ .card.card-kind-denizen .symbol{width:75%!important;max-height:72%!important;margin-top:0!important}
+}
