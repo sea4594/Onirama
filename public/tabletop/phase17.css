@@ -1,0 +1,52 @@
+/* Phase 17 — cooperative tabletop follows the physical reading order:
+   paired Doors / equipment / paired Labyrinths / paired Denizens / both hands. */
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-grid.tt17-coop-grid{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:space-between!important;gap:clamp(2px,.5vmin,6px)!important;grid-template-areas:none!important;grid-template-columns:none!important;grid-template-rows:none!important;align-content:normal!important;min-width:0;min-height:0}
+.game-viewport .tt17-coop-grid>*{min-width:0;flex:0 0 auto;max-width:100%}
+.game-viewport .tt17-coop-doors,.game-viewport .tt17-coop-labyrinths,.game-viewport .tt17-coop-denizens{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:stretch;gap:clamp(2px,.6vw,10px);width:100%}
+.game-viewport .tt17-player-doors,.game-viewport .tt17-player-labyrinth,.game-viewport .tt17-denizen-player{border:1px solid var(--table-line);border-radius:8px;background:var(--table-zone);padding:clamp(2px,.5vw,7px);min-width:0;min-height:0;overflow:hidden}
+.game-viewport .tt17-player-doors .tt8-doors-row{display:flex;justify-content:space-around;width:100%;gap:1px}
+.game-viewport .tt17-coop-labyrinths .tt6-labyrinth-cards{display:flex!important;flex-flow:row nowrap!important;align-items:center;gap:2px;min-width:0;max-width:100%;min-height:calc(var(--tt15-mini)*1.42 + 3px)!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:thin}
+.game-viewport .tt17-coop-labyrinths .tt6-labyrinth-cards .card.tiny{flex:0 0 auto!important;width:var(--tt15-mini)!important;height:calc(var(--tt15-mini)*1.42)!important;max-width:none!important}
+.game-viewport .tt17-coop-equipment{display:flex;flex-direction:row;align-items:stretch;gap:clamp(2px,.6vw,8px);width:100%;min-height:0}
+.game-viewport .tt17-coop-equipment>.tt6-piles{flex:0 1 auto;min-width:min(35%,170px);min-height:0!important;padding:2px!important;justify-content:space-around!important;gap:2px!important}
+.game-viewport .tt17-coop-equipment>.tt8-towers-slot{flex:1 1 20%;min-width:0}
+.game-viewport .tt17-coop-equipment>.tt5-expansions{flex:1 1 60%;min-width:0;grid-area:auto!important;display:flex!important;flex-wrap:wrap!important;align-items:stretch!important;gap:3px!important}
+.game-viewport .tt17-coop-equipment>.tt5-expansions>.tt5-zone{flex:1 1 125px;min-width:0;min-height:0}
+.game-viewport .tt17-coop-denizens .tt17-denizen-player{padding-bottom:2px}
+.game-viewport .tt17-denizen-cards,.game-viewport .tt5-denizens>.tt5-contents{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:3px;overflow-x:auto!important;overflow-y:hidden!important;min-height:calc(var(--tt15-mini)*1.42 + 5px);scrollbar-width:thin;max-width:100%}
+.game-viewport .tt17-denizen-card{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+.game-viewport .tt17-denizen-card>.card.tiny{width:var(--tt15-mini)!important;height:calc(var(--tt15-mini)*1.42)!important;min-width:0}
+.game-viewport .tt17-denizen-card>.tt5-action{position:absolute;right:0;top:0;font-size:9px;min-width:22px;min-height:20px;padding:0;z-index:2}
+.game-viewport .tt17-denizen-reserve{flex:0 0 auto;display:inline-flex;align-items:center}
+.game-viewport .tt17-denizen-reserve>.card.tiny{width:var(--tt15-mini)!important;height:calc(var(--tt15-mini)*1.42)!important}
+.game-viewport .tt17-coop-hands{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,.72fr) minmax(0,1fr)!important;gap:clamp(2px,.6vw,10px);width:100%;min-width:0;align-items:stretch;order:100}
+.game-viewport .tt17-coop-hands>:is(.tt6-self,.tt6-opponent){display:block!important;grid-area:auto!important;min-width:0;min-height:0!important;order:0!important;align-self:stretch}
+.game-viewport .tt17-coop-hands>.tt6-shared-block{grid-area:auto!important;min-width:0;order:0!important}
+.game-viewport .tt17-coop-hands .tt6-hand-block{display:block!important;min-width:0;min-height:0!important;width:100%;height:100%;padding:clamp(2px,.5vw,6px)}
+.game-viewport .tt17-coop-hands .tt6-hand-cards{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-evenly!important;min-height:calc(var(--tt15-card)*1.42 + 3px)!important;gap:0!important;overflow:hidden}
+.game-viewport .tt17-coop-hands .tt6-card-wrap{min-width:0!important;flex:0 1 auto!important;max-width:calc(100% / 3)}
+.game-viewport .tt17-coop-hands .tt6-hand-cards .card{width:min(var(--tt15-card),100%)!important;max-width:100%!important;height:auto!important;aspect-ratio:1/1.42!important;min-width:0!important}
+.game-viewport .tt17-coop-hands .tt6-card-back{width:min(var(--tt15-card),100%)!important;height:auto!important;aspect-ratio:1/1.42!important;min-width:0!important}
+.game-viewport .tt17-coop-hands>.tt6-shared-block .tt6-hand-cards{min-height:calc(var(--tt15-mini)*1.42 + 3px)!important}
+.game-viewport .tt17-coop-hands>.tt6-shared-block .tt6-card-wrap{max-width:50%}
+.game-viewport .tt17-coop-hands>.tt6-shared-block .card{width:min(var(--tt15-mini),100%)!important}
+.game-viewport .tt17-coop-grid>.tt6-draft{grid-area:auto!important;order:0!important;max-height:none!important}
+.game-viewport .tt17-coop-grid .tt6-region-heading strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.game-viewport .tt5-denizens>.tt5-contents{transform:none!important;position:static!important;left:auto!important;top:auto!important}
+@media(max-width:700px){
+ .game-viewport .tt17-coop-equipment{flex-wrap:wrap}
+ .game-viewport .tt17-coop-equipment>.tt6-piles{flex:1 1 32%}
+ .game-viewport .tt17-coop-equipment>.tt8-towers-slot{flex:1 1 55%}
+ .game-viewport .tt17-coop-equipment>.tt5-expansions{flex:1 1 100%}
+ .game-viewport .tt17-coop-equipment>.tt5-expansions>.tt5-zone{flex:1 1 calc(33.333% - 4px)}
+ .game-viewport .tt17-coop-hands .tt6-region-heading{font-size:9px;letter-spacing:0}
+ .game-viewport .tt17-coop-hands .tt6-hand-cards{min-height:calc(var(--tt15-card)*1.15 + 3px)!important}
+ .game-viewport .tt17-coop-hands .tt6-hand-cards .card,.game-viewport .tt17-coop-hands .tt6-card-back{width:min(calc(var(--tt15-card)*.88),100%)!important}
+}
+@media(orientation:landscape) and (max-height:550px){
+ .game-viewport .tt17-coop-equipment{flex-wrap:nowrap!important}
+ .game-viewport .tt17-coop-equipment>.tt5-expansions{flex:1 1 45%;flex-wrap:nowrap!important}
+ .game-viewport .tt17-coop-equipment>.tt5-expansions>.tt5-zone{flex:1 1 0}
+ .game-viewport .tt17-coop-grid{gap:2px!important}
+ .game-viewport .tt17-coop-hands .tt6-hand-cards{min-height:calc(var(--tt15-card)*1.10 + 1px)!important}
+}

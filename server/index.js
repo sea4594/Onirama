@@ -134,6 +134,12 @@ function endpoint(req,res,url,data){
     const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(v=>v.name),config:next.config,interactiveDraw:true,manualTurnEnd:true});next.replay=recordReplay([],next.game,null);next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
+  if(req.method==='POST'&&operation==='restart'){
+    if(!original.game||original.game.status==='active'||original.ended||original.mode!=='coop'||original.seats.some(s=>!s))throw Error('The previous game must be finished and both players present');
+    if(!Number.isInteger(data.expectedVersion)||data.expectedVersion!==original.version)throw Error('State changed. Refresh before starting again.');
+    const next=structuredClone(original);next.game=newGame({mode:'coop',names:next.seats.map(s=>s.name),config:next.config,interactiveDraw:true,manualTurnEnd:true});assertConserved(next.game);next.replay=recordReplay([],next.game,null);next.version++;commit(next);
+    return json(res,200,{ok:true,version:next.version});
+  }
   if(req.method==='POST'&&operation==='action'){
     if(!original.game)throw Error('Game has not started');if(original.ended||(original.mode==='coop'&&original.seats.some(v=>!v)))throw Error('Game paused until another player joins');
     if(seat!==original.game.active)throw Error('It is not your turn');

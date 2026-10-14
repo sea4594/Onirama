@@ -40,6 +40,13 @@ service cloud.firestore {
           resource.data.ready[1-resource.data.hostSeat] == true && request.resource.data.game is map &&
           request.resource.data.game.mode == 'coop' && request.resource.data.replay is list && changedOnly(['game','replay','updatedAt','version']);
       }
+      function restarting() {
+        return member() && !ended() && resource.data.hostUid != null && resource.data.guestUid != null &&
+          resource.data.game is map && resource.data.game.status != 'active' &&
+          request.resource.data.game is map && request.resource.data.game.mode == 'coop' &&
+          request.resource.data.game.status == 'active' && request.resource.data.replay is list &&
+          changedOnly(['game','replay','updatedAt','version']);
+      }
       function playing() {
         return member() && !ended() && resource.data.hostUid != null && resource.data.guestUid != null &&
           resource.data.game is map && resource.data.game.status == 'active' &&
@@ -79,7 +86,7 @@ service cloud.firestore {
         request.resource.data.ready == [false,false] &&
         request.resource.data.createdAt is int && request.resource.data.expiresAt is int;
       allow update: if signedIn() && nextVersion() &&
-        (claimSeat0() || claimSeat1() || setupChange() || readyChange() || starting() || playing() || departing() || ending());
+        (claimSeat0() || claimSeat1() || setupChange() || readyChange() || starting() || restarting() || playing() || departing() || ending());
       allow delete: if false;
     }
     match /{document=**} { allow read, write: if false; }

@@ -52,6 +52,12 @@ export function startRoom(room,uid,now=Date.now()){
  const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName],interactiveDraw:true,manualTurnEnd:true});assertConserved(game);
  return {...room,game:clone(game),replay:recordReplay([],game,null),updatedAt:now,version:room.version+1};
 }
+export function restartRoom(room,uid,now=Date.now()){
+ requireRule(seatFor(room,uid)>=0,'Not a room member');
+ requireRule(!room.ended&&occupied(room)&&room.game&&room.game.status!=='active','Both players must be present and the previous game finished');
+ const game=newGame({mode:'coop',config:room.config,names:[room.hostName,room.guestName],interactiveDraw:true,manualTurnEnd:true});assertConserved(game);
+ return {...room,game:clone(game),replay:recordReplay([],game,null),updatedAt:now,version:room.version+1};
+}
 export function playRoom(room,uid,expectedVersion,command,now=Date.now()){
  const seat=seatFor(room,uid);requireRule(seat>=0,'Not a room member');
  requireRule(!room.ended&&occupied(room),'Game paused until another player joins');

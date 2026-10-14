@@ -44,6 +44,5 @@ export function renderSoloTabletop(g,{selectedId=null,canAct=true,decisionHtml='
       ${renderExpansionTabletop(g,{canAct,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,group:"secondary"})}
     </div>
     ${isDecision?`<div class="tt2-decision" role="region" aria-label="Resolve card effect">${decisionHtml}</div>`:''}
-    ${g.status!=='active'?`<div class="tt2-finish" role="status"><strong>${g.status==='won'?'The dream is escaped':'The dream ends'}</strong><div>${button('New game','setup','tt2-action tt2-primary')}${button('History','history','tt2-action')}</div></div>`:''}
   </div>`;
 }

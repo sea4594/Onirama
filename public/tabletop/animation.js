@@ -90,7 +90,7 @@ function animateFlight(template,from,to,target,delay,active){
   const motion=ghost.animate([
     {transform:`translate(${source.x-dest.x}px,${source.y-dest.y}px) scale(${sx},${sy}) rotate(-4deg)`,opacity:.85},
     {transform:'translate(0,0) scale(1,1) rotate(0)',opacity:1}
-  ],{duration:290,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
+  ],{duration:560,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
   motion.finished.catch(()=>{}).then(cleanup);
 }
 
@@ -114,7 +114,7 @@ function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null}
  const cleanup=()=>{if(finished)return;finished=true;overlay.remove();if(target)target.style.removeProperty('visibility');const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
  cleanups.push(cleanup);
  if(!overlay.animate){cleanup();return;}
- const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:940,delay,easing:'ease-in-out',fill:'both'});
+ const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:1450,delay,easing:'ease-in-out',fill:'both'});
  motion.finished.catch(()=>{}).then(cleanup);
 }
 function premonitionNode(root,id){
@@ -163,19 +163,19 @@ export function createTabletopAnimator({root}){
       // Labyrinth, Doors, and expansion zones without inventing engine steps.
       for(const id of plan.moved){
         const a=old.get(id),b=now.get(id);
-        if(!a||!b)continue;
+        if(!a||!b||plan.drawn.includes(id))continue;
         const ca=center(a.r),cb=center(b.r);
         if(Math.hypot(ca.x-cb.x,ca.y-cb.y)>14)flies.push([b.template,a.r,b.r,b.el]);
       }
       // Flip each newly public card in the screen center, then send it to its
       // actual zone (hand, Limbo, Discard or the fixed decision dock).
-      if(plan.draw&&rectOK(deck)){
+      if((plan.draw||plan.drawn?.some(id=>now.has(id)&&((game.players||[]).some(p=>cards(p.hand).some(c=>c.id===id))||(game.shared||[]).some(c=>c.id===id))))&&rectOK(deck)){
         const known=publicCardMap(game);
         plan.drawn.slice(0,8).forEach((id,i)=>{
           const c=known.get(id);if(!c)return;
           const target=now.get(id),destination=target?.r||(membership(game,'discard').has(id)?discard:membership(game,'limbo').has(id)?limbo:null);
           if(!rectOK(destination))return;
-          revealGhost(c,deck,destination,i*175,cleanups,{target:target?.el||null});
+          revealGhost(c,deck,destination,i*250,cleanups,{target:target?.el||null});
         });
       }
       if(plan.premRevealed?.length){
@@ -202,7 +202,7 @@ export function createTabletopAnimator({root}){
       }
       // A single accepted engine action can change many zones. Bound the
       // animation workload so dense expansion combinations stay responsive.
-      flies.slice(0,9).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*36,180),cleanups));
+      flies.slice(0,9).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*75,280),cleanups));
       const flash=(el,cls,ms=600)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
       if(plan.draw)flash(pile(root,'deck'),'tt8-draw-cue');
       if(plan.shuffle){

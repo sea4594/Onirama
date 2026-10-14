@@ -88,8 +88,8 @@ async function departRoom(end=false){
  }catch(e){setError(e.message);}finally{busy=false;render();}
 }
 function saveSession(o){stopReplay();cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
-async function create(mode){
-  const name=mode==='solo'?'You':(document.querySelector('#name')?.value||playerDisplayName||'').trim();if(mode==='coop'&&!name)return setError('Enter a display name to host.');const config={ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
+async function create(mode,repeatConfig=null){
+  const name=mode==='solo'?'You':(document.querySelector('#name')?.value||playerDisplayName||'').trim();if(mode==='coop'&&!name)return setError('Enter a display name to host.');const config=repeatConfig||{ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
   try{if(STATIC_SITE&&mode==='solo'){cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'solo',config,interactiveDraw:true,names:['You']});localStorage.setItem('onirama.solo.v1',JSON.stringify(game));session={id:'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));beginGuestSession();await refresh();setRoute('#/game');return;}const o=mode==='coop'&&USE_FIREBASE?{...(await firebase.createFirebaseRoom(name,config)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api(mode==='solo'?'/api/solo':'/api/rooms','POST',{name,config});saveSession(o);beginGuestSession();await refresh();setRoute(mode==='coop'?'#/multiplayer':'#/game');startStream();}
   catch(e){setError(e.message);}finally{busy=false;render();}
 }
@@ -99,7 +99,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   if(!/^(?:[A-Za-z]{4}|[a-fA-F0-9]{8})$/.test(String(code||'').trim()))return setError('Enter a four-letter room code.');
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
-async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
+async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
 async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
@@ -253,7 +253,7 @@ function decision(g,canAct){
     const targets=p.targets||[],choices=targets.filter((t,i)=>targets.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
     return `<section class="decision stack"><div class="actions tt7-search-actions">${choices.map(t=>btn((t.source==='deck'?'Deck':'Catcher '+(Number(t.source.slice(5))+1))+' · '+(t.color||p.color),'doorSearch:claim:'+t.id,'primary')).join('')}${g.expansion?.dreamcatchers?catcherSearchChoice(g,true):''}${btn('Search without taking','doorSearch:search')}${btn('Skip search','doorSearch:skip')}</div></section>`;
   }
-  if(p.type==='door')return `<section class="decision stack"><div class="actions">${p.keys.length?'<span class="tt7-micro">Tap a matching Key</span>':''}${btn('Limbo','useKey:limbo')}</div></section>`;
+  if(p.type==='door'){const reason=p.card?.color==='wild'?'Door to the Oniverse: any Key color works.':p.chromatic?.length?'Matching color, Crossroad Key, or spend Chromatic Chaos for an off-color Key.':'Choose a Key of this Door’s color (or a Crossroad Key).';return `<section class="decision stack"><div class="actions">${p.keys.length?`<span class="tt7-micro">${escape(reason)}</span>`:''}${btn('Send Door to Limbo','useKey:limbo')}</div></section>`;}
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
     const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" aria-disabled="${!enabled}" aria-pressed="${chosen}">${name}</button>`;
@@ -442,6 +442,16 @@ async function handle(actionName){
   if(actionName==='presetSave'){try{const preset=savePreset(localStorage,document.querySelector('#presetName')?.value,currentSetup());return render();}catch(e){return setError(e.message);}}
   if(actionName.startsWith('presetLoad:')){const preset=readPresets(localStorage).find(p=>p.id===actionName.slice(11));if(!preset)return setError('Saved setup not found');selectedExpansions=new Set(preset.config.expansions);selectedDifficulties={...preset.config.difficulties};return render();}
   if(actionName.startsWith('presetDelete:')){const id=actionName.slice(13);if(confirm('Delete this saved setup?')){deletePreset(localStorage,id);return render();}return;}
+  if(actionName==='exitFinished'){if(state?.game?.status==='active')return;return setRoute('#/');}
+  if(actionName==='playAgain'){
+    const finished=state?.game;if(!finished||finished.status==='active')return;
+    const config=finished.config;
+    if(IS_LOCAL_GAME()){
+      try{localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT();const again=localEngine.newGame({mode:hot?'coop':'solo',config,names:hot?finished.players.map(p=>p.name):['You'],interactiveDraw:true,manualTurnEnd:hot});localStorage.setItem(hot?'onirama.hotseat.v1':'onirama.solo.v1',JSON.stringify(again));selected=null;gameOverlay=null;passDevice=hot;await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;
+    }
+    if(finished.mode==='solo')return create('solo',config);
+    return doRoom('restart',{expectedVersion:version});
+  }
   if(actionName==='setup')return setRoute('#/setup');if(actionName==='roadmap')return setRoute('#/roadmap');if(actionName==='rules')return setRoute('#/rules');if(actionName==='joinPage')return setRoute('#/join');
   if(actionName==='solo'||actionName==='coop'){selectedMode=actionName;return setRoute('#/setup');}
   if(actionName==='chooseSolo'||actionName==='chooseCoop'){selectedMode=actionName==='chooseSolo'?'solo':'coop';return render();}

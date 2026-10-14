@@ -29,7 +29,7 @@ function overlapRows(table){
 }
 function fitTiles(table){
  for(const zone of table.querySelectorAll('.tt5-zone')){
-  if(zone.closest('.tt8-towers-slot')||zone.matches('.tt5-catchers,.tt5-premonitions'))continue;
+  if(zone.closest('.tt8-towers-slot')||zone.matches('.tt5-catchers,.tt5-premonitions,.tt5-denizens'))continue;
   const inner=zone.querySelector(':scope > .tt5-contents');if(!inner)continue;
   inner.style.transform='';inner.style.left='0px';inner.style.top='18px';
   const width=Math.max(inner.scrollWidth,inner.offsetWidth),height=Math.max(inner.scrollHeight,inner.offsetHeight);

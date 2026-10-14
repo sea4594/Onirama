@@ -58,7 +58,7 @@ test('Cooperative drafting is a shared full-width zone, while private hands rema
  const html=renderCooperativeTabletop(g,{seat:0});
  assert.match(html,/data-phase="draft"/);
  assert.match(html,/<section class="tt6-draft"/);
- assert.ok(html.indexOf('<div class="tt6-center">')<html.indexOf('<section class="tt6-draft"'));
- assert.ok(html.indexOf('<section class="tt6-draft"')<html.indexOf('<div class="tt6-self">'));
+ assert.ok(html.indexOf('<div class="tt17-coop-equipment">')<html.indexOf('<section class="tt6-draft"'));
+ assert.ok(html.indexOf('<section class="tt6-draft"')<html.indexOf('tt17-coop-hands'));
  assert.match(html,/Partner&#39;s hand/);
 });

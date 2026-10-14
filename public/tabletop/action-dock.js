@@ -4,7 +4,7 @@ import {renderCard} from './cards.js';
 const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Free a Dreamcatcher',towerPenalty:'Towers',moduleDecision:'Effect'};
 export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
 export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null}={}){
- if(game.status==='won')return {title:'Victory',hint:''};
+ if(game.status==='won')return {title:'You escaped the dream!',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
  if(game.phase==='turnComplete')return {title:seat===game.active?'Turn complete':'Waiting for partner',hint:''};
  if(game.phase==='draft')return {title:seat===game.active?'Draft':'Partner drafting',hint:''};
@@ -33,7 +33,7 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
   // Selecting a card only outlines its legal tabletop destinations. No duplicate action buttons.
   if(game.config?.expansions?.includes('crossroads'))controls+=button('Escape','escape');
  }
- if(game.status!=='active')controls=button('New game','setup');
+ if(game.status!=='active')controls=button('Exit','exitFinished')+button('Play again','playAgain');
  const content=dialog?.html||controls||'';
  const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');

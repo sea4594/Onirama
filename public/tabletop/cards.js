@@ -1,9 +1,10 @@
 import {cardSymbol} from '../icons.js';
 // UI-only card primitives. Never mutates the game or decides whether an action is legal.
+export const DENIZEN_NAMES=Object.freeze({architect:'Architect',cyclobot:'Cyclobot',squirrel:'Squirrel Spies',harpoon:'Harpoon Hunter',hammer:'Hammer Bird',chromatic:'Chromatic Chaos',mirror:'Mirror',keeper:'Repentant Treasure Keeper'});
 export const CARD_COLORS=Object.freeze(['red','blue','green','brown']);
 export const htmlEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function cardDescription(c){
-  return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left||'blank'}/${c.right||'blank'}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?`Denizen: ${c.ability}`:c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
+  return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left||'blank'}/${c.right||'blank'}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?(DENIZEN_NAMES[c.ability]||c.ability):c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
 }
 export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,interactive=false,highlight=false}={}){
   const symbol=cardSymbol(c.kind==='location'?c.symbol:c.kind);

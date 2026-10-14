@@ -58,7 +58,7 @@ test('decision, nonaction and finished states keep zones visible without illegal
  const s=newGame({mode:'solo',seed:12,config:{expansions:[],difficulties:{}}});const g=viewFor(s,0);
  g.phase='decision';g.pending={type:'nightmare'};
  let html=renderSoloTabletop(g,{decisionHtml:'<section class="decision">Choose</section>'});assert.match(html,/tt2-decision/);assert.match(html,/Choose/);assert.doesNotMatch(html,/data-action="play"/);
- g.phase='ended';g.status='lost';html=renderSoloTabletop(g);assert.match(html,/tt2-finish/);assert.match(html,/tt2-piles/);
+ g.phase='ended';g.status='lost';html=renderSoloTabletop(g);assert.doesNotMatch(html,/tt2-finish/);assert.match(html,/tt2-piles/);
 });
 test('UI modules are pure projections and do not reveal draw deck contents',()=>{
  const s=newGame({mode:'solo',seed:24,config:{expansions:[],difficulties:{}}}),g=viewFor(s,0),before=JSON.stringify(g);

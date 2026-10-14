@@ -406,7 +406,7 @@ export function act(previous,command){
  if(p.type==='door'){
    need(command.type==='chooseDoor','Resolve drawn Door');const d=p.card;
    if(command.keyId==='limbo')s.limbo.push(d);
-   else {need(p.keys.some(k=>k.id===command.keyId),'Key does not match this Door');const key=takeSpot(s,command.keyId);if(d.color!=='wild'&&key.color!==d.color)spendDenizen(s,p.chromatic?.[0],'chromatic');s.discard.push(key);acquireDoor(s,d,'Key');}
+   else {need(p.keys.some(k=>k.id===command.keyId),'Key does not match this Door');const key=takeSpot(s,command.keyId);if(d.color!=='wild'&&key.color!==d.color&&key.color!=='wild')spendDenizen(s,p.chromatic?.[0],'chromatic');s.discard.push(key);acquireDoor(s,d,'Key');}
    if(s.status==='active'){s.pending=null;finishAcquisition(s);}return s;
  }
  if(p.type==='nightmare'&&command.type==='incubusCancel'){cancelWithIncubus(s);return s;}
