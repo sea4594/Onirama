@@ -1,3 +1,4 @@
+import {premonitionFace} from './tabletop/expansions.js';
 import {renderCard,htmlEscape} from './tabletop/cards.js';
 import {cardSymbol,icon} from './icons.js';
 // View-only reference. Rules are paraphrased from the second-edition base/expansion
@@ -104,9 +105,9 @@ function renderGuideCard(c){
  if(!guideObjectKinds.has(c.kind))return renderCard(c,{tiny:true});
  const name=String(c.name||''),label=({mirror:'Mirror',goal:'Goal',premonition:'Warning',catcher:'Dreamcatcher',failsafe:'Failsafe',incubus:'Incubus'})[c.kind];
  const readable=({red2:'2 red Doors',blue2:'2 blue Doors',green2:'2 green Doors',brown2:'2 brown Doors',doors5:'5 Doors',doors3:'3 Doors',rainbow4:'4 colors',pair2:'Door pair'})[name]||name;
- const emblem=c.kind==='mirror'?cardSymbol(['sun','moon','key','glyph','rainbow'].includes(name)?name:'diamond'):c.kind==='goal'?icon('door'):c.kind==='premonition'?icon('sparkle'):c.kind==='incubus'?icon('chess'):c.kind==='failsafe'?icon('book'):icon('flower');
+ const emblem=c.kind==='mirror'?cardSymbol(['sun','moon','key','glyph','rainbow'].includes(name)?name:'mirror-art'):c.kind==='goal'?icon('portal'):c.kind==='premonition'?premonitionFace(name):c.kind==='incubus'?icon('chess'):c.kind==='failsafe'?icon('book'):icon('lost-dream-art');
  const safe=htmlEscape(readable),color=['red','blue','green','brown'].includes(name)?` guide-object-${name}`:'';
- return `<span class="guide-object guide-object-${c.kind}${color}" role="img" aria-label="${htmlEscape(label+' '+name)}"><span class="guide-object-top">${label}</span><span class="guide-object-icon">${emblem}</span><strong>${safe||label}</strong></span>`;
+ return `<span class="guide-object guide-object-${c.kind}${color}" role="img" aria-label="${htmlEscape(label+' '+name)}"><span class="guide-object-icon">${emblem}</span></span>`;
 }
 export function guideCardStrip(cards,caption=''){
  if(!cards.length)return '';

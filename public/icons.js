@@ -33,7 +33,28 @@ const shapes=Object.freeze({
  'right':'<path d="m9 18 6-6-6-6"/>',
  'swap':'<path d="M4 7h16l-4-4m4 4-4 4M20 17H4l4-4m-4 4 4 4"/>',
  'cards':'<rect x="8" y="3" width="12" height="17" rx="2"/><path d="M5 6H4a1 1 0 0 0-1 1v14h12"/>',
- 'eye':'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'
+ 'eye':'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+ 'portal':'<path d="M4 22V8Q4 2 12 2t8 6v14H4Z"/><path d="M8 22V9Q8 6 12 6t4 3v13"/><path d="M12 10v12M10 13l2-2 2 2"/><circle cx="18" cy="16" r=".9" fill="currentColor" stroke="none"/>',
+ 'nightmare-art':'<path d="M3 8 9 3l3 4 4-4 5 5-3 5 3 6-8 2-4-5-6 3 3-7-3-4Z"/><path d="m8 9 3 2 3-2 3 3-3 3-3-2-3 2"/><path d="m7 5 2 3m9-3-2 3"/>',
+ 'lost-dream-art':'<path d="M7 20V9a5 5 0 0 1 10 0v11l-3-2-2 2-3-2-2 2Z"/><circle cx="10" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="11" r="1" fill="currentColor" stroke="none"/><path d="M2 5h4M18 5h4M2 18h4M18 18h4"/>',
+ 'happy-dream-art':'<path d="M5 14a7 7 0 0 0 12 4 6 6 0 0 1-8-10A7 7 0 0 0 5 14Z"/><path d="m18 3 1.1 2.9L22 7l-2.9 1.1L18 11l-1.1-2.9L14 7l2.9-1.1L18 3Z"/><path d="m4 3 .6 1.4L6 5l-1.4.6L4 7l-.6-1.4L2 5l1.4-.6L4 3Z"/>',
+ 'dead-end-art':'<path d="M5 22V9h14v13M5 13h14M12 13v9"/><path d="m9 7 3-4 3 4M5 9l3 3M19 9l-3 3"/><path d="M9 18h6"/>',
+ 'sphinx-art':'<path d="M3 16 12 5l9 11-9 5-9-5Z"/><path d="M7 15q5-8 10 0-5 5-10 0Z"/><circle cx="12" cy="15" r="1.7"/><path d="m8 6 4-4 4 4"/>',
+ 'diver-art':'<path d="M3 9c2 2 4 2 6 0s4-2 6 0 4 2 6 0M3 15c2 2 4 2 6 0s4-2 6 0 4 2 6 0"/><path d="m12 2 0 10m-4-4 4 4 4-4M12 18v4"/>',
+ 'confusion-art':'<path d="M12 3a9 9 0 1 1-9 9 6 6 0 1 1 6 6 3 3 0 1 1 3-3"/><path d="m16 2 2 3-3 1M2 16l3 2-1 3"/>',
+ 'glyph-art':'<path d="m12 2 8 10-8 10-8-10 8-10Z"/><path d="m12 5-4 7 4 7 4-7-4-7ZM8 12h8M12 5v14"/>',
+ 'architect-art':'<path d="M3 21h18M5 18V6l7-4 7 4v12M9 18V9h6v9M3 9h18"/><path d="M12 2v7"/>',
+ 'cyclobot-art':'<rect x="5" y="6" width="14" height="12" rx="3"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/><path d="M8 15h8M12 6V3M3 11H1M23 11h-2"/>',
+ 'squirrel-art':'<path d="M9 20c-6 2-8-4-5-7 3-2 5 2 7 1 4-2 2-10 7-10 4 0 5 7 1 10-2 1-4 1-5-1"/><path d="M9 20c4-1 6-5 5-9M11 18v4M17 4l3-2"/>',
+ 'harpoon-art':'<path d="M6 21 19 3M12 3h7v7M7 15l-4 1 4 3M13 9l-4-2"/>',
+ 'hammer-art':'<path d="m4 21 11-11M12 5l4-3 6 6-4 3-6-6ZM10 9l5 5"/>',
+ 'chromatic-art':'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 5.5l13 13M18.5 5.5l-13 13"/>',
+ 'mirror-art':'<rect x="6" y="3" width="12" height="18" rx="5"/><path d="m9 8 3-3M9 15l6-7M12 18l3-3"/>',
+ 'keeper-art':'<path d="M4 10h16v11H4V10ZM3 7h18v3H3V7ZM12 7v14M7 7c-6-4 0-8 5 0 5-8 11-4 5 0"/>',
+ 'paired-doors-art':'<rect x="3" y="5" width="9" height="16" rx="2"/><rect x="12" y="3" width="9" height="18" rx="2"/><path d="M7 15h.01M17 15h.01"/>',
+ 'card-stack-art':'<rect x="8" y="4" width="12" height="17" rx="2"/><path d="M5 7H4a1 1 0 0 0-1 1v14h12"/><path d="M12 9h4m-4 4h4"/>',
+ 'discard-art':'<path d="M6 8h12l-1 13H7L6 8ZM4 5h16M9 3h6"/><path d="M10 11v7M14 11v7"/>',
+ 'multiple-doors-art':'<path d="M3 20V9Q3 5 7 5h3v15M9 20V6q0-4 4-4t4 4v14M15 20V9q0-4 4-4t4 4v11M2 21h20"/>'
 });
 export function icon(name){const shape=shapes[name]||shapes.diamond;return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">${shape}</svg>`;}
-export const cardSymbol=name=>icon(({glyph:'sparkle',lostDream:'flower',nightmare:'sparkle',hidden:'diamond',sphinx:'eye',diver:'down',confusion:'swap',deadEnd:'blocked',happyDream:'smile',denizen:'leaf',rainbow:'diamond'}[name])||name);
+export const cardSymbol=name=>icon(({glyph:'glyph-art',lostDream:'lost-dream-art',nightmare:'nightmare-art',hidden:'diamond',sphinx:'sphinx-art',diver:'diver-art',confusion:'confusion-art',deadEnd:'dead-end-art',happyDream:'happy-dream-art',denizen:'leaf',door:'portal',rainbow:'chromatic-art'}[name])||name);

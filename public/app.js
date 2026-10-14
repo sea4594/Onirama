@@ -253,7 +253,7 @@ function decision(g,canAct){
     const targets=p.targets||[],choices=targets.filter((t,i)=>targets.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
     return `<section class="decision stack"><div class="actions tt7-search-actions">${choices.map(t=>btn((t.source==='deck'?'Deck':'Catcher '+(Number(t.source.slice(5))+1))+' · '+(t.color||p.color),'doorSearch:claim:'+t.id,'primary')).join('')}${g.expansion?.dreamcatchers?catcherSearchChoice(g,true):''}${btn('Search without taking','doorSearch:search')}${btn('Skip search','doorSearch:skip')}</div></section>`;
   }
-  if(p.type==='door'){const reason=p.card?.color==='wild'?'Door to the Oniverse: any Key color works.':p.chromatic?.length?'Matching color, Crossroad Key, or spend Chromatic Chaos for an off-color Key.':'Choose a Key of this Door’s color (or a Crossroad Key).';return `<section class="decision stack"><div class="actions">${p.keys.length?`<span class="tt7-micro">${escape(reason)}</span>`:''}${btn('Send Door to Limbo','useKey:limbo')}</div></section>`;}
+  if(p.type==='door')return `<section class="decision stack"><div class="actions">${btn('Gain Door','useKey:gain','primary')}${btn('Pass','useKey:limbo')}</div></section>`;
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
     const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" aria-disabled="${!enabled}" aria-pressed="${chosen}">${name}</button>`;
@@ -268,7 +268,7 @@ function decision(g,canAct){
   if(p.type==='premonitionDoor')return `<section class="decision stack"><span class="tt7-micro">Tap a Door</span></section>`;
   if(['incantation','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
   if(p.type==='catchChoose')return `<section class="decision stack">${btn('Continue',`catchChoose:${p.choices[0]}`,'primary')}</section>`;
-  if(p.type==='catchOverload')return `<section class="decision stack"><div class="actions">${p.choices.map(i=>btn(`Free ${i+1}`,`catchOverload:${i}`)).join('')}</div></section>`;
+  if(p.type==='catchOverload')return `<section class="decision stack"><div class="actions">${p.choices.map(i=>btn(`Sacrifice ${i+1}`,`catchOverload:${i}`)).join('')}</div></section>`;
   if(p.type==='towerPenalty')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap a Tower</span>${btn('False destruction','towerFake')}</div></section>`;
   if(p.type==='moduleDecision')return `<section class="decision stack"><h2>Choose effect: ${escape(p.id)}</h2><div class="actions">${pagedCards(p.options,o=>btn(escape(o),`moduleDecision:${encodeURIComponent(o)}`,'primary'),2)}</div></section>`;
   return `<div class="notice">Resolving an effect.</div>`;
@@ -347,6 +347,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const previousLabyrinths=new Map([...(app.querySelectorAll?.('[data-tabletop-scroll]')||[])].map(el=>[el.dataset.tabletopScroll,{count:el.querySelectorAll('.card.tiny').length,left:el.scrollLeft}]));
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
   const previousPile=app.querySelector?.('.tt6-pile-scroll'),pileScroll=previousPile?.scrollTop||0;
+  const oldDiscardStrip=app.querySelector?.('.tt8-discard-history'),discardX=oldDiscardStrip?.scrollLeft,discardWasAtEnd=!oldDiscardStrip||oldDiscardStrip.scrollWidth-oldDiscardStrip.clientWidth-oldDiscardStrip.scrollLeft<=4;
   const previousWindow=app.querySelector?.('.shell-viewport-window');
   const windowScroll=previousWindow?.scrollTop||0,windowRoute=previousWindow?.dataset?.pageRoute;
   const previousOverlay=app.querySelector?.('[data-game-menu-dialog]');
@@ -378,6 +379,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator=createTabletopAnimator({root:replayLayer});replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');fitReplay(replayLayer,replayFrames[replayIndex]);}}
   const nextDock=app.querySelector?.('.tt6-dock-scroll');if(nextDock){nextDock.scrollTop=dockScroll;nextDock.scrollLeft=dockX;}
   const nextPile=app.querySelector?.('.tt6-pile-scroll');if(nextPile)nextPile.scrollTop=pileScroll;
+  const newDiscardStrip=app.querySelector?.('.tt8-discard-history');if(newDiscardStrip)newDiscardStrip.scrollLeft=discardWasAtEnd?newDiscardStrip.scrollWidth:discardX;
   const nextWindow=app.querySelector?.('.shell-viewport-window');
   if(nextWindow&&windowRoute===page)nextWindow.scrollTop=windowScroll;
   if(typeof dialogController!=='undefined'&&dialogController)dialogController.sync(dialogFocus);
@@ -552,6 +554,7 @@ async function handle(actionName){
   }
   if(actionName==='draw'||actionName==='confirmDraw')return action({type:actionName});
   if(actionName.startsWith('doorSearch:')){const value=document.querySelector('#freeOnSearch')?.value,parts=actionName.split(':'),freeId=value===''||value===undefined?undefined:Number(value);if(parts[1]==='claim'&&freeId!==undefined){const target=g.pending?.targets?.find(t=>t.id===parts[2]);if(target?.source===`catch${freeId}`)return setError('You cannot free the same Dreamcatcher holding the selected Door. Choose a different catcher or no freeing.');}return action({type:'doorSearch',option:parts[1],doorId:parts[2],freeId});}
+  if(actionName==='useKey:gain'){const pending=g.pending,hand=[...g.players[g.active].hand,...(g.shared||[])];const best=pending?.keys?.map(k=>hand.find(c=>c.id===k.id)).filter(Boolean).sort((a,b)=>{const rank=c=>pending.card.color==='wild'?(c.color==='wild'?1:0):(c.color===pending.card.color?0:c.color==='wild'?1:2);return rank(a)-rank(b);})[0];if(!best)return setError('No eligible Key to claim this Door.');return action({type:'chooseDoor',keyId:best.id});}
   if(actionName.startsWith('useKey:'))return action({type:'chooseDoor',keyId:actionName.slice(7)});
   if(actionName.startsWith('nightKey:'))return action({type:'nightmare',option:'key',cardId:actionName.slice(9)});
   if(actionName.startsWith('nightDoor:'))return action({type:'nightmare',option:'door',cardId:actionName.slice(10)});

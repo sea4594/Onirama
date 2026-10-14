@@ -1,0 +1,89 @@
+/* Phase 18 — one visual language for illustrated card faces and color semantics.
+   Every illustration sits inside the card's own box, never a viewport-sized font. */
+:root{
+  --red:#ef6b70;--blue:#57adf0;--green:#4fc995;--brown:#e0a05a;
+  --card-red-bg:#75404b;--card-blue-bg:#305f82;--card-green-bg:#316451;--card-brown-bg:#855735;
+}
+.card{box-sizing:border-box;overflow:hidden!important;container-type:inline-size;position:relative;isolation:isolate}
+.card.red{border-color:var(--red);background:linear-gradient(145deg,var(--card-red-bg),#302436)}
+.card.blue{border-color:var(--blue);background:linear-gradient(145deg,var(--card-blue-bg),#222c43)}
+.card.green{border-color:var(--green);background:linear-gradient(145deg,var(--card-green-bg),#1d3336)}
+.card.brown{border-color:var(--brown);background:linear-gradient(145deg,var(--card-brown-bg),#352d30)}
+.card:not(.hidden)::before{content:'';position:absolute;inset:5%;border:1px solid #f7e6c141;border-radius:inherit;pointer-events:none;z-index:0}
+.card:not(.hidden)::after{content:'';position:absolute;inset:11% 15%;border-radius:45%;background:radial-gradient(ellipse,#ffe3ac13,transparent 76%);pointer-events:none;z-index:0}
+.card .symbol{position:relative;z-index:1;display:grid!important;place-items:center!important;box-sizing:border-box;flex:0 0 auto;width:72%!important;height:auto!important;max-height:62%!important;aspect-ratio:1;min-width:0!important;min-height:0!important;font-size:inherit!important;line-height:1!important;margin:0 auto}
+.card .symbol .ui-icon,.card.tiny .symbol .ui-icon,.game-viewport .tt2-root[data-tt15-layout] .card>.symbol>.ui-icon,.game-viewport .tt2-root[data-tt15-layout] .card.tiny>.symbol>.ui-icon{display:block;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;stroke-width:1.7;overflow:visible}
+.card.card-kind-location .symbol{width:59%!important;max-height:60%!important}
+.card.card-kind-door{background:linear-gradient(160deg,#445367,#1a2238);border-color:#e3c990}
+.card.card-kind-door.red{border-color:var(--red);background:linear-gradient(155deg,#763c4b,#30253b)}
+.card.card-kind-door.blue{border-color:var(--blue);background:linear-gradient(155deg,#355d88,#222942)}
+.card.card-kind-door.green{border-color:var(--green);background:linear-gradient(155deg,#366f58,#20303b)}
+.card.card-kind-door.brown{border-color:var(--brown);background:linear-gradient(155deg,#8a573a,#312d3d)}
+.card.card-kind-door .symbol{width:74%!important;max-height:72%!important}
+.card.card-kind-door .symbol .ui-icon{stroke-width:2.1!important}
+.card.card-oniverse{border:2px solid transparent!important;background:linear-gradient(#24364d,#24364d) padding-box,conic-gradient(var(--red),var(--blue),var(--green),var(--brown),var(--red)) border-box!important}
+.card.wild.card-kind-location{border:2px solid transparent;background:linear-gradient(#394355,#2c3650) padding-box,conic-gradient(var(--red),var(--blue),var(--green),var(--brown),var(--red)) border-box}
+.card.card-kind-nightmare{border-color:#e07bd8;background:radial-gradient(ellipse at 50% 45%,#743d73,#241e3e 78%)}
+.card.card-kind-lostDream{border-color:#a8a4f2;background:radial-gradient(ellipse at 50% 45%,#51558b,#25273f 80%)}
+.card.card-kind-happyDream{border-color:#f5d779;background:radial-gradient(ellipse at 50% 45%,#777153,#25454b 85%)}
+.card.card-kind-deadEnd{border-color:#ee947b;background:radial-gradient(ellipse at 50% 45%,#7d4543,#332c37 85%)}
+.card.card-kind-sphinx{border-color:#dcb5e7;background:linear-gradient(150deg,#715275,#262b47)}
+.card.card-kind-diver{border-color:#87bfd6;background:linear-gradient(150deg,#346579,#26334f)}
+.card.card-kind-confusion{border-color:#d4b0f3;background:linear-gradient(150deg,#624b80,#2f2c45)}
+.card.card-kind-denizen{border-color:#b4bee9;background:linear-gradient(145deg,#455d87,#282d49)}
+.card.card-kind-denizen .symbol{width:62%!important;max-height:55%!important;margin-top:4%}
+.card .card-label{display:none!important}
+.card.card-kind-denizen .card-label{display:-webkit-box!important;position:relative;z-index:2;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;max-width:94%!important;width:94%;margin:1px auto 0!important;font-size:clamp(6px,13cqw,11px)!important;line-height:1.07!important;letter-spacing:0!important;text-transform:none!important;overflow-wrap:anywhere;text-align:center}
+.card.card-kind-tower .tt5-tower-face{width:100%;height:100%;min-height:0;overflow:hidden}
+.card.card-kind-tower .tt11-tower-number{color:#fff1c0;font-variant-numeric:tabular-nums}
+.card.card-kind-tower .tt8-tower-mark .ui-icon{min-width:0!important;min-height:0!important}
+/* Off-deck Premonition art has a two-part language: Door threshold / consequence.
+   Colored pips distinguish the four two-Door conditions without tiny letters. */
+.tt18-pm-art{display:flex;position:relative;flex-direction:column;align-items:center;justify-content:space-between;width:100%;height:100%;min-height:0;gap:1px;overflow:hidden;box-sizing:border-box;color:#f7e4ca}
+.tt18-pm-pips{display:flex;justify-content:center;gap:clamp(1px,.25vw,3px);width:100%;height:7px;flex:0 0 auto;align-items:center}
+.tt18-pip{display:block;width:min(12%,6px);aspect-ratio:1;border:1px solid #e7d9c199;border-radius:50%;background:#e9dfc9}
+.tt18-pip-red{background:var(--red)}.tt18-pip-blue{background:var(--blue)}.tt18-pip-green{background:var(--green)}.tt18-pip-brown{background:var(--brown)}
+.tt18-pm-door,.tt18-pm-effect{flex:1 1 0;min-height:0;display:grid;place-items:center;width:74%;max-width:30px}
+.tt18-pm-door .ui-icon,.tt18-pm-effect .ui-icon{display:block!important;width:100%!important;height:100%!important;max-height:100%!important;min-width:0;min-height:0}
+.tt18-pm-door{opacity:.96}.tt18-pm-effect{opacity:.75;width:58%}
+.tt18-pm-door .ui-icon{stroke-width:2.3}.tt18-pm-effect .ui-icon{stroke-width:1.8}
+.tt18-pm-red2{color:#ffc3c8}.tt18-pm-green2{color:#bff3d2}.tt18-pm-blue2{color:#b8dafa}.tt18-pm-brown2{color:#f9d7a8}
+.game-viewport .tt5-premonition{background:linear-gradient(165deg,#604b70,#29283f)!important;border:1px solid #ba98d5!important}
+.game-viewport .tt5-premonition .tt5-pm-face{width:100%;height:100%;flex:1;min-height:0;font-size:inherit!important;overflow:hidden}
+.game-viewport .tt5-premonition .tt5-pm-face .tt18-pm-art{width:100%;height:100%;padding:2px 0 1px}
+.game-viewport .tt14-reserve{align-self:center;justify-content:center!important;align-items:center!important;padding:0!important;gap:0!important;aspect-ratio:1/1.42!important;height:min(100%,calc(var(--tt15-prem-h,100px) - 23px))!important;max-width:70px;width:auto;min-width:0!important;flex:0 1 auto!important}
+.game-viewport .tt14-reserve-back{display:block!important;box-sizing:border-box;flex:none!important;width:auto!important;height:100%!important;max-height:100%!important;max-width:100%!important;aspect-ratio:1/1.42!important;margin:0!important;border-color:#cbaad5;background:radial-gradient(circle at center,#bdabda22 0 18%,transparent 19%),repeating-linear-gradient(140deg,#47345a,#47345a 6px,#342d50 6px,#342d50 12px)}
+.game-viewport .tt14-reserve-label{display:none!important}
+.tt14-reserve-list .tt5-premonition .tt5-pm-face{display:grid;place-items:center;width:100%;height:100%}
+.tt14-reserve-list .tt18-pm-art{height:100%;padding:6px 3px;box-sizing:border-box}
+/* Inventory: fill available rows, cap each cell, never make a single item giant. */
+.tt6-pile-inspector .tt6-inventory-rows{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,105px),1fr))!important;gap:8px!important;align-items:stretch}
+.tt6-pile-inspector .tt6-inventory-line{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:space-between!important;box-sizing:border-box!important;gap:5px!important;width:100%!important;max-width:170px!important;min-width:0!important;padding:7px 5px!important;border-radius:7px;background:var(--ui-soft)}
+.tt6-pile-inspector .tt6-inventory-line .tt7-inventory-card{display:grid;place-items:center;width:100%}
+.tt6-pile-inspector .tt10-count-track{width:100%!important;max-width:none!important;height:13px!important;padding:0!important;gap:clamp(1px,.5vw,3px)!important}
+.tt6-pile-inspector .tt10-count-track i{min-width:0!important}
+/* Physical discard order: oldest is leftmost; most recently discarded is rightmost. */
+.tt8-discard-history{direction:ltr;scroll-behavior:auto;scrollbar-width:thin}
+.tt8-discard-history>.tt8-discard-item{position:relative}
+/* Four-color vocabulary across non-card tabletop markers and guides. */
+.tt5-goal-face.red{background:var(--red)}.tt5-goal-face.blue{background:var(--blue)}.tt5-goal-face.green{background:var(--green)}.tt5-goal-face.brown{background:var(--brown)}
+.tt5-mirror-symbol.red{color:var(--red)}.tt5-mirror-symbol.blue{color:var(--blue)}.tt5-mirror-symbol.green{color:var(--green)}.tt5-mirror-symbol.brown{color:var(--brown)}
+.game-viewport .tt8-door-empty.red{border-color:var(--red);background:#ef6b7022}.game-viewport .tt8-door-empty.blue{border-color:var(--blue);background:#57adf022}.game-viewport .tt8-door-empty.green{border-color:var(--green);background:#4fc99522}.game-viewport .tt8-door-empty.brown{border-color:var(--brown);background:#e0a05a22}
+@media(max-width:500px){.tt6-pile-inspector .tt6-inventory-rows{grid-template-columns:repeat(auto-fill,minmax(min(100%,90px),1fr))!important;gap:6px!important}}
+
+/* Refinement from the 28/45/75px rendered gallery: keep the consequence symbol
+   and progress track distinct even in the narrowest off-deck card. */
+.tt5-premonition{container-type:inline-size}
+@container (max-width:39px){
+ .tt18-pm-art{gap:0!important;padding:1px 0 0!important}
+ .tt18-pm-pips{height:4px!important}
+ .tt18-pip{width:3px!important;border-width:.5px!important}
+ .tt18-pm-door .ui-icon,.tt18-pm-effect .ui-icon{stroke-width:2.4!important}
+ .tt16-pm-progress{height:8px!important}
+ .tt16-pm-progress b{font-size:6px!important}
+}
+.game-viewport .tt5-mirror-symbol{color:#eadac7}
+.game-viewport .tt5-mirror .tt5-mirror-symbol .ui-icon{stroke-width:2}
+.guide-object .guide-object-icon{display:grid;place-items:center;flex:1 1 auto;width:100%;min-height:0}
+.guide-object .guide-object-icon .tt18-pm-art{width:70%;height:95%}
+.guide-object .guide-object-icon .tt18-pm-door,.guide-object .guide-object-icon .tt18-pm-effect{max-width:100%}

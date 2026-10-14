@@ -6,7 +6,7 @@ const app=readFileSync('public/app.js','utf8'),css=readFileSync('public/tabletop
 test('Location faces have only artwork; their identity remains accessible to assistive technology and inspection',()=>{
  const h=renderCard({id:'card-red',kind:'location',color:'red',symbol:'sun'},{select:true});
  assert.match(h,/data-pick="card-red"/);assert.match(h,/aria-label="red sun"/);assert.doesNotMatch(h,/class="card-label"/);
- assert.match(renderCard({kind:'door',color:'blue'}),/class="card-label"/);
+ assert.doesNotMatch(renderCard({kind:'door',color:'blue'}),/class="card-label"/);
 });
 test('existing hand and acquired Door cards are actionable during mandatory decisions without copying them into the dock',()=>{
  const s=newGame({mode:'solo',seed:23}),g=viewFor(s,0),key=g.players[0].hand[0];
@@ -30,7 +30,7 @@ test('nightmare stage buttons, prophecy discard slot and dock scroll containment
 });
 test('pile inventories show card pictures plus zero-inclusive counts, never text-only entries',()=>{
  const g=viewFor(newGame({seed:71,config:{expansions:['glyphs','towers']}}),0);
- const html=renderPileInspector(g,'deck');assert.match(html,/tt7-inventory-card/);assert.match(html,/class="card red tiny"/);
+ const html=renderPileInspector(g,'deck');assert.match(html,/tt7-inventory-card/);assert.match(html,/class="card red card-kind-location tiny"/);
  assert.match(html,/aria-label="Red Sun Location: \d+ of \d+"/);assert.match(html,/tt10-count-track/);assert.doesNotMatch(html,/small>\/\d+/);
  assert.doesNotMatch(html,/>Red Sun Location<\/span>/);
 });

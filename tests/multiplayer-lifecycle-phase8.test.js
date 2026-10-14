@@ -60,11 +60,11 @@ test('Firestore rules use authenticated blind seat claims and restrict private r
  assert.match(readFileSync('public/firebase-room.js','utf8'),/store\.updateDoc\(ref/);
  assert.match(readFileSync('public/firebase-room.js','utf8'),/store\.increment\(1\)/);
 });
-test('Discard inspector puts newest card first in an overlapping, horizontally scrolling history',()=>{
+test('Discard inspector follows physical order, with newest at the right',()=>{
  const cards=[{id:'a',kind:'location',color:'red',symbol:'sun'},{id:'b',kind:'location',color:'blue',symbol:'moon'},{id:'c',kind:'location',color:'green',symbol:'key'}];
  const html=renderPileInspector({discard:cards,pileInventory:[]},'discard');
- assert.match(html,/tt8-discard-history/);assert.match(html,/Recent discards, newest first/);
- assert.ok(html.indexOf('data-card-id="c"')<html.indexOf('data-card-id="b"')||html.indexOf('green')<html.indexOf('blue'));
+ assert.match(html,/tt8-discard-history/);assert.match(html,/Discard history, oldest first, newest at right/);
+ assert.ok(html.indexOf('data-tt-motion-id="a"')<html.indexOf('data-tt-motion-id="b"')&&html.indexOf('data-tt-motion-id="b"')<html.indexOf('data-tt-motion-id="c"'));
  const css=readFileSync('public/tabletop/phase7c.css','utf8');assert.match(css,/tt8-discard-history\{[^}]*overflow-x:auto/);
 });
 test('Server and UI explicitly distinguish leaving from ending; all orientations share one resizing fitter',()=>{

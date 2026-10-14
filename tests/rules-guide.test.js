@@ -11,7 +11,7 @@ test('all base, cooperative, expansions and promotional chapters use a single re
 });
 test('illustrations render real existing tabletop cards without adding new artwork or sensitive state',()=>{
  const result=guideCardStrip([{kind:'door',color:'red'},{kind:'nightmare'},{kind:'location',color:'blue',symbol:'key'}],'Example');
- assert.match(result,/class="card red tiny"/);assert.match(result,/class="card nightmare tiny"/);assert.match(result,/class="card blue tiny"/);assert.match(result,/Example/);assert.doesNotMatch(result,/data-tt-motion-id/);
+ assert.match(result,/class="card red card-kind-door tiny"/);assert.match(result,/class="card nightmare card-kind-nightmare tiny"/);assert.match(result,/class="card blue card-kind-location tiny"/);assert.match(result,/Example/);assert.doesNotMatch(result,/data-tt-motion-id/);
 });
 test('full reference includes all expansions, rule summaries, search, visual examples and official links',()=>{
  const html=renderRulesReference();for(const id of ['base','coop','book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx','combinations','incubus'])assert.ok(html.includes(`data-guide-chapter="${id}"`),id);
