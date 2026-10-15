@@ -9,7 +9,6 @@
 .card.blue{border-color:var(--blue);background:linear-gradient(145deg,var(--card-blue-bg),#222c43)}
 .card.green{border-color:var(--green);background:linear-gradient(145deg,var(--card-green-bg),#1d3336)}
 .card.brown{border-color:var(--brown);background:linear-gradient(145deg,var(--card-brown-bg),#352d30)}
-.card:not(.hidden)::before{content:'';position:absolute;inset:5%;border:1px solid #f7e6c141;border-radius:inherit;pointer-events:none;z-index:0}
 .card:not(.hidden)::after{content:'';position:absolute;inset:11% 15%;border-radius:45%;background:radial-gradient(ellipse,#ffe3ac13,transparent 76%);pointer-events:none;z-index:0}
 .card .symbol{position:relative;z-index:1;display:grid!important;place-items:center!important;box-sizing:border-box;flex:0 0 auto;width:72%!important;height:auto!important;max-height:62%!important;aspect-ratio:1;min-width:0!important;min-height:0!important;font-size:inherit!important;line-height:1!important;margin:0 auto}
 .card .symbol .ui-icon,.card.tiny .symbol .ui-icon,.game-viewport .tt2-root[data-tt15-layout] .card>.symbol>.ui-icon,.game-viewport .tt2-root[data-tt15-layout] .card.tiny>.symbol>.ui-icon{display:block;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;stroke-width:1.7;overflow:visible}

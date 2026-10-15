@@ -74,3 +74,13 @@ test('standalone gallery fixtures generate without a browser dependency',()=>{
   assert.match(readFileSync(join(dir,'coop-all.html'),'utf8'),/tt17-coop-hands/);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('face-up cards have one perimeter, with no inset decorative outline',()=>{
+ const css=source('public/tabletop/phase18.css');
+ assert.doesNotMatch(css,/\.card:not\(\.hidden\)::before/);
+ assert.doesNotMatch(css,/\.card[^{}]*::before\s*\{[^}]*\binset:/);
+ // Keep the actual card-edge styling and any selected-card outline.
+ assert.match(css,/\.card\.red\{border-color:var\(--red\)/);
+ assert.match(source('public/styles.css'),/\.card\{[^}]*border:2px solid/);
+ assert.match(source('public/tabletop/static-tabletop.css'),/\.card\.selected/);
+});
