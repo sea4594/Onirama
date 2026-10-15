@@ -1,6 +1,7 @@
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {readFileSync,writeFileSync,existsSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
+const APP_VERSION=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).version;
 import {join,extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {newGame,act,viewFor,assertConserved} from '../engine/game.js';
@@ -87,7 +88,7 @@ async function body(req){
 }
 function endpoint(req,res,url,data){
   const segments=url.pathname.split('/').filter(Boolean);
-  if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{ok:true,version:'0.11.0'});
+  if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{ok:true,version:APP_VERSION});
   if(req.method==='GET'&&url.pathname==='/api/catalog')return json(res,200,{expansions:EXPANSION_CATALOG});
   if(req.method==='POST'&&url.pathname==='/api/solo')return json(res,201,create('solo',data.name,data.config));
   if(req.method==='POST'&&url.pathname==='/api/rooms')return json(res,201,create('coop',data.name,data.config));

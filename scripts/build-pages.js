@@ -12,6 +12,18 @@ const dest=resolve(process.argv[2]||'site');
 rmSync(dest,{recursive:true,force:true});mkdirSync(dest,{recursive:true});
 cpSync('public',dest,{recursive:true});cpSync('engine',join(dest,'engine'),{recursive:true});
 writeFileSync(join(dest,'runtime-config.js'),configured);
+// A single ordered CSS bundle retains the source cascade exactly while
+// avoiding dozens of serial stylesheet requests on mobile connections.
+const sourceHTML=readFileSync('public/index.html','utf8');
+const cssLink=/<link rel="stylesheet" href="\.\/([^"?#]+\.css)">/g;
+const cssPaths=[...sourceHTML.matchAll(cssLink)].map(m=>m[1]);
+if(cssPaths.length<12||new Set(cssPaths).size!==cssPaths.length)throw Error('Invalid stylesheet source list');
+const bundle=cssPaths.map(name=>`/* ${name} */\n`+readFileSync(join('public',name),'utf8')).join('\n');
+writeFileSync(join(dest,'onirama-styles.css'),bundle);
+let stylesSeen=0;
+const packedHTML=sourceHTML.replace(cssLink,()=>stylesSeen++===0?'<link rel="stylesheet" href="./onirama-styles.css">':'');
+writeFileSync(join(dest,'index.html'),packedHTML);
+
 let commit=process.env.GITHUB_SHA||'';
 if(!commit){try{commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{}}
 // Never display a fabricated identifier when the checkout hash is unavailable.

@@ -64,5 +64,17 @@ const shapes=Object.freeze({
  'redraw-hand-art':'<rect x="3" y="7" width="8" height="12" rx="1"/><rect x="9" y="5" width="8" height="12" rx="1"/><path d="M18 7a6 6 0 0 1 2 9m0-4v4h-4M17 21a6 6 0 0 1-4-1"/>',
  'return-nightmare-art':'<path d="m4 8 4-4 4 4M8 4v11q0 5 5 5h7"/><path d="M12 11 15 7l3 4-1 4h-5Z"/>',
 });
-export function icon(name){const shape=shapes[name]||shapes.diamond;return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">${shape}</svg>`;}
-export const cardSymbol=name=>icon(({glyph:'glyph-art',lostDream:'lost-dream-art',nightmare:'nightmare-art',hidden:'diamond',sphinx:'sphinx-art',diver:'diver-art',confusion:'confusion-art',deadEnd:'dead-end-art',happyDream:'happy-dream-art',denizen:'leaf',door:'portal',rainbow:'chromatic-art'}[name])||name);
+// Purpose-built miniature silhouettes avoid dense detail vanishing on 28–40px cards.
+const compactShapes=Object.freeze({
+ 'nightmare-art':'<path d="M4 5 9 8l3-4 3 4 5-3-2 9-6 7-6-7-2-9Z"/><path d="m8 13 2 1m6-1-2 1M10 18h4"/>',
+ 'sphinx-art':'<path d="M3 20h18M5 18v-5l6-3 7 3 2 5H5Z"/><path d="M12 10V6l3-3 4 2v6M9 14v6M17 15v5"/>',
+ 'diver-art':'<circle cx="13" cy="5" r="3"/><path d="m11 9-4 5 6 3 2 5M7 14l-4 3m10 0 6-4"/>',
+ 'confusion-art':'<path d="M8 9a4 4 0 1 1 6 3c-2 1-2 3-2 4M12 20h.01"/><path d="M3 12a9 9 0 0 1 7-9M3 7v5h5M21 12a9 9 0 0 1-7 9m7-4v-5h-5"/>',
+ 'squirrel-art':'<path d="M8 20c-5-3-5-8-1-10 2-1 4 1 5 3-1-5 1-10 5-9 4 1 3 7 0 9-1 4-4 7-9 7Z"/><path d="M16 9h.01M11 20v2"/>',
+ 'harpoon-art':'<path d="M4 21 19 3m-6 0h6v6M19 3l-1 6"/>',
+ 'hammer-art':'<path d="M3 13q6-8 12-4l6-5-1 7-5 3q-4 5-11 2Z"/><path d="m7 14 3 7M17 10h.01"/>',
+ 'keeper-art':'<rect x="4" y="8" width="16" height="13" rx="1"/><path d="M3 8h18V5H3v3ZM9 14h6v4H9z"/>',
+ 'cyclobot-art':'<rect x="4" y="6" width="16" height="13" rx="3"/><circle cx="9" cy="11" r="1.5"/><circle cx="15" cy="11" r="1.5"/><path d="M9 16h6M12 6V3"/>'
+});
+export function icon(name,{compact=false}={}){const shape=(compact?compactShapes[name]:null)||shapes[name]||shapes.diamond;return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">${shape}</svg>`;}
+export const cardSymbol=(name,{compact=false}={})=>icon(({glyph:'glyph-art',lostDream:'lost-dream-art',nightmare:'nightmare-art',hidden:'diamond',sphinx:'sphinx-art',diver:'diver-art',confusion:'confusion-art',deadEnd:'dead-end-art',happyDream:'happy-dream-art',denizen:'leaf',door:'portal',rainbow:'chromatic-art'}[name])||name,{compact});

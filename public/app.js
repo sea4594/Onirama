@@ -7,7 +7,7 @@ import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
-import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,createIncantationClaim,moveOrderedCardToGap} from './tabletop/interactions.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
@@ -183,12 +183,6 @@ function pinnedSetupAction(){
  }
  return '';
 }
-function joinPage(){return `<div class="route shell shell-join"><h1 class="shell-title">Join room</h1><section class="shell-card shell-room"><label class="visually-hidden" for="roomcode">Room code</label><input id="roomcode" class="inline-input shell-code-input" placeholder="ROOM CODE" aria-label="Room code" maxlength="8" autocapitalize="characters" spellcheck="false" autocomplete="off" value="${escape(roomCodeFromHash())}"><label class="visually-hidden" for="joinname">Your name</label><input id="joinname" class="inline-input" value="${escape(partnerDisplayName)}" placeholder="Your name" maxlength="40">${btn('Join room','join','primary shell-wide')}</section></div>`;}
-function lobby(room){return `<div class="route shell shell-lobby"><div class="shell-title-line"><h1 class="shell-title">Room</h1><span class="shell-status">${room.connected?.filter(Boolean).length||0}/2</span></div>
- <section class="shell-card shell-invite"><label class="visually-hidden" for="roomcodeDisplay">Room code</label><input id="roomcodeDisplay" class="shell-room-code" readonly value="${escape(room.code)}" aria-label="Room code"><div class="shell-invite-buttons">${btn('Copy code','copyCode')}<button type="button" data-action="copyInvite" aria-label="Copy invite link">Copy link</button></div><label class="visually-hidden" for="inviteUrl">Invite link</label><input id="inviteUrl" class="inline-input shell-invite-url" readonly aria-label="Invite link" value="${escape(inviteLink(room.code))}"></section>
- <section class="shell-card shell-lobby-players" aria-label="Player readiness">${[0,1].map((i)=>`<div class="shell-seat ${room.ready[i]?'ready':''}"><span class="shell-seat-icon" aria-hidden="true">${icon(room.ready[i]?'check':room.connected[i]?'dot':'circle')}</span><span>Player ${i+1}</span><small>${room.ready[i]?'Ready':room.connected[i]?'Joined':'Waiting'}</small></div>`).join('')}</section>
- <div class="shell-start">${btn(room.ready[room.seat]?'Not ready':'Ready','ready','primary shell-big')}${room.host?`<button type="button" data-action="start" class="shell-big" ${room.ready.every(Boolean)&&room.connected[1]?'':'disabled title="Both players must be ready"'}>Start</button>`:''}</div>
- ${btn('Leave room','leaveRoom','shell-text-button')} </div>`;}
 function pagedCards(items,renderOne,pageSize=3){
  const pages=Math.max(1,Math.ceil(items.length/pageSize)),page=Math.max(0,Math.min(choicePage,pages-1));
  const cards=items.slice(page*pageSize,(page+1)*pageSize);
@@ -334,6 +328,7 @@ function fitGameTabletop(){
   const viewport=app.querySelector?.('.tt6-table-slot'),table=viewport?.querySelector?.('.tt2-root');
   return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
 }
+let lastRenderedMarkup=null;
 function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousLabyrinths=new Map([...(app.querySelectorAll?.('[data-tabletop-scroll]')||[])].map(el=>[el.dataset.tabletopScroll,{count:el.querySelectorAll('.card.tiny').length,left:el.scrollLeft}]));
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
@@ -359,7 +354,8 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
-  app.innerHTML=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop',host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  if(markup!==lastRenderedMarkup){app.innerHTML=markup;lastRenderedMarkup=markup;}
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
@@ -587,7 +583,6 @@ function installTabletopController(){
       return action({type,id});
     }
   });
-  if(typeof createIncantationClaim==='function')createIncantationClaim({root:app,onClaim:id=>{if(state?.game?.pending?.type==='incantation'&&incantationStage==='claim'){effectPick=id;effectOrder=state.game.pending.cards.filter(c=>c.id!==id).map(c=>c.id);incantationStage='order';render();}}});
   createDecisionReorder({root:app,
     canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&state.game.pending.cards.some(c=>c.kind==='door')),
     onDiscard:id=>{if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
@@ -637,7 +632,6 @@ app.addEventListener('keydown',e=>{
   }
   // Expansion tiles are intentionally not nested buttons (some contain an
   // independent action button). Make their button roles operable from a keyboard.
-  if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('[data-tt-incantation-drop][role="button"]')){e.preventDefault();handle('incantationClaim');return;}
   if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.tt5-tile[role="button"][data-action]')){
     if(!gameOverlay){e.preventDefault();handle(e.target.dataset.action);}return;
   }

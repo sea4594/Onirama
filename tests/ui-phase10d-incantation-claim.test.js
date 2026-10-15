@@ -55,6 +55,6 @@ test('Combined cooperative Doors remain shared while Incantation claims are made
 test('UI action stage disallows ordering before claim/pass; mouse/touch drop only accepts revealed Door',()=>{
  const app=src('public/app.js'),gestures=src('public/tabletop/interactions.js'),styles=src('public/tabletop/phase10d.css');
  assert.match(app,/p.type==='incantation'/);assert.doesNotMatch(app,/incantationPass/);assert.doesNotMatch(app,/incantationBack/);assert.match(app,/incantationClaim:/);
- assert.match(gestures,/createIncantationClaim/);assert.match(gestures,/data-tt-incantation-card/);assert.match(gestures,/data-tt-incantation-drop/);
+ assert.doesNotMatch(gestures,/createIncantationClaim/);assert.doesNotMatch(app,/createIncantationClaim/);
  assert.match(styles,/\.tt12-claim-zone/);assert.match(styles,/outline-offset:-3px/);
 });

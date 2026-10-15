@@ -16,7 +16,7 @@ async function stop({server,directory}){server.kill('SIGTERM');await Promise.rac
 test('Deployed multiplayer acceptance script: create/join via code, Pages CORS, ready/start, privacy and stale action',async()=>{
  const instance=await boot();try{
   const output=execFileSync(process.execPath,['scripts/verify-backend.js',instance.origin],{encoding:'utf8',timeout:25000});
-  assert.match(output,/PASS: health v0\.11\.0/);assert.match(output,/two seats/);
+  assert.match(output,/PASS: health v0\.22\.0/);assert.match(output,/two seats/);
   const data=JSON.parse(readFileSync(join(instance.directory,'sessions.json'),'utf8'));assert.equal(Object.keys(data).length,1);
   assert.equal(Object.values(data)[0].game.phase,'draft');
  }finally{await stop(instance);}
@@ -37,7 +37,7 @@ test('Invalid invite code is rejected; server refuses room hijacking and start w
 });
 test('Browser invitation routes contain only code, no bearer; UI has connection diagnostic and accessible mobile controls',()=>{
  const js=readFileSync('public/app.js','utf8'),html=readFileSync('public/index.html','utf8'),css=readFileSync('public/styles.css','utf8');
- assert.match(js,/join\\\?code=/);assert.match(js,/const inviteLink=code/);assert.match(js,/Copy invite link/);assert.match(js,/roomCodeFromHash\(\)/);
+ assert.match(js,/join\\\?code=/);assert.match(js,/const inviteLink=code/);assert.match(js,/Copy code/);assert.match(js,/roomCodeFromHash\(\)/);
  assert.match(js,/cancelStream/);assert.match(js,/Test multiplayer connection/);assert.match(readFileSync('public/tabletop/coop-board.js','utf8'),/Connection interrupted/);
  assert.ok(!/inviteLink.*token/.test(js));assert.match(html,/viewport/);assert.match(css,/@media\(max-width:600px\)/);
 });

@@ -43,8 +43,9 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }
 export function renderInventoryTrack(count,total){
- const slots=Math.max(0,Math.min(300,Number(total)||0)),filled=Math.max(0,Math.min(slots,Number(count)||0));
- return `<div class="tt10-count-track" role="img" aria-label="${filled} of ${slots} remaining" style="--tt10-slots:${Math.max(1,slots)}">${Array.from({length:slots},(_,i)=>`<i aria-hidden="true" class="${i<filled?'tt10-count-filled':'tt10-count-empty'}"></i>`).join('')}</div>`;
+ const totalCards=Math.max(0,Number(total)||0),remaining=Math.max(0,Math.min(totalCards,Number(count)||0));
+ const slots=Math.min(48,Math.ceil(totalCards)),filled=slots?Math.round(slots*remaining/Math.max(1,totalCards)):0;
+ return `<div class="tt10-count-track" role="img" aria-label="${remaining} of ${totalCards} remaining" style="--tt10-slots:${Math.max(1,slots)}">${Array.from({length:slots},(_,i)=>`<i aria-hidden="true" class="${i<filled?'tt10-count-filled':'tt10-count-empty'}"></i>`).join('')}</div>`;
 }
 function inventoryPreview(row){
  const [,kind='',color='',symbol='',ability='',number='']=row.key.split(':');
@@ -67,7 +68,7 @@ export function renderPileInspector(game,pile,seat=null){
  const titles={deck:'Draw pile',discard:'Discard pile',limbo:'Limbo pile'};
  const sections=[['base','Base game'],['glyphs','Glyphs'],['dreamcatchers','Dreamcatchers'],['towers','Towers'],['premonitions','Happy Dreams'],['crossroads','Crossroads'],['oniverse','Oniverse'],['sphinx','Sphinx / Diver / Confusion']];
  const removed=pile==='discard'?(game.expansion?.book?.removed||[]):[];
- const count=inventory.reduce((n,r)=>n+r[pile],0)+removed.length;
+ const count=inventory.reduce((n,r)=>n+r[pile],0);
  const visible=Array.isArray(game[pile])&&pile!=='deck'?`<section class="tt6-inventory-group"><h3>${pile==='discard'?'Recent discards':'Cards in Limbo'}</h3><div class="${pile==='discard'?'tt8-discard-history':'tt9-stack-details'}" ${pile==='discard'?'tabindex="0" role="region" aria-label="Discard history, oldest first, newest at right"':''}>${game[pile].map((c,i)=>pile==='discard'?`<span class="tt8-discard-item" style="z-index:${i+1}">${renderCard(c,{tiny:true})}</span>`:renderCard(c,{tiny:true})).join('')||'<span>Empty</span>'}</div></section>`:'';
  const removedSection=removed.length?`<section class="tt6-inventory-group tt-removed-group"><h3>Removed from the game · ${removed.length}</h3><p>These cards paid for Book of Steps spells and cannot be drawn again.</p><div class="tt9-stack-details">${removed.map(c=>renderCard(c,{tiny:true})).join('')}</div></section>`:'';
  const body=pile==='limbo'?visible:visible+removedSection+sections.map(([key,name])=>{const entries=inventory.filter(i=>i.section===key);if(!entries.length)return '';return `<section class="tt6-inventory-group"><h3>${escape(name)}</h3><div class="tt6-inventory-rows">${entries.map(i=>`<div class="tt6-inventory-line ${i[pile]===0?'tt9-empty-count':''}" aria-label="${escape(i.label)}: ${i[pile]} of ${i.total}"><span class="tt7-inventory-card">${inventoryPreview(i)}</span>${renderInventoryTrack(i[pile],i.total)}</div>`).join('')}</div></section>`;}).join('');

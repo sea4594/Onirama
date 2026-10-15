@@ -1,0 +1,10 @@
+/* Card-face system: tokens shared by front, reverse, preview and gesture ghost. */
+.game-viewport{--card-ratio:0.704225;--card-icon-safe:70%}
+.card,.tt6-card-back,.tt2-deck-back,.tt14-catcher-back,.tt14-reserve-back{box-sizing:border-box;aspect-ratio:var(--card-ratio,0.704225)}
+.card .symbol,.card .symbol .ui-icon{max-width:100%;max-height:100%;min-width:0;min-height:0}
+.card .symbol .ui-icon{overflow:hidden!important;stroke-linecap:round;stroke-linejoin:round}
+.card.tiny .symbol{max-width:var(--card-icon-safe);max-height:62%}
+.card.tiny.card-kind-denizen .symbol{max-height:68%;width:69%!important;margin:0 auto}
+.card.tiny.card-kind-denizen .card-label{display:none!important}
+.card:not(.tiny).card-kind-denizen .card-label{max-width:92%;overflow-wrap:anywhere}
+@media (prefers-reduced-motion:reduce){.card.selected{transition:none!important}}

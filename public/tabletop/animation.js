@@ -1,3 +1,4 @@
+import {CARD_MOTION,catcherTransferCounts} from './animation-timing.js';
 import {renderCard} from './cards.js';
 /* Phase 7: presentation-only transitions from successive *public game views*.
    Never mutate the engine, issue actions, read the unrevealed deck, or replay
@@ -55,6 +56,7 @@ export function planGameTransitions(previous,next){
     turn:previous.turn!==next.turn||previous.active!==next.active,
     phase:previous.phase!==next.phase||previous.pending?.type!==next.pending?.type,
     finished:previous.status==='active'&&next.status!=='active',
+    catcherCaptured:catcherTransferCounts(previous,next),
     draft:previous.phase==='draft'||next.phase==='draft'
   };
 }
@@ -76,7 +78,7 @@ function pile(root,name){
 }
 function animateFlight(template,from,to,target,delay,active){
   if(!rectOK(from)||!rectOK(to))return;
-  const ghost=template.cloneNode(true);ghost.removeAttribute('id');ghost.removeAttribute('data-pick');ghost.removeAttribute('data-action');
+  const ghost=template.cloneNode(true);ghost.removeAttribute('id');ghost.removeAttribute('data-pick');ghost.removeAttribute('data-action');ghost.querySelectorAll?.('.tt10-draw-count,.tt2-pile-label,.tt6-pile-label').forEach(el=>el.remove());
   ghost.setAttribute('aria-hidden','true');ghost.setAttribute('tabindex','-1');
   ghost.classList.add('tt8-flying-card');
   Object.assign(ghost.style,{position:'fixed',left:`${to.left}px`,top:`${to.top}px`,width:`${to.width}px`,height:`${to.height}px`,margin:'0',zIndex:'2147483600',pointerEvents:'none'});
@@ -90,7 +92,7 @@ function animateFlight(template,from,to,target,delay,active){
   const motion=ghost.animate([
     {transform:`translate(${source.x-dest.x}px,${source.y-dest.y}px) scale(${sx},${sy}) rotate(-4deg)`,opacity:.85},
     {transform:'translate(0,0) scale(1,1) rotate(0)',opacity:1}
-  ],{duration:560,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
+  ],{duration:CARD_MOTION.move,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
   motion.finished.catch(()=>{}).then(cleanup);
 }
 
@@ -114,7 +116,7 @@ function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null}
  const cleanup=()=>{if(finished)return;finished=true;overlay.remove();if(target)target.style.removeProperty('visibility');const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
  cleanups.push(cleanup);
  if(!overlay.animate){cleanup();return;}
- const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:1450,delay,easing:'ease-in-out',fill:'both'});
+ const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:CARD_MOTION.reveal,delay,easing:'ease-in-out',fill:'both'});
  motion.finished.catch(()=>{}).then(cleanup);
 }
 function premonitionNode(root,id){
@@ -131,7 +133,7 @@ function shuffleOverlay(back,cleanups,delay=0){
  document.body.appendChild(ghost);
  let timer;
  const cleanup=()=>{clearTimeout(timer);ghost.remove();const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
- cleanups.push(cleanup);timer=setTimeout(cleanup,delay+700);
+ cleanups.push(cleanup);timer=setTimeout(cleanup,delay+CARD_MOTION.shuffle);
 }
 
 export function createTabletopAnimator({root}){
@@ -200,10 +202,28 @@ export function createTabletopAnimator({root}){
         if(!rectOK(dest))continue;
         for(const id of list){const a=old.get(id);if(a)flies.push([a.template,a.r,dest,null]);}
       }
+      // Some Limbo cards are not individually rendered in the compact fan.
+      // Still show their capture using a generic, face-down card: no hidden
+      // identity or deck information may be inferred from this animation.
+      const captureSource=rect(pile(root,'limbo'))||rect(pile(root,'deck'));
+      const genericBack=pile(root,'deck');
+      if(rectOK(captureSource)&&genericBack){
+        for(const transfer of (plan.catcherCaptured||[])){
+          const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
+          const destination=rect(catcher);
+          if(!rectOK(destination))continue;
+          // Explicit movement already animates a recognizable, visible card;
+          // avoid an extra generic duplicate for that specific transfer.
+          const movedIds=transfer.ids;
+          const alreadyFlying=movedIds.filter(id=>flies.some(([template])=>template?.dataset?.ttMotionId===id)).length;
+          for(let i=0;i<Math.min(3,Math.max(0,transfer.count-alreadyFlying));i++)
+            flies.push([genericBack,captureSource,destination,null]);
+        }
+      }
       // A single accepted engine action can change many zones. Bound the
       // animation workload so dense expansion combinations stay responsive.
-      flies.slice(0,9).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*75,280),cleanups));
-      const flash=(el,cls,ms=600)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
+      flies.slice(0,9).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups));
+      const flash=(el,cls,ms=CARD_MOTION.highlight)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
       if(plan.draw)flash(pile(root,'deck'),'tt8-draw-cue');
       if(plan.shuffle){
         const back=pile(root,'deck'),origin=rect(pile(root,'limbo'));
@@ -214,7 +234,7 @@ export function createTabletopAnimator({root}){
           animateFlight(back,origin,deck,null,110,cleanups);
         }
         shuffleOverlay(pile(root,'deck'),cleanups,plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
-        flash(pile(root,'deck'),'tt8-shuffle-cue',750);
+        flash(pile(root,'deck'),'tt8-shuffle-cue',CARD_MOTION.shuffle);
       }
       if(plan.turn||plan.phase||plan.finished)flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');
       if(plan.turn)flash(root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top'),'tt8-turn-cue');

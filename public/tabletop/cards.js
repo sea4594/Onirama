@@ -8,7 +8,7 @@ export function cardDescription(c){
   return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left||'blank'}/${c.right||'blank'}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?(DENIZEN_NAMES[c.ability]||c.ability):c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
 }
 export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,interactive=false,highlight=false}={}){
-  const symbol=cardSymbol(c.kind==='location'?c.symbol:c.kind==='denizen'?DENIZEN_ART[c.ability]||'leaf':c.kind);
+  const symbol=cardSymbol(c.kind==='location'?c.symbol:c.kind==='denizen'?DENIZEN_ART[c.ability]||'leaf':c.kind,{compact:tiny});
   const text=htmlEscape(cardDescription(c));
   const faceName=htmlEscape(c.kind==='denizen'&&c.ability==='keeper'?'Treasure Keeper':cardDescription(c));
   const classes=`card ${c.color||c.kind} card-kind-${c.kind}${c.kind==='door'&&c.color==='wild'?' card-oniverse':''}${tiny?' tiny':''}${selectedId===c.id?' selected':''}${highlight?' tt7-eligible':''}`;
