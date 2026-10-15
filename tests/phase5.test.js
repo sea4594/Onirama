@@ -88,6 +88,7 @@ const bot=s=>{
   const a=actions.find(x=>x.type==='play')||actions.find(x=>x.type==='discard')||actions[0];
   if(!a)throw Error('No action available');return a.type==='playTower'?{...a,side:'right'}:a;
  }
+ if(p.type==='coopSwap')return {type:'coopSwap',option:'pass'};
  if(p.type==='doorSearch')return {type:'doorSearch',option:'skip'};
  if(p.type==='door')return {type:'chooseDoor',keyId:'limbo'};
  if(p.type==='nightmare')return {type:'nightmare',option:'hand'};

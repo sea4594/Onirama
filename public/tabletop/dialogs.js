@@ -3,19 +3,19 @@ import {icon,cardSymbol} from '../icons.js';
 export const PENDING_DECISIONS = Object.freeze([
   'sphinxName','sphinxResolve','diver','confusion','mirrorReward',
   'doorSearch','door','nightmare','prophecy','happyDream','happyFetch','rally',
-  'premonitionPick','premonitionDoor','incantation','towerLook','spellPeek',
+  'premonitionPick','premonitionDoor','incantation','incantationOrder','towerLook','spellPeek',
   'happyPeek','denizenPeek','catchChoose','catchOverload','towerPenalty','moduleDecision'
 ]);
-export const CONTEXT_DIALOGS = Object.freeze(['mirrorPair','cyclobot','coopDiscard','spellbook']);
+export const CONTEXT_DIALOGS = Object.freeze(['mirrorPair','cyclobot','spellbook']);
 const LABELS={
   sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',
   mirrorReward:'Mirror',doorSearch:'Door search',door:'Door',nightmare:'Nightmare',
   prophecy:'Prophecy',happyDream:'Happy Dream',happyFetch:'Card search',rally:'Denizen',
   premonitionPick:'Dark Premonition',premonitionDoor:'Dark Premonition',
-  incantation:'Incantation',towerLook:'Tower inspection',spellPeek:'Spell',
+  incantation:'Incantation',incantationOrder:'Incantation',coopSwap:'Swap cards',towerLook:'Tower inspection',spellPeek:'Spell',
   happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',
   catchOverload:'Dreamcatcher',towerPenalty:'Tower',moduleDecision:'Effect',
-  mirrorPair:'Mirror pair',cyclobot:'Cyclobot',coopDiscard:'Discard',spellbook:'Spellbook'
+  mirrorPair:'Mirror pair',cyclobot:'Cyclobot',spellbook:'Spellbook'
 };
 export function decisionDialogKey(game,seat){
   if(game?.status!=='active'||game.phase!=='decision'||seat!==game.active||!game.pending)return null;

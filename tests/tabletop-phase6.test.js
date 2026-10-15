@@ -22,7 +22,7 @@ test('privacy: opponent faces and action IDs never render, while both Labyrinths
   for(const seat of [0,1]){const g=seat===0?g0:g1,html=renderCooperativeTabletop(g,{seat});
     assert.equal((html.match(/class="tt6-card-back"/g)||[]).length,3);
     assert.equal((html.match(/data-tt6-player=/g)||[]).length,2);
-    assert.equal((html.match(/tt6-player-doors/g)||[]).length,2);
+    assert.equal((html.match(/tt20-door-tracker/g)||[]).length,2);assert.equal((html.match(/tt20-team-doors/g)||[]).length,1);
     assert.equal((html.match(/tt6-player-labyrinth/g)||[]).length,2);
     for(const c of game.players[1-seat].hand){assert.ok(!html.includes(`data-pick="${c.id}"`));assert.ok(!html.includes(`data-tt-card="${c.id}"`));}
     for(const c of g.shared)assert.ok(html.includes(`${c.color} ${c.symbol}`),'public shared resource face visible');
@@ -68,7 +68,7 @@ test('both co-op seats can complete drafts, play actions, and conserve all card 
 });
 test('Firebase source, existing command dispatcher, dialog route and coop CSS remain part of build',()=>{
   const app=readFileSync('public/app.js','utf8');assert.match(app,/renderCooperativeTabletop/);assert.match(app,/cooperativeLegalTargets/);assert.match(app,/firebase\.firebaseAction/);
-  assert.match(app,/swapDraft=\{cardId:id\}/);assert.match(app,/gameWorkspace\(state\.game,state\.room\)/);
+  assert.match(app,/type:'discard',id/);assert.match(app,/type:'coopSwap'/);assert.match(app,/gameWorkspace\(state\.game,state\.room\)/);
   assert.match(readFileSync('public/index.html','utf8'),/tabletop\/coop\.css/);
   assert.match(readFileSync('public/tabletop/coop.css','utf8'),/orientation:landscape/);
 });

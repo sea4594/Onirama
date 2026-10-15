@@ -14,7 +14,7 @@ const setup=(kind='location',mode='solo')=>{
  if(mode==='coop')while(s.phase==='draft')s=act(s,{type:'draft',id:s.draft[0].id});
  const i=s.deck.findIndex(c=>c.kind===kind);assert(i>=0);const [c]=s.deck.splice(i,1);s.deck.push(c);
  const discard=s.players[s.active].hand.find(x=>x.kind==='location'&&x.symbol!=='key');assert(discard);
- s=act(s,{type:'discard',id:discard.id});assert.equal(s.pending.type,'drawReady');return {s,c};
+ s=act(s,{type:'discard',id:discard.id});if(s.pending?.type==='coopSwap')s=act(s,{type:'coopSwap',option:'pass'});assert.equal(s.pending.type,'drawReady');return {s,c};
 };
 test('ordinary draw and non-action Door/Lost Dream move automatically without confirmation',()=>{
  for(const kind of ['location','door']){

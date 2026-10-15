@@ -9,7 +9,7 @@ export const SHARED_ZONES=Object.freeze(['draw','discard','limbo','game-status']
 export const PER_PLAYER_ZONES=Object.freeze(['labyrinth','doors','hand']);
 export const MULTIPLAYER_ZONES=Object.freeze(['shared-hand','draft']);
 export const PENDING_DECISIONS=Object.freeze([
-  'doorSearch','door','nightmare','prophecy','incantation','towerLook','towerPenalty',
+  'doorSearch','door','nightmare','prophecy','incantation','incantationOrder','towerLook','towerPenalty',
   'catchChoose','catchOverload','spellPeek','moduleDecision','happyDream',
   'happyPeek','happyFetch','rally','premonitionPick','premonitionDoor',
   'denizenPeek','sphinxName','sphinxResolve','diver','confusion','mirrorReward'

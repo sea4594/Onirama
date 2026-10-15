@@ -14,6 +14,7 @@ const choose=(s)=>{
       const k=[...s.players[s.active].hand,...s.shared].find(x=>x.symbol==='key');
       return k?{type:'nightmare',option:'key',cardId:k.id}:{type:'nightmare',option:'reveal'};
     }
+    if(s.pending.type==='coopSwap')return {type:'coopSwap',option:'pass'};
     if(s.pending.type==='prophecy'){const cards=s.pending.cards;return {type:'prophecy',discardId:cards[0].id,order:cards.slice(1).map(c=>c.id)};}
     throw Error('Unexpected decision: '+s.pending.type);
   }

@@ -32,7 +32,7 @@ test('co-op physical order: doors split, Labyrinth then owner-specific Denizens,
   const g=viewFor(s,seat),html=renderCooperativeTabletop(g,{seat});
   const doors=html.indexOf('tt17-coop-doors'),lab=html.indexOf('tt17-coop-labyrinths'),den=html.indexOf('tt17-coop-denizens'),hands=html.indexOf('tt17-coop-hands');
   assert.ok(doors>=0&&doors<lab&&lab<den&&den<hands);
-  assert.equal((html.match(/class="tt17-player-doors/g)||[]).length,2);
+  assert.equal((html.match(/class="tt17-player-doors/g)||[]).length,1);assert.equal((html.match(/tt20-door-tracker/g)||[]).length,2);
   assert.equal((html.match(/class="tt17-player-labyrinth/g)||[]).length,2);
   const middle=html.slice(hands);const sharedIndex=middle.indexOf('tt6-shared-block');assert.ok(sharedIndex>middle.indexOf('tt17-')&&sharedIndex<middle.lastIndexOf('tt17-'));
   assert.ok(html.includes('data-tt-zone="denizens"'));assert.ok(html.includes(`data-tt6-player="1"`));

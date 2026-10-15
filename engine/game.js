@@ -124,7 +124,7 @@ function isVictory(s){
  return true;
 }
 function checkWin(s){if(s.status==='active'&&isVictory(s)){s.status='won';s.phase='ended';s.pending=null;s.interrupts=[];note(s,'All objectives completed. Victory!');return true;}return false;}
-function acquireDoor(s,door,source){
+function acquireDoor(s,door,source,{deferVictory=false}={}){
  if(has(s,'book')){const g=nextGoal(s);if(!g||g.color!==door.color){s.limbo.push(door);note(s,`The ${door.color} Door did not match the next Goal and entered Limbo.`);return false;}
    g.done=true;g.doorId=door.id;
  }
@@ -134,7 +134,7 @@ function acquireDoor(s,door,source){
    if(has(s,'book')){const g=goals(s).find(x=>x.doorId===door.id);g.done=false;g.doorId=null;}
    s.limbo.push(door);note(s,`Duplicate cooperative ${door.color} Door entered Limbo.`);return false;
  }
- own(s).doors.push(door);note(s,`${own(s).name} unlocked a ${door.color} Door (${source}).`);event(s,'doorAcquired',{doorId:door.id,color:door.color,source,player:s.active});checkWin(s);return true;
+ own(s).doors.push(door);note(s,`${own(s).name} unlocked a ${door.color} Door (${source}).`);event(s,'doorAcquired',{doorId:door.id,color:door.color,source,player:s.active});if(!deferVictory)checkWin(s);return true;
 }
 function loseDoor(s,id){const p=own(s),idx=p.doors.findIndex(c=>c.id===id);need(idx!==-1,'Select one of your collected Doors');const door=p.doors.splice(idx,1)[0];s.limbo.push(door);
  if(has(s,'book')){const g=goals(s).find(x=>x.doorId===door.id);if(g){g.done=false;g.doorId=null;}}
@@ -289,7 +289,7 @@ export function legalActions(s){if(s.status!=='active')return [];
  const bonus=has(s,'book')&&s.discard.length>=Math.min(...Object.values(spellCosts(s)))?[{type:'cast',spells:Object.entries(spellCosts(s)).filter(([spell,cost])=>s.discard.length>=cost&&(spell!=='punishment'||s.pending?.type==='nightmare')).map(([spell])=>spell)}]:[];
  if(s.phase==='turnComplete')return [{type:'endTurn'},...bonus];
  if(s.phase==='decision'){
-  const p=s.pending;const list={door:{type:'door',choices:(p.keys||[]).map(x=>x.id).concat('limbo')},doorSearch:{type:'doorSearch',choices:doorSearchTargets(s,p.color)},nightmare:{type:'nightmare',choices:['key','door','reveal','hand']},prophecy:{type:'prophecy'},incantation:{type:'incantation'},towerLook:{type:'towerLook'},towerPenalty:{type:'towerPenalty'},catchChoose:{type:'catchChoose'},catchOverload:{type:'catchOverload'},spellPeek:{type:'spellPeek'},moduleDecision:{type:'moduleDecision'},happyDream:{type:'happyDream'},happyPeek:{type:'happyPeek'},happyFetch:{type:'happyFetch'},rally:{type:'rally'},premonitionPick:{type:'premonitionPick'},premonitionDoor:{type:'premonitionDoor'},denizenPeek:{type:'denizenPeek'},sphinxName:{type:'sphinxName'},sphinxResolve:{type:'sphinxResolve'},diver:{type:'diver'},confusion:{type:'confusion'},mirrorReward:{type:'mirrorReward'}};
+  const p=s.pending;const list={door:{type:'door',choices:(p.keys||[]).map(x=>x.id).concat('limbo')},doorSearch:{type:'doorSearch',choices:doorSearchTargets(s,p.color)},nightmare:{type:'nightmare',choices:['key','door','reveal','hand']},prophecy:{type:'prophecy'},incantation:{type:'incantation'},towerLook:{type:'towerLook'},towerPenalty:{type:'towerPenalty'},catchChoose:{type:'catchChoose'},catchOverload:{type:'catchOverload'},spellPeek:{type:'spellPeek'},moduleDecision:{type:'moduleDecision'},happyDream:{type:'happyDream'},happyPeek:{type:'happyPeek'},happyFetch:{type:'happyFetch'},rally:{type:'rally'},premonitionPick:{type:'premonitionPick'},premonitionDoor:{type:'premonitionDoor'},denizenPeek:{type:'denizenPeek'},sphinxName:{type:'sphinxName'},sphinxResolve:{type:'sphinxResolve'},diver:{type:'diver'},confusion:{type:'confusion'},mirrorReward:{type:'mirrorReward'},coopSwap:{type:'coopSwap',choices:['swap','pass']},incantationOrder:{type:'incantationOrder'}};
   return [list[p.type]].filter(Boolean).concat(bonus);
  }
  if(s.phase!=='action')return [];
@@ -350,6 +350,7 @@ export function act(previous,command){
   if(command.type==='discard'){
    const f=spots(s).find(x=>x.id===command.id);need(f&&f.card.kind!=='deadEnd','Dead Ends cannot be individually discarded');const c=takeSpot(s,command.id);s.discard.push(c);note(s,`${own(s).name} discarded ${c.color} ${c.symbol||'Tower'}.`);
    if(s.mode==='coop'&&command.swapWith){const i=hand(s).findIndex(x=>x.id===command.swapWith.personal),j=s.shared.findIndex(x=>x.id===command.swapWith.shared);need(i!==-1&&j!==-1,'Swap requires personal and shared cards');[hand(s)[i],s.shared[j]]=[s.shared[j],hand(s)[i]];}
+   else if(s.mode==='coop'){s.pending={type:'coopSwap',cardKind:c.kind,cardSymbol:c.symbol||'',towerNumber:c.number||0};s.phase='decision';return s;}
    if(c.kind==='tower'){s.pending={type:'towerLook',cards:takeLook(s,c.number)};s.phase='decision';return s;}
    if(c.symbol==='glyph'){s.pending={type:'incantation',cards:takeLook(s,5)};s.phase='decision';return s;}
    if(c.symbol==='key'){const cards=takeLook(s,5);if(cards.length){s.pending={type:'prophecy',cards};s.phase='decision';return s;}}
@@ -358,6 +359,17 @@ export function act(previous,command){
   throw Error('That action is unavailable');
  }
  need(s.phase==='decision'&&s.pending,'Resolve the pending decision first');const p=s.pending;
+ if(p.type==='coopSwap'){
+   need(command.type==='coopSwap'&&['pass','swap'].includes(command.option),'Choose Swap cards or Pass');
+   if(command.option==='swap'){const i=hand(s).findIndex(c=>c.id===command.personal),j=s.shared.findIndex(c=>c.id===command.shared);need(i>=0&&j>=0&&command.personal!==command.shared,'Swap one remaining private card with one shared card');[hand(s)[i],s.shared[j]]=[s.shared[j],hand(s)[i]];note(s,'Swapped a private and shared card.');}
+   s.pending=null;
+   if(p.cardKind==='tower'){s.pending={type:'towerLook',cards:takeLook(s,p.towerNumber||0)};s.phase='decision';return s;}
+   if(p.cardSymbol==='glyph'){s.pending={type:'incantation',cards:takeLook(s,5)};s.phase='decision';return s;}
+   if(p.cardSymbol==='key'){const cards=takeLook(s,5);if(cards.length){s.pending={type:'prophecy',cards};s.phase='decision';return s;}}
+   completeAction(s);return s;
+ }
+ if(p.type==='incantationOrder'){need(command.type==='incantationOrder','Rearrange the Incantation cards');putBottom(s,p.cards,command.order);s.pending=null;if(s.status==='active'){if(!checkWin(s))finishAcquisition(s);}return s;}
+
  if(p.type==='sphinxName'){need(command.type==='sphinxName'&&([...COLORS,'moon','key',...(has(s,'glyphs')?['glyph']:[])].includes(command.aspect)),'Name a permitted color or symbol');s.pending={type:'sphinxResolve',card:p.card,aspect:command.aspect,cards:takeLook(s,5,'bottom')};return s;}
  if(p.type==='sphinxResolve'){need(command.type==='sphinxResolve','Resolve the Sphinx');const match=p.cards.some(c=>matchesAspect(c,p.aspect));const ids=p.cards.map(c=>c.id);need(Array.isArray(command.order)&&command.order.length===ids.length&&new Set(command.order).size===ids.length&&command.order.every(id=>ids.includes(id)),'Return every revealed card exactly once');if(match){need(ids.includes(command.topId),'Choose any one revealed card for the top');putBottom(s,p.cards.filter(c=>c.id!==command.topId),command.order.filter(id=>id!==command.topId));s.deck.push(p.cards.find(c=>c.id===command.topId));}else putBottom(s,p.cards,command.order);s.discard.push(p.card);s.pending=null;if(!match){s.discard.push(...hand(s).splice(0));if(s.mode==='coop')s.discard.push(...s.shared.splice(0));if(fillSpecial(s))endTurn(s);}else refill(s);return s;}
  if(p.type==='diver'){need(command.type==='diver','Resolve the Diver');const ids=p.cards.map(c=>c.id);if(command.option==='continue'){need(s.deck.length>0&&p.cards.at(-1)?.kind!=='nightmare','Cannot continue after Nightmare or deck end');p.cards.push(takeLook(s,1,'bottom')[0]);return s;}need(command.option==='stop'||command.option==='nightmare','Choose stop or Nightmare');const hit=p.cards.at(-1)?.kind==='nightmare';need((hit&&command.option==='nightmare')||(!hit&&command.option==='stop'),'Must resolve a revealed Nightmare');need(Array.isArray(command.order)&&command.order.length===ids.length-(hit?0:1)&&new Set(command.order).size===command.order.length&&command.order.every(id=>ids.includes(id)&&(!hit? id!==p.cards.at(-1).id:true)),'Invalid bottom order');putBottom(s,hit?p.cards:p.cards.slice(0,-1),command.order);if(hit){s.pending={type:'nightmare',card:p.card};return s;}s.deck.push(p.cards.at(-1));s.discard.push(p.card);s.pending=null;refill(s);return s;}
@@ -424,6 +436,11 @@ export function act(previous,command){
  }
  if(p.type==='prophecy'){need(command.type==='prophecy','Complete Prophecy');need(p.cards.some(c=>c.id===command.discardId),'Select a revealed card to discard');const rest=p.cards.filter(c=>c.id!==command.discardId);need(command.order?.length===rest.length,'Invalid Prophecy order');putTop(s,rest,command.order);s.discard.push(p.cards.find(c=>c.id===command.discardId));s.pending=null;refill(s);return s;}
  if(p.type==='towerLook'){need(command.type==='towerLook','Reorder inspected cards');putTop(s,p.cards,command.order);s.pending=null;refill(s);return s;}
+ if(p.type==='incantation'&&command.type==='incantationClaim'){
+   const chosen=p.cards.find(c=>c.id===command.doorId&&c.kind==='door');need(chosen,'Select one revealed Door');
+   const rest=p.cards.filter(c=>c.id!==chosen.id);acquireDoor(s,chosen,'Incantation',{deferVictory:true});
+   s.pending={type:'incantationOrder',cards:rest};s.phase='decision';return s;
+ }
  if(p.type==='incantation'){
    need(command.type==='incantation','Resolve Incantation');const doors=p.cards.filter(c=>c.kind==='door');
    const id=command.doorId;need(doors.length?doors.some(c=>c.id===id):(id===null||id===undefined),'Choose a revealed Door (passing is allowed only if none was revealed)');

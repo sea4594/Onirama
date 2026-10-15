@@ -25,13 +25,13 @@ function pendingFixture(type,g){const c=card(g),d={id:'door-test',kind:'door',co
  door:{card:d,keys:[{id:c.id,zone:'hand'}]},nightmare:{card:{kind:'nightmare',id:'night-test'}},
  prophecy:{cards:[c]},happyDream:{},happyFetch:{options:[c]},rally:{card:{ability:'architect'},choices:[c.id]},
  premonitionPick:{options:['twoRed']},premonitionDoor:{choices:[{id:d.id,color:'red',owner:0}]},
- incantation:{cards:[c,d]},towerLook:{cards:[c]},spellPeek:{cards:[c]},happyPeek:{cards:[c]},denizenPeek:{cards:[c]},
+ incantation:{cards:[c,d]},incantationOrder:{cards:[c,d]},towerLook:{cards:[c]},spellPeek:{cards:[c]},happyPeek:{cards:[c]},denizenPeek:{cards:[c]},
  catchChoose:{choices:[0,1]},catchOverload:{choices:[0]},towerPenalty:{},moduleDecision:{id:'test',options:['alpha','beta']}
  };
  return {type,...pieces[type]};
 }
 test('every pending type renders within the mandatory temporary surface, without close/backdrop cancel',()=>{
- const ctx=uiContext(),g=fixture();assert.equal(PENDING_DECISIONS.length,23);
+ const ctx=uiContext(),g=fixture();assert.equal(PENDING_DECISIONS.length,24);
  for(const type of PENDING_DECISIONS){const pending=pendingFixture(type,g);g.phase='decision';g.pending=pending;ctx.game=g;
   const html=vm.runInContext('decision(game,true)',ctx);assert.equal(typeof html,'string',type);assert.ok(html.length>40,type);
   const wrapped=renderGameDialog({type,key:decisionDialogKey(g,0),html,mandatory:true});
@@ -40,7 +40,7 @@ test('every pending type renders within the mandatory temporary surface, without
  }
 });
 test('optional contexts have accessible close controls and are not mistaken for mandatory decisions',()=>{
- assert.deepEqual(CONTEXT_DIALOGS,['mirrorPair','cyclobot','coopDiscard','spellbook']);
+ assert.deepEqual(CONTEXT_DIALOGS,['mirrorPair','cyclobot','spellbook']);
  for(const type of CONTEXT_DIALOGS){const html=renderGameDialog({type,key:'context:'+type,html:'<section class="decision"><h2>Choice</h2></section>'});
   assert.match(html,/data-tt4-overlay="optional"/);assert.match(html,/data-action="dialogClose"/);
   assert.match(html,/aria-label="Close dialog"/);

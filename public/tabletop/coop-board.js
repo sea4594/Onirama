@@ -6,7 +6,7 @@ import {cooperativeLegalTargets} from './interactions.js';
 
 const esc=htmlEscape;
 const button=(label,command,disabled=false,title=label)=>`<button type="button" class="tt2-action" data-action="${esc(command)}" title="${esc(title)}" aria-label="${esc(title)}" ${disabled?'disabled':''}>${label}</button>`;
-const preview=c=>c.kind==='hidden'?`<div class="tt6-card-back" aria-label="Face-down private card"><span aria-hidden="true">${icon('sparkle')}</span></div>`:renderCard(c,{tiny:true});
+const preview=c=>c.kind==='hidden'?`<div class="tt6-card-back" aria-label="Face-down private card"><span aria-hidden="true">${icon('diamond')}</span></div>`:renderCard(c,{tiny:true});
 export function cooperativeTabletopModel(g,seat,{selectedId=null,canAct=true}={}){
   if(g?.mode!=='coop'||![0,1].includes(seat)||g.players?.length!==2)throw Error('Cooperative tabletop requires two players and a valid seat');
   const mine=g.players[seat],partner=g.players[1-seat],active=canAct&&g.status==='active'&&g.phase==='action'&&g.active===seat;
@@ -14,13 +14,10 @@ export function cooperativeTabletopModel(g,seat,{selectedId=null,canAct=true}={}
   const legal=selected?cooperativeLegalTargets(g,selectedId,seat):[];
   return {seat,mine,partner,shared:g.shared||[],draft:g.draft||[],selected,legal,active,isDraft:g.phase==='draft',canDraft:canAct&&g.active===seat&&g.status==='active',deckCount:g.deckCount??0,discard:g.discard||[],limbo:g.limbo||[]};
 }
-function doors(g,p,i,options){
-  const {decisionTargets,spellGoalMode,spellGoals,incantationClaim,incantationPreview}=options;
-  const claim=incantationClaim&&g.active===i;
-  return `<section class="tt17-player-doors tt6-player-doors ${claim?'tt12-claim-zone':''}" data-tt6-player="${i}" aria-label="${esc(p.name)} Doors" ${claim?'data-action="incantationClaim" data-tt-incantation-drop="doors" role="button" tabindex="0"':''}>
-    <div class="tt6-region-heading"><strong>${esc(p.name)} · Doors</strong><b>${p.doors.length}</b></div>
-    <div class="tt6-doors-row tt8-doors-row">${renderDoorSlots(p.doors,{...g.config,bookGoals:g.expansion?.book?.goals},{targets:decisionTargets,spellGoalMode,spellGoals,incantationPreview:claim?incantationPreview:null})}</div>
-  </section>`;
+function doors(g,options){
+ const all=g.players.flatMap(p=>p.doors),completed=p=>new Set(p.doors.filter(d=>d.expansion!=='oniverse').map(d=>d.color));
+ const tracker=(p,i)=>{const earned=completed(p);return `<div class="tt20-door-tracker" data-tt6-player="${i}" aria-label="${esc(p.name)} Door color progress"><small>${esc(p.name)}</small><div class="tt20-door-colors">${['red','blue','green','brown'].map(color=>`<span class="tt20-door-color ${color} ${earned.has(color)?'tt20-earned':'tt20-missing'}" aria-label="${esc(color)} ${earned.has(color)?'collected':'not yet collected'}">${icon('door')}</span>`).join('')}</div></div>`;};
+ return `<section class="tt17-player-doors tt20-team-doors" aria-label="Cooperative Doors"><div class="tt20-doors-layout">${tracker(g.players[0],0)}<div class="tt20-team-door-list"><div class="tt6-region-heading"><strong>Doors</strong><b>${all.length}</b></div><div class="tt6-doors-row tt8-doors-row">${renderDoorSlots(all,{...g.config,bookGoals:g.expansion?.book?.goals},options)}</div></div>${tracker(g.players[1],1)}</div></section>`;
 }
 function labyrinth(g,p,i,canAct){
   return `<section class="tt17-player-labyrinth tt6-player-labyrinth ${canAct&&g.active===i&&g.phase==='action'?'tt6-active-labyrinth':''}" aria-label="${esc(p.name)} Labyrinth" ${canAct&&g.active===i&&g.phase==='action'?'data-tt-drop="play"':''}>
@@ -37,8 +34,9 @@ function piles(g,m){const pile=(name,cards)=>{const visible=name==='Limbo'?cards
 export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,connected=true,decisionTargets=new Set(),decisionSelected=new Set(),spellGoalMode=false,spellGoals=[],selectedPremonition=null,premonitionChoiceMode=false,incantationClaim=false,incantationPreview=null}={}){
   const m=cooperativeTabletopModel(g,seat,{selectedId,canAct}),active=m.active&&!m.isDraft;
   const playerOptions={decisionTargets,spellGoalMode,spellGoals,incantationClaim,incantationPreview};
-  const handFor=i=>handArea(g.players[i].hand,`${g.players[i].name}'s hand`,{active:active&&i===seat,privateBacks:i!==seat,selectedId,decisionTargets,decisionSelected});
-  const shared=handArea(m.shared,'Shared',{active,selectedId,shared:true,decisionTargets,decisionSelected});
+  const swapping=g.phase==='decision'&&g.pending?.type==='coopSwap'&&canAct&&g.active===seat;
+  const handFor=i=>handArea(g.players[i].hand,`${g.players[i].name}'s hand`,{active:(active||swapping)&&i===seat,privateBacks:i!==seat,selectedId,decisionTargets:i===seat?decisionTargets:new Set(),decisionSelected:i===seat?decisionSelected:new Set()});
+  const shared=handArea(m.shared,'Shared',{active:active||swapping,selectedId,shared:true,decisionTargets,decisionSelected});
   const draft=`<section class="tt6-draft" aria-label="Public card draft"><div class="tt6-region-heading">Draft <b>${g.draft?.length||0}</b><small>${esc(g.players[g.active]?.name||'Player')}'s pick</small></div><div class="tt6-draft-cards">${m.draft.map(c=>renderCard(c,{select:m.canDraft,interactive:false})).join('')}</div></section>`;
   const selected=m.selected;
   const expansion=renderExpansionTabletop(g,{canAct:active||m.canDraft,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,excludeDenizens:true});
@@ -47,7 +45,7 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
     <div class="tt6-top"><span class="tt2-game-name">CO-OP</span><span class="tt6-turn" aria-live="polite">${g.status!=='active'?(g.status==='won'?'Victory':'Defeat'):m.isDraft?'Draft':`Turn ${g.turn} · ${esc(g.players[g.active].name)}`}</span><span class="tt6-doors-total" aria-label="${doorsAll} Doors acquired">${doorsAll} Doors</span><span class="tt6-connection ${connected?'':'tt6-offline'}" title="${connected?'Connected':'Reconnecting'}">●</span><span class="game-top-actions"><button type="button" class="game-menu-trigger" data-action="openGamePause" aria-label="Pause menu" title="Pause">${icon('pause')}</button><button type="button" class="tt2-rule-link" data-action="openGameRules" aria-label="Game rules" title="Rules">${icon('help')}</button></span></div>
     ${!connected?`<div class="tt6-disconnected" role="status">Connection interrupted ${button('Retry','retryConnection')}</div>`:''}
     <div class="tt6-grid tt17-coop-grid">
-      <div class="tt17-coop-doors">${g.players.map((p,i)=>doors(g,p,i,playerOptions)).join('')}</div>
+      <div class="tt17-coop-doors">${doors(g,playerOptions)}</div>
       <div class="tt17-coop-equipment">${piles(g,m)}${renderTowerTabletop(g,{canAct:active,decisionTargets})}${expansion}</div>
       ${m.isDraft?draft:''}
       <div class="tt17-coop-labyrinths">${g.players.map((p,i)=>labyrinth(g,p,i,active)).join('')}</div>

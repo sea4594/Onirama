@@ -23,9 +23,9 @@ test('Zones cover every standard expansion, optional Incubus, and both multiplay
  assert.ok(zonesFor({expansions:['incubus']}).includes('incubus'));
  assert.throws(()=>zonesFor({expansions:['unknown']}),/Unknown expansion/);
 });
-test('Inventory enumerates all 23 engine decision types, plus contextual operations',()=>{
+test('Inventory enumerates all 24 reference decision types, plus contextual operations',()=>{
  const source=readFileSync('public/app.js','utf8');
- assert.equal(PENDING_DECISIONS.length,23);assert.equal(new Set(PENDING_DECISIONS).size,23);
+ assert.equal(PENDING_DECISIONS.length,24);assert.equal(new Set(PENDING_DECISIONS).size,24);
  for(const kind of PENDING_DECISIONS)assert.ok(source.includes(`'${kind}'`),`Unrepresented decision ${kind}`);
  assert.ok(EXTRA_INTERACTIONS.includes('cooperative-discard-swap'));
 });

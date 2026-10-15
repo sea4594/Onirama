@@ -24,8 +24,8 @@ test('Incantation claims one Door and returns all other revealed cards in order'
 });
 test('Incantation UI requires choosing a revealed Door before reordering',()=>{
  const app=source('public/app.js');
- assert.match(app,/incantationStage==='claim'/);assert.doesNotMatch(app,/incantationPass/);
- assert.match(app,/incantationClaim/);assert.match(app,/Incantation: take one revealed Door/);assert.match(app,/Submit/);
+ assert.match(app,/p.type==='incantation'/);assert.doesNotMatch(app,/incantationPass/);
+ assert.match(app,/incantationClaim:/);assert.match(app,/Incantation: Take a door/);assert.match(app,/Incantation: Rearrange and put on bottom/);assert.doesNotMatch(app,/incantationBack/);
  assert.match(source('public/tabletop/phase10c.css'),/nth-child\(5\)/);
 });
 test('Tower icon and number are separate fixed positions',()=>{

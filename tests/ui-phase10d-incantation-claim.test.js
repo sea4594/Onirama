@@ -18,7 +18,7 @@ function setIncantation({book=false,coop=false,match=true}={}){
  const door=s.deck.splice(i,1)[0];const extra=[];
  for(let k=0;k<4;k++){const j=s.deck.findIndex(c=>c.kind==='location');assert(j>=0);extra.push(s.deck.splice(j,1)[0]);}
  s.deck.push(door,...extra);
- s=act(s,{type:'discard',id:glyph.id});assert.equal(s.pending.type,'incantation');assert.equal(s.pending.cards.length,5);
+ s=act(s,{type:'discard',id:glyph.id});if(s.pending?.type==='coopSwap')s=act(s,{type:'coopSwap',option:'pass'});assert.equal(s.pending.type,'incantation');assert.equal(s.pending.cards.length,5);
  return {s,door,goal};
 }
 test('Claimed Incantation Door moves to Doors, never Limbo, when no Steps restriction applies',()=>{
@@ -44,17 +44,17 @@ test('Cooperative claim affects active player seat without changing partner Door
  const final=act(s,{type:'incantation',doorId:door.id,order:rest});
  assert(final.players[active].doors.some(c=>c.id===door.id));assert(!final.players[1-active].doors.some(c=>c.id===door.id));assertConserved(final);
 });
-test('Only active-player Doors are a highlighted Incantation drop target, with provisional preview',()=>{
+test('Combined cooperative Doors remain shared while Incantation claims are made from the dialog',()=>{
  const {s,door}=setIncantation({coop:true});const game=viewFor(s,s.active);
- const active=renderCooperativeTabletop(game,{seat:s.active,incantationClaim:true});assert.equal((active.match(/data-tt-incantation-drop="doors"/g)||[]).length,1);
- const waiting=renderCooperativeTabletop(game,{seat:1-s.active,incantationClaim:false});assert(!waiting.includes('data-tt-incantation-drop="doors"'));
+ const active=renderCooperativeTabletop(game,{seat:s.active,incantationClaim:true});assert.equal((active.match(/tt20-door-tracker/g)||[]).length,2);
+ const waiting=renderCooperativeTabletop(game,{seat:1-s.active,incantationClaim:false});assert.match(waiting,/tt20-team-doors/);
  const solo=setIncantation().s;const soloHTML=renderSoloTabletop(viewFor(solo,0),{incantationClaim:true});assert(soloHTML.includes('data-tt-incantation-drop="doors"'));
  const rendered=renderDoorSlots([],{expansions:['glyphs']},{incantationPreview:door});assert(rendered.includes('tt12-door-preview'));
  assert.equal((rendered.match(/tt12-door-preview/g)||[]).length,1);
 });
 test('UI action stage disallows ordering before claim/pass; mouse/touch drop only accepts revealed Door',()=>{
  const app=src('public/app.js'),gestures=src('public/tabletop/interactions.js'),styles=src('public/tabletop/phase10d.css');
- assert.match(app,/incantationStage!=='order'/);assert.doesNotMatch(app,/incantationPass/);assert.match(app,/incantationBack/);assert.match(app,/incantationSelect:/);
+ assert.match(app,/p.type==='incantation'/);assert.doesNotMatch(app,/incantationPass/);assert.doesNotMatch(app,/incantationBack/);assert.match(app,/incantationClaim:/);
  assert.match(gestures,/createIncantationClaim/);assert.match(gestures,/data-tt-incantation-card/);assert.match(gestures,/data-tt-incantation-drop/);
  assert.match(styles,/\.tt12-claim-zone/);assert.match(styles,/outline-offset:-3px/);
 });

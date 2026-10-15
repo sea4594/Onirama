@@ -54,6 +54,7 @@ function botCommand(s){const p=s.pending;
   const card=[...s.players[s.active].hand,...(s.mode==='coop'?s.shared:[])].find(c=>c.kind!=='deadEnd');
   return card?{type:'discard',id:card.id}:{type:'escape'};
  }
+ if(p.type==='coopSwap')return {type:'coopSwap',option:'pass'};
  if(p.type==='door')return {type:'chooseDoor',keyId:'limbo'};
  if(p.type==='doorSearch')return {type:'doorSearch',option:'skip'};
  if(p.type==='nightmare')return {type:'nightmare',option:'hand'};

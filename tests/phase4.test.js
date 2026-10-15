@@ -7,6 +7,7 @@ const mk=(expansions=[],seed=4,mode='solo',difficulties={})=>newGame({mode,seed,
 const a=(s,c)=>{const result=act(s,c);assertConserved(result);return result;};
 function choose(s){const p=s.pending;if(s.phase==='draft')return {type:'draft',id:s.draft[0].id};
  if(s.phase==='decision'){
+  if(p.type==='coopSwap')return {type:'coopSwap',option:'pass'};
   if(p.type==='doorSearch'){const target=s.deck.find(x=>x.kind==='door'&&x.color===p.color);return {type:'doorSearch',option:target?'claim':'skip',doorId:target?.id};}
   if(p.type==='door')return {type:'chooseDoor',keyId:'limbo'};
   if(p.type==='nightmare')return {type:'nightmare',option:'reveal'};

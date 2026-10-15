@@ -43,12 +43,13 @@ export function targetState(g, cardId, seat=0){
   return {play:legal.includes('play'),discard:legal.includes('discard')};
 }
 const DRAG_THRESHOLD=8;
-export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onInspect=()=>{}}){
+export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onSwap=()=>{}, onInspect=()=>{}}){
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
   const board=()=>$('.tt2-root[data-tabletop-solo="true"],.tt6-root[data-tabletop-coop="true"]');
   const selected=()=>board()?.dataset.selectedCard||'';
   const legal=id=>isBusy()?[]:tabletopLegalTargets(getGame(),id,getSeat());
+  const swapZone=id=>{const g=getGame(),seat=getSeat();if(isBusy()||g?.mode!=='coop'||g.phase!=='decision'||g.pending?.type!=='coopSwap'||g.active!==seat)return null;return g.players[seat].hand.some(c=>c.id===id)?'personal':g.shared.some(c=>c.id===id)?'shared':null;};
   function syncTargets(id=selected()){
     const b=board();if(!b)return;
     const targets=legal(id);
@@ -93,26 +94,29 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     }
     e.preventDefault();
     ghost.style.left=`${e.clientX-pointer.offsetX}px`;ghost.style.top=`${e.clientY-pointer.offsetY}px`;
-    const next=hitTarget(e.clientX,e.clientY,pointer.cardId);
+    const hover=swapZone(pointer.cardId)?document.elementFromPoint(e.clientX,e.clientY)?.closest?.('[data-tt-card]'):null;
+    const next=hover&&swapZone(hover.dataset.ttCard)&&swapZone(hover.dataset.ttCard)!==swapZone(pointer.cardId)?hover:hitTarget(e.clientX,e.clientY,pointer.cardId);
     if(currentDrop!==next){currentDrop?.classList.remove('tt3-drop-hover');currentDrop=next;currentDrop?.classList.add('tt3-drop-hover');}
   }
   function release(e){
     if(!pointer||e.pointerId!==pointer.id)return;
     const {cardId,dragging}=pointer;
-    const drop=dragging?hitTarget(e.clientX,e.clientY,cardId):null;
+    const hover=dragging&&swapZone(cardId)?document.elementFromPoint(e.clientX,e.clientY)?.closest?.('[data-tt-card]'):null;
+    const drop=hover&&swapZone(hover.dataset.ttCard)&&swapZone(hover.dataset.ttCard)!==swapZone(cardId)?hover:dragging?hitTarget(e.clientX,e.clientY,cardId):null;
     if(dragging){
       // Browsers synthesize click after pointerup. Suppress it so a completed
       // drag cannot accidentally select a different card or run an action twice.
       suppressClick=true;setTimeout(()=>{suppressClick=false;},0);
     }
     clearDrag();
+    if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
     if(drop){dispatch(drop.dataset.ttDrop,cardId);return;}
     if(dragging)onSelect(cardId);
   }
   function onPointerDown(e){
     if(e.button!==0&&e.pointerType==='mouse')return;
     const c=e.target.closest?.('[data-tt-card]');
-    if(!c||!board()?.contains(c)||!legal(c.dataset.ttCard).length)return;
+    if(!c||!board()?.contains(c)||!(legal(c.dataset.ttCard).length||swapZone(c.dataset.ttCard)))return;
     const bounds=c.getBoundingClientRect();
     pointer={id:e.pointerId,card:c,cardId:c.dataset.ttCard,x:e.clientX,y:e.clientY,offsetX:e.clientX-bounds.left,offsetY:e.clientY-bounds.top,dragging:false};
   }

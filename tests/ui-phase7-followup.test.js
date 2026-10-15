@@ -32,7 +32,7 @@ test('drawn Nightmare is explained and must be resolved before another draw',()=
 });
 test('cooperative drawing preserves hidden hands without a second confirmation',()=>{
  let s=newGame({mode:'coop',seed:48,interactiveDraw:true});while(s.phase==='draft')s=act(s,{type:'draft',id:s.draft[0].id});
- const card=moveTop(s,'location');s=simpleDiscard(s);assert.equal(s.pending.type,'drawReady');
+ const card=moveTop(s,'location');s=simpleDiscard(s);assert.equal(s.pending.type,'coopSwap');s=act(s,{type:'coopSwap',option:'pass'});assert.equal(s.pending.type,'drawReady');
  const seat=s.active;s=act(s,{type:'draw'});assertConserved(s);
  const other=viewFor(s,1-seat);assert(!JSON.stringify(other.players[seat].hand).includes(card.color));
  assert(other.players[seat].hand.every(c=>c.kind==='hidden'));assert.notEqual(s.pending?.type,'drawn');

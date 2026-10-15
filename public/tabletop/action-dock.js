@@ -14,12 +14,13 @@ export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDis
   if(seat!==game.active)return {title:'Partner resolving',hint:''};
   if(dialog?.type==='spellbook')return {title:'Spellbook',hint:''};
   const type=game.pending?.type||'';
+  if(type==='coopSwap')return {title:'Swap cards',hint:''};
   if(type==='drawReady')return {title:'Draw',hint:''};
   if(type==='drawn')return {title:'Drawn',hint:''};
   return {title:type==='prophecy'&&prophecyDiscard?'Prophecy · order':'Prophecy'===step[type]?'Prophecy · discard':step[type]||'Resolve',hint:''};
  }
  if(seat!==game.active)return {title:`${game.players[game.active]?.name||'Partner'}’s turn`,hint:''};
- if(dialog)return {title:dialog.type==='mirrorPair'?'Mirror':dialog.type==='coopDiscard'?'Discard / swap':dialog.type==='cyclobot'?'Cyclobot':'Spellbook',hint:''};
+ if(dialog)return {title:dialog.type==='mirrorPair'?'Mirror':dialog.type==='cyclobot'?'Cyclobot':'Spellbook',hint:''};
  return selectedId?{title:'Play / discard',hint:''}:{title:'Your turn',hint:''};
 }
 const button=(label,action)=>`<button type="button" data-action="${escape(action)}" class="tt6-dock-button">${escape(label)}</button>`;
@@ -27,6 +28,7 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog});
  let controls='';
  if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');
+ if(game.phase==='decision'&&game.pending?.type==='coopSwap'&&seat===game.active)controls=button('Pass','swapPass');
  if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawReady')controls=button('Draw','draw');
  // Legacy saves paused mid-draw need a one-time, neutral recovery action.
  if(!dialog&&game.status==='active'&&seat===game.active&&game.pending?.type==='drawn')controls=button('Continue','confirmDraw');
@@ -36,7 +38,7 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  }
  if(game.status!=='active')controls=button('Exit','exitFinished')+button('Play again','playAgain');
  const content=dialog?.html||controls||'';
- const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
+ const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card&&game.pending.type!=='door'?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
  return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }

@@ -27,7 +27,7 @@ const IS_LOCAL_GAME=()=>IS_LOCAL_SOLO()||IS_HOTSEAT();
 let localEngine=null;
 const COLOR=['red','blue','green','brown'];
 const EXP=[['Book of Steps','P4','book'],['Glyphs','P4','glyphs'],['Dreamcatchers','P4','dreamcatchers'],['Towers','P4','towers'],['Happy Dreams / Premonitions','P5','premonitions'],['Crossroads / Dead Ends','P5','crossroads'],['Door to the Oniverse','P5','oniverse'],['Mirrors (promo)','P6','mirrors'],['Sphinx / Diver / Confusion','P6','sphinx'],['Little Incubus','P6','incubus']];
-let mirrorSelection=new Set(),mirrorTarget=null,mirrorPairSelection=new Set(),cyclobotTarget=null,swapDraft=null,spellOpen=false;
+let mirrorSelection=new Set(),mirrorTarget=null,mirrorPairSelection=new Set(),cyclobotTarget=null,spellOpen=false;
 let happyPremonitionChoice=null,happyBanishMode=false,nightChoice=null,choicePage=0,spellGoals=[],swapPersonalId=null,swapSharedId=null,freeSearchId="";
 let session=null;try{const saved=JSON.parse(localStorage.getItem('onirama.session')||'null');if(saved&&typeof saved.id==='string'&&saved.id.length<64&&(['local','hotseat'].includes(saved.id)||typeof saved.token==='string'||saved.transport==='firebase'))session=saved;}catch{localStorage.removeItem('onirama.session');}
 if(STATIC_SITE&&USE_FIREBASE&&!['local','hotseat'].includes(session?.id)&&session?.transport!=='firebase'){session=null;localStorage.removeItem('onirama.session');}
@@ -100,7 +100,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -209,25 +209,21 @@ function eligibleDecisionCards(g){
   if(p.type==='towerPenalty')for(const t of legalPenaltyTowers(g))ids.add(t.id);
  }
  if(mirrorTarget&&g.phase==='action')for(const c of cards)if(c.kind==='location'&&(COLOR.includes(mirrorTarget)?c.color===mirrorTarget||c.color==='wild':mirrorTarget==='rainbow'?COLOR.includes(c.color):c.symbol===mirrorTarget))ids.add(c.id);
- if(swapDraft&&g.phase==='action')for(const c of cards)if(c.id!==swapDraft.cardId)ids.add(c.id);
+ if(g.phase==='decision'&&p.type==='coopSwap')for(const c of [...g.players[g.active].hand,...(g.shared||[])])if(c.kind!=='hidden')ids.add(c.id);
  return ids;
 }
 function legalPenaltyTowers(g){const a=g.expansion?.towers?.alignment||[];return a.filter((t,i)=>i===0||i===a.length-1||!a[i-1].right||!a[i+1].left||!towerEdgeConflict(a[i-1].right,a[i+1].left));}
 function chosenDecisionCards(){return new Set([...mirrorPairSelection,...(swapPersonalId?[swapPersonalId]:[]),...(swapSharedId?[swapSharedId]:[])]);}
 function incantationDecision(p){
- const ids=p.cards.map(c=>c.id),doors=p.cards.filter(c=>c.kind==='door');
- const choosing=doors.length>0&&incantationStage!=='order';
+ const choosing=p.type==='incantation'&&p.cards.some(c=>c.kind==='door');
  if(choosing){
-  if(effectPick&&!doors.some(c=>c.id===effectPick))effectPick=null;
-  const next=state?.game?.expansion?.book?.goals?.find(g=>!g.done)?.color;
-  const hint=next?`<span class="tt12-goal-hint">Next Step: ${escape(next)}${effectPick&&doors.find(c=>c.id===effectPick)?.color!==next?' · mismatched Door → Limbo':''}</span>`:'';
-  return `<section class="decision stack tt12-incantation" data-tt-incantation-step="claim"><div class="tt12-incantation-heading">Incantation: take one revealed Door ${hint}</div><div class="tt12-claim-cards">${p.cards.map(c=>c.kind==='door'?`<button type="button" class="tt12-incantation-card ${effectPick===c.id?'tt12-picked':''}" data-action="incantationSelect:${escape(c.id)}" data-tt-incantation-card="${escape(c.id)}" aria-pressed="${effectPick===c.id}" aria-label="Choose ${escape(c.color)} Door">${card(c,{tiny:true})}</button>`:`<span class="tt12-incantation-other">${card(c,{tiny:true})}</span>`).join('')}</div><div class="tt12-claim-actions"><button type="button" class="primary" data-action="incantationClaim" ${effectPick?'':'disabled'}>Take Door &amp; arrange other cards</button></div></section>`;
+  return `<section class="decision stack tt20-incantation" data-tt-incantation-step="claim"><h2>Incantation: Take a door</h2><div class="tt20-incantation-cards">${p.cards.map(c=>c.kind==='door'?`<button type="button" class="tt20-incantation-choice" data-action="incantationClaim:${escape(c.id)}" aria-label="Take ${escape(c.color)} Door">${card(c)}</button>`:`<span class="tt20-incantation-reveal">${card(c)}</span>`).join('')}</div></section>`;
  }
- const chosen=effectPick&&p.cards.find(c=>c.id===effectPick),remaining=p.cards.filter(c=>c.id!==effectPick);
- if(effectOrder.length!==remaining.length||effectOrder.some(id=>!remaining.some(c=>c.id===id)))effectOrder=remaining.map(c=>c.id);
- return `<section class="decision stack tt12-incantation" data-tt-incantation-step="order"><div class="tt12-incantation-heading">Order remaining cards on deck bottom (leftmost = bottom)</div><div class="cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=remaining.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Reorder card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div><div class="tt12-claim-actions">${doors.length?btn('Back','incantationBack'):''}${btn('Submit','effectConfirm','primary')}</div></section>`;
+ const ids=p.cards.map(c=>c.id);
+ if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
+ return `<section class="decision stack tt20-incantation" data-tt-incantation-step="order"><h2>Incantation: Rearrange and put on bottom</h2><div class="tt20-incantation-cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" tabindex="0" role="button" aria-label="Reorder ${escape(c.kind)} card">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div>${btn('Confirm','effectConfirm','primary')}</section>`;
 }
-function effectReorder(p){if(!p.cards)return '';if(p.type==='incantation')return incantationDecision(p);const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
+function effectReorder(p){if(!p.cards)return '';if(['incantation','incantationOrder'].includes(p.type))return incantationDecision(p);const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
  const modes={sphinxResolve:'Sphinx — choose the top card if your named aspect matched; arrange the others bottom-first.',diver:'Diver — stop and put last card on top, continue revealing, or resolve a Nightmare.',denizenPeek:'Denizen insight — reorder inspected cards.',happyPeek:'Happy Dream — choose zero or more cards to discard, then reorder the rest.',incantation:'Incantation — choose one Door (if available) and order the others from bottom to top.',towerLook:'Tower insight — order inspected cards from top to bottom.',spellPeek:'Paradoxical Prophecy — pick one card to put on top; order the others from bottom to top.'};
  const options=p.cards.filter(c=>p.type==='incantation'?c.kind==='door':['spellPeek','sphinxResolve'].includes(p.type));
  if(effectPick&&!options.some(c=>c.id===effectPick))effectPick=null;
@@ -253,7 +249,7 @@ function decision(g,canAct){
     const targets=p.targets||[],choices=targets.filter((t,i)=>targets.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
     return `<section class="decision stack"><div class="actions tt7-search-actions">${choices.map(t=>btn((t.source==='deck'?'Deck':'Catcher '+(Number(t.source.slice(5))+1))+' · '+(t.color||p.color),'doorSearch:claim:'+t.id,'primary')).join('')}${g.expansion?.dreamcatchers?catcherSearchChoice(g,true):''}${btn('Search without taking','doorSearch:search')}${btn('Skip search','doorSearch:skip')}</div></section>`;
   }
-  if(p.type==='door')return `<section class="decision stack"><div class="actions">${btn('Gain Door','useKey:gain','primary')}${btn('Pass','useKey:limbo')}</div></section>`;
+  if(p.type==='door')return `<section class="decision stack tt20-door-decision"><h2>Gain door</h2><button type="button" class="tt20-door-choice" data-action="useKey:gain" aria-label="Gain ${escape(p.card.color==='wild'?'Door to the Oniverse':p.card.color+' Door')}">${card(p.card)}</button>${btn('Pass','useKey:limbo')}</section>`;
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
     const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" aria-disabled="${!enabled}" aria-pressed="${chosen}">${name}</button>`;
@@ -266,7 +262,7 @@ function decision(g,canAct){
   if(p.type==='rally')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap an eligible Location</span>${btn('Skip','rally:skip')}</div></section>`;
   if(p.type==='premonitionPick')return `<section class="decision stack"><h2>Dark Premonitions triggered</h2><p>Choose the order of resolving the active conditions.</p><div class="actions">${pagedCards(p.options,id=>btn(id,`premonitionPick:${id}`,'danger'),2)}</div></section>`;
   if(p.type==='premonitionDoor')return `<section class="decision stack"><span class="tt7-micro">Tap a Door</span></section>`;
-  if(['incantation','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
+  if(['incantation','incantationOrder','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
   if(p.type==='catchChoose')return `<section class="decision stack">${btn('Continue',`catchChoose:${p.choices[0]}`,'primary')}</section>`;
   if(p.type==='catchOverload')return `<section class="decision stack"><div class="actions">${p.choices.map(i=>btn(`Sacrifice ${i+1}`,`catchOverload:${i}`)).join('')}</div></section>`;
   if(p.type==='towerPenalty')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap a Tower</span>${btn('False destruction','towerFake')}</div></section>`;
@@ -305,21 +301,15 @@ function contextualDialog(g,room){
   const html=`<section class="decision stack"><h2>Cyclobot exchange</h2><p>Select a hand Location, then select its replacement.</p><div class="tt4-card-choices">${eligible.map(c=>`<button type="button" class="tt4-card-option" data-action="cyclobotSwap:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')||'<span>No Locations available.</span>'}</div><div class="actions">${btn('Cancel','cyclobotCancel')}</div></section>`;
   return {type:'cyclobot',key:`context:cyclobot:${cyclobotTarget}`,html};
  }
- if(g.phase==='action'&&swapDraft){
-  const discarded=cards.find(c=>c.id===swapDraft.cardId);if(discarded){
-   const html=`<section class="decision stack"><div class="actions"><span class="tt7-micro">${swapPersonalId&&swapSharedId?'Swap selected':'Tap personal + shared to swap'}</span>${btn('Discard','discardConfirm','primary')}${btn('Cancel','discardCancel')}</div></section>`;
-   return {type:'coopDiscard',key:`context:discard:${discarded.id}`,html};
-  }
- }
  if(spellOpen&&e.book){const b=e.book;
   const choices=[
    {id:'parallel',name:'Parallel Planning',description:'Swap any two Goal cards in the Book of Steps. Tap the two Goals on the tabletop.',allowed:true},
    {id:'paradox',name:'Paradoxical Prophecy',description:'Look at up to five cards from the bottom of the deck. Put one on top and return the others to the bottom.',allowed:g.deckCount>0},
    {id:'punishment',name:'Powerful Punishment',description:'Cancel a Nightmare just drawn, without applying its penalty.',allowed:g.pending?.type==='nightmare'&&!g.pending?.incubus}
-  ];
+  ].sort((a,b)=>g.expansion.book.costs[a.id]-g.expansion.book.costs[b.id]);
   const active=choices.find(x=>x.id===spellChoice)||choices[0];
   const enough=g.discard.length>=b.costs[active.id];
-  const html=`<section class="decision stack tt16-spell-dialog"><h2>Book of Steps · ${g.discard.length} discarded cards</h2><div class="tt16-spell-choices" role="radiogroup" aria-label="Choose spell">${choices.map(c=>`<button type="button" role="radio" aria-checked="${spellChoice===c.id}" class="tt16-spell-choice ${spellChoice===c.id?'tt16-selected':''}" data-action="spellSelect:${c.id}"><strong>${c.name}</strong><span class="tt16-spell-cost">${b.costs[c.id]} cards${c.allowed?'':' · unavailable'}</span></button>`).join('')}</div><p class="tt16-spell-description">${active.description}</p><p class="tt16-spell-payment">${enough?`Uses ${b.costs[active.id]} oldest discards; inspect them under “Removed from game”.`:`Need ${b.costs[active.id]} discarded cards; ${g.discard.length} available.`}${spellChoice==='parallel'?` Select two Goal cards (${spellGoals.length}/2 selected).`:''}</p><div class="tt16-spell-actions"><button type="button" class="primary" data-action="castSpell" ${!enough||!active.allowed||spellChoice==='parallel'&&spellGoals.length!==2?'disabled':''}>Cast spell</button>${btn('Cancel','dialogClose')}</div></section>`;
+  const html=`<section class="decision stack tt16-spell-dialog"><h2>Book of Steps · ${g.discard.length} discarded cards</h2><div class="tt16-spell-choices" role="radiogroup" aria-label="Choose spell">${choices.map(c=>`<button type="button" role="radio" aria-checked="${spellChoice===c.id}" class="tt16-spell-choice ${spellChoice===c.id?'tt16-selected':''}" data-action="spellSelect:${c.id}"><strong>${c.name}</strong><span class="tt16-spell-cost">${b.costs[c.id]} cards${c.allowed?'':' · unavailable'}</span></button>`).join('')}</div><p class="tt16-spell-description">${active.description}</p>${spellChoice==='parallel'?`<p class="tt16-spell-payment">Select two Goals (${spellGoals.length}/2)</p>`:''}<div class="tt16-spell-actions"><button type="button" class="primary" data-action="castSpell" ${!enough||!active.allowed||spellChoice==='parallel'&&spellGoals.length!==2?'disabled':''}>Cast spell</button>${btn('Cancel','dialogClose')}</div></section>`;
   return {type:'spellbook',key:'context:spellbook',html};
  }
  return null;
@@ -328,10 +318,11 @@ function gameWorkspace(g,room){
  if(!g||!room||g.status!=='active'||room.paused)return null;
  if(g.phase==='decision'&&['drawReady','drawn'].includes(g.pending?.type))return null;
  if(g.phase==='decision'&&spellOpen&&g.expansion?.book)return contextualDialog(g,room);
+ if(g.phase==='decision'&&g.pending?.type==='coopSwap')return null;
  if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,html:decision(g,true)}:null;}
  return contextualDialog(g,room);
 }
-function closeOptionalDialog(){mirrorTarget=null;mirrorPairSelection.clear();cyclobotTarget=null;swapDraft=null;spellOpen=false;spellSelected.clear();render();}
+function closeOptionalDialog(){mirrorTarget=null;mirrorPairSelection.clear();cyclobotTarget=null;spellOpen=false;spellSelected.clear();render();}
 function rules(){return `<div class="route shell shell-rules"><div class="shell-title-line"><h1 class="shell-title">Rules & card guide</h1><span class="shell-count">All modules</span></div>${renderRulesReference()}</div>`;}
 function roadmap(){const phases=['Foundation','Base tabletop','Card gestures','Decision dialogs','Expansion tabletop','Co-op tabletop','Minimal app shell','Visual QA','Final cleanup'];return `<div class="route shell"><div class="shell-title-line"><h1 class="shell-title">UI roadmap</h1><span class="shell-count">9 of 9</span></div><section class="shell-card shell-roadmap">${phases.map((title,i)=>`<div><span>${i+1}</span><strong>${title}</strong><small>${i<9?'✓':'Pending'}</small></div>`).join('')}</section></div>`;}
 function tutorial(){return renderGuideTutorial(tutorialChapter,tutorialStep);}
@@ -400,14 +391,21 @@ function pick(id){
   const targets=eligibleDecisionCards(g);if(targets.has(id)){
    const p=g.pending||{};
    if(g.phase==='decision'){
-    if(p.type==='door')return action({type:'chooseDoor',keyId:id});
+    if(p.type==='coopSwap'){
+    const personal=g.players[g.active].hand.some(c=>c.id===id),shared=g.shared?.some(c=>c.id===id);
+    if(!personal&&!shared)return;
+    if(personal)swapPersonalId=swapPersonalId===id?null:id;else swapSharedId=swapSharedId===id?null:id;
+    if(swapPersonalId&&swapSharedId)return action({type:'coopSwap',option:'swap',personal:swapPersonalId,shared:swapSharedId});
+    return render();
+   }
+   if(p.type==='door')return action({type:'chooseDoor',keyId:id});
     if(p.type==='nightmare'&&nightChoice)return action({type:'nightmare',option:nightChoice,cardId:id});
     if(p.type==='rally')return action({type:'rally',cardId:id});
     if(p.type==='premonitionDoor')return action({type:'premonitionDoor',doorId:id});
     if(p.type==='towerPenalty')return action({type:'towerPenalty',option:'discard',towerId:id});
    }
    if(g.phase==='action'&&mirrorTarget){if(mirrorPairSelection.has(id))mirrorPairSelection.delete(id);else if(mirrorPairSelection.size<2)mirrorPairSelection.add(id);return render();}
-   if(g.phase==='action'&&swapDraft){const personal=g.players[g.active].hand.some(c=>c.id===id);if(personal){swapPersonalId=swapPersonalId===id?null:id;}else{swapSharedId=swapSharedId===id?null:id;}return render();}
+
   }
  }
  selected=selected===id?null:id;render();
@@ -481,7 +479,7 @@ async function handle(actionName){
   if(['play','discard','towerLeft','towerRight'].includes(actionName)&&selected){
     const targets=g.mode==='coop'?cooperativeLegalTargets(g,selected,state.room.seat):soloLegalTargets(g,selected,state.room.seat);
     if(!targets.includes(actionName))return;
-    if(actionName==='discard'&&g.mode==='coop'){swapDraft={cardId:selected};return render();}
+    if(actionName==='discard'&&g.mode==='coop')return action({type:'discard',id:selected});
     if(actionName.startsWith('tower'))return action({type:'playTower',id:selected,side:actionName==='towerLeft'?'left':'right'});
     return action({type:actionName,id:selected});
   }
@@ -535,13 +533,7 @@ async function handle(actionName){
     const denizenId=cyclobotTarget;cyclobotTarget=null;
     return action({type:'useDenizen',id:denizenId,cardId:selected,discardId:actionName.slice(14)});
   }
-  if(actionName==='discardCancel'){swapDraft=null;swapPersonalId=null;swapSharedId=null;return render();}
-  if(actionName==='discardConfirm'){
-    if(!swapDraft)return setError('Select a card to discard first.');
-    const discardId=swapDraft.cardId,personal=swapPersonalId||'',shared=swapSharedId||'';
-    if(Boolean(personal)!==Boolean(shared))return setError('Select both a personal and shared card, or neither.');
-    swapDraft=null;swapPersonalId=null;swapSharedId=null;return action({type:'discard',id:discardId,...(personal&&shared?{swapWith:{personal,shared}}:{})});
-  }
+  if(actionName==='swapPass'&&g.phase==='decision'&&g.pending?.type==='coopSwap')return action({type:'coopSwap',option:'pass'});
   if(actionName==='towerLeft'||actionName==='towerRight'){if(!selected)return setError('Choose a Tower.');return action({type:'playTower',id:selected,side:actionName==='towerLeft'?'left':'right'});}
   if(actionName==='play'||actionName==='discard'){
     if(!selected)return setError('Select a card first.');
@@ -549,7 +541,7 @@ async function handle(actionName){
     if(!c)return setError('Selected card is not available.');
     if(actionName==='play'&&g.players[g.active].labyrinth.at(-1)?.symbol===c.symbol)return setError('The next Location needs a different symbol.');
     const command={type:actionName,id:selected};
-    if(actionName==='discard'&&g.mode==='coop'){swapDraft={cardId:selected};return render();}
+    if(actionName==='discard'&&g.mode==='coop')return action({type:'discard',id:selected});
     return action(command);
   }
   if(actionName==='draw'||actionName==='confirmDraw')return action({type:actionName});
@@ -569,12 +561,10 @@ async function handle(actionName){
   if(actionName==='towerFake')return action({type:'towerPenalty',option:'fake'});
   if(actionName.startsWith('spellCost:')){const id=actionName.slice(10);if(spellSelected.has(id))spellSelected.delete(id);else spellSelected.add(id);return render();}
   if(actionName==='castSpell'){const goals=state.game.expansion?.book?.goals||[];const [a,b]=spellGoals;return action({type:'cast',spell:spellChoice,...(spellChoice==='parallel'?{first:a,second:b}:{})});}
-  if(actionName.startsWith('incantationSelect:')){if(g.pending?.type!=='incantation'||incantationStage!=='claim')return;const id=actionName.slice('incantationSelect:'.length);if(!g.pending.cards.some(c=>c.kind==='door'&&c.id===id))return;effectPick=effectPick===id?null:id;return render();}
-  if(actionName==='incantationClaim'){if(g.pending?.type!=='incantation'||incantationStage!=='claim'||!effectPick)return;effectOrder=g.pending.cards.filter(c=>c.id!==effectPick).map(c=>c.id);incantationStage='order';return render();}
-  if(actionName==='incantationBack'){if(g.pending?.type!=='incantation')return;incantationStage='claim';effectOrder=g.pending.cards.map(c=>c.id);return render();}
+  if(actionName.startsWith('incantationClaim:')&&g.pending?.type==='incantation')return action({type:'incantationClaim',doorId:actionName.slice('incantationClaim:'.length)});
   if(actionName.startsWith('effectPick:')){effectPick=actionName.slice(11);return render();}
   if(actionName.startsWith('moduleDecision:'))return action({type:'moduleDecision',decisionId:g.pending.id,choice:decodeURIComponent(actionName.slice(15))});
-  if(actionName==='effectConfirm'){const p=state.game.pending;if(p.type==='incantation'&&p.cards.some(c=>c.kind==='door')&&incantationStage!=='order')return;const cards=p.cards;if(p.type==='happyPeek')return action({type:'happyPeek',discardIds:[...effectDiscards],order:effectOrder.filter(id=>!effectDiscards.has(id))});if(p.type==='denizenPeek')return action({type:'denizenPeek',order:effectOrder});return p.type==='towerLook'?action({type:'towerLook',order:effectOrder}):p.type==='spellPeek'?action({type:'spellPeek',topId:effectPick,bottomOrder:effectOrder.filter(id=>id!==effectPick)}):action({type:'incantation',doorId:effectPick||null,order:effectOrder.filter(id=>id!==effectPick)});}
+  if(actionName==='effectConfirm'){const p=state.game.pending;if(p.type==='incantation'&&p.cards.some(c=>c.kind==='door'))return;const cards=p.cards;if(p.type==='happyPeek')return action({type:'happyPeek',discardIds:[...effectDiscards],order:effectOrder.filter(id=>!effectDiscards.has(id))});if(p.type==='denizenPeek')return action({type:'denizenPeek',order:effectOrder});return p.type==='incantationOrder'?action({type:'incantationOrder',order:effectOrder}):p.type==='towerLook'?action({type:'towerLook',order:effectOrder}):p.type==='spellPeek'?action({type:'spellPeek',topId:effectPick,bottomOrder:effectOrder.filter(id=>id!==effectPick)}):action({type:'incantation',doorId:effectPick||null,order:effectOrder.filter(id=>id!==effectPick)});}
   if(actionName==='prophecyConfirm'){if(!prophecyDiscard)return setError('Choose one card to discard.');return action({type:'prophecy',discardId:prophecyDiscard,order:prophecyOrder.filter(id=>id!==prophecyDiscard)});}
 }
 // Interaction adapter: gestures never mutate state. They produce the same
@@ -586,24 +576,25 @@ function installTabletopController(){
   tabletopController=createTabletopInteractions({
     root:app,getGame:()=>state?.game,getSeat:()=>state?.room?.seat??-1,
     isBusy:()=>busy||!state?.room?.started,
+    onSwap:(personal,shared)=>{if(state?.game?.phase==='decision'&&state.game.pending?.type==='coopSwap')return action({type:'coopSwap',option:'swap',personal,shared});},
     onSelect:id=>{if(page==='#/game'&&state?.game&&['solo','coop'].includes(state.game.mode))pick(id);},
     onCommand:(type,id)=>{
       if(page!=='#/game'||busy||!state?.game)return;
       const targets=state.game.mode==='coop'?cooperativeLegalTargets(state.game,id,state.room?.seat):soloLegalTargets(state.game,id,state.room?.seat);
       if(!targets.includes(type))return;
-      if(type==='discard'&&state.game.mode==='coop'){selected=id;swapDraft={cardId:id};return render();}
+      if(type==='discard'&&state.game.mode==='coop')return action({type:'discard',id});
       if(type==='towerLeft'||type==='towerRight')return action({type:'playTower',id,side:type==='towerLeft'?'left':'right'});
       return action({type,id});
     }
   });
   if(typeof createIncantationClaim==='function')createIncantationClaim({root:app,onClaim:id=>{if(state?.game?.pending?.type==='incantation'&&incantationStage==='claim'){effectPick=id;effectOrder=state.game.pending.cards.filter(c=>c.id!==id).map(c=>c.id);incantationStage='order';render();}}});
   createDecisionReorder({root:app,
-    canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&incantationStage!=='order'),
+    canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&state.game.pending.cards.some(c=>c.kind==='door')),
     onDiscard:id=>{if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
     onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
       if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){if(!prophecyDiscard)return;const ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);prophecyOrder=[...moved,...(prophecyDiscard?[prophecyDiscard]:[])];}
-      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(state.game.pending?.type==='incantation'?0:orderSlice(effectOrder).offset)+gap);
+      else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(['incantation','incantationOrder'].includes(state.game.pending?.type)?0:orderSlice(effectOrder).offset)+gap);
       else return;
       render();
     }

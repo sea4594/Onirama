@@ -37,7 +37,7 @@ test('all Premonitions have different wordless progress-marked pictograms; reser
  const inspector=renderPileInspector(game(['premonitions']),'reserve');assert.match(inspector,/tt18-pm-art/);
 });
 test('Door gain/pass, legal crossroad selection and Dreamcatcher overload sacrifice are distinct',()=>{
- assert.match(app,/btn\('Gain Door','useKey:gain'/);assert.match(app,/btn\('Pass','useKey:limbo'/);
+ assert.match(app,/data-action=\"useKey:gain\"/);assert.match(app,/btn\('Pass','useKey:limbo'/);
  assert.match(app,/actionName==='useKey:gain'/);assert.match(app,/type:'chooseDoor',keyId:best.id/);
  assert.match(app,/`Sacrifice \${i\+1}`/);
  assert.doesNotMatch(app,/Send Door to Limbo|btn\(`Free \${i\+1}`,`catchOverload/);

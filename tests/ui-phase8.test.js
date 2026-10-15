@@ -45,7 +45,7 @@ test('every difficult variant remains accepted and renders without missing its o
  }
 });
 test('all mandatory and optional effect surfaces remain dialog-based with accessibility semantics',()=>{
- assert.equal(PENDING_DECISIONS.length,23);assert.equal(CONTEXT_DIALOGS.length,4);
+ assert.equal(PENDING_DECISIONS.length,24);assert.equal(CONTEXT_DIALOGS.length,3);
  for(const type of [...PENDING_DECISIONS,...CONTEXT_DIALOGS]){
   const required=PENDING_DECISIONS.includes(type);
   const markup=renderGameDialog({type,key:`qa:${type}`,html:'<button>Option</button>',mandatory:required});

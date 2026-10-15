@@ -89,7 +89,7 @@ test('All currently modeled pending decision types render an actionable dialog; 
 
 test('Mirror pair, Cyclobot, Confusion and cooperative swap have inline UI controls, not blocking prompts',()=>{
  const source=readFileSync('public/app.js','utf8');
- assert.match(source,/mirrorPairSelection/);assert.match(source,/eligibleDecisionCards/);assert.match(source,/mirrorConfirm/);assert.match(source,/cyclobotSwap:/);assert.match(source,/swapPersonal/);assert.match(source,/swapShared/);assert.match(source,/discardConfirm/);assert.match(source,/Confusion — reorder your hand/);
+ assert.match(source,/mirrorPairSelection/);assert.match(source,/eligibleDecisionCards/);assert.match(source,/mirrorConfirm/);assert.match(source,/cyclobotSwap:/);assert.match(source,/swapPersonal/);assert.match(source,/swapShared/);assert.doesNotMatch(source,/discardConfirm/);assert.match(source,/swapPass/);assert.match(source,/Confusion — reorder your hand/);
  assert.doesNotMatch(source,/prompt\(/,'all prompt-based gameplay actions should be replaced');
 });
 

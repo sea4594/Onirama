@@ -1,0 +1,30 @@
+/* Phase 20: co-op swap, Door progress, and legible decision cards. */
+.game-viewport .tt17-coop-doors{display:block!important;min-width:0}
+.game-viewport .tt20-team-doors{width:100%;display:block!important;box-sizing:border-box}
+.game-viewport .tt20-doors-layout{display:grid;grid-template-columns:minmax(38px,.38fr) minmax(0,3fr) minmax(38px,.38fr);gap:clamp(3px,1vw,12px);align-items:center;min-width:0}
+.game-viewport .tt20-team-door-list{min-width:0}
+.game-viewport .tt20-team-door-list .tt6-doors-row{flex-wrap:nowrap;justify-content:center;gap:2px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain}
+.game-viewport .tt20-door-tracker{display:grid;justify-items:center;gap:3px;min-width:0}
+.game-viewport .tt20-door-tracker small{font-size:clamp(8px,1.6vw,11px);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.game-viewport .tt20-door-colors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;width:100%;max-width:90px}
+.game-viewport .tt20-door-color{display:grid;place-items:center;min-width:0;aspect-ratio:1/1.25;border-radius:4px;border:1px solid currentColor}
+.game-viewport .tt20-door-color .ui-icon{width:85%;height:85%;min-width:0}
+.game-viewport .tt20-door-color.red{color:var(--red)}.game-viewport .tt20-door-color.blue{color:var(--blue)}.game-viewport .tt20-door-color.green{color:var(--green)}.game-viewport .tt20-door-color.brown{color:var(--brown)}
+.game-viewport .tt20-door-color.tt20-missing{filter:grayscale(1);opacity:.25}
+.game-viewport .tt20-door-color.tt20-earned{background:color-mix(in srgb,currentColor 18%,transparent)}
+.game-viewport .tt17-coop-hands .tt7-eligible{outline:2px solid var(--table-gold)!important;outline-offset:-2px}
+.game-viewport .tt17-coop-hands .tt3-drop-hover{box-shadow:0 0 0 3px var(--table-gold)!important}
+.game-viewport .tt6-workspace .tt20-incantation{display:flex!important;flex-flow:column nowrap!important;justify-content:center!important;align-items:center;gap:4px!important;max-width:100%;width:100%}
+.game-viewport .tt20-incantation h2,.game-viewport .tt20-door-decision h2{font-size:clamp(12px,2.8vw,18px);line-height:1.2;margin:0}
+.game-viewport .tt20-incantation-cards{display:flex;align-items:center;justify-content:flex-start;gap:clamp(4px,1.1vw,10px);max-width:100%;width:100%;overflow-x:auto!important;overflow-y:hidden!important;min-height:0;scrollbar-width:thin;padding:2px 4px;box-sizing:border-box;touch-action:pan-x}
+.game-viewport .tt20-incantation-choice,.game-viewport .tt20-incantation-reveal,.game-viewport .tt20-incantation-cards .tt3-order-item{flex:0 0 auto!important;min-width:0!important;width:clamp(48px,14vw,82px)!important;max-width:none!important;box-sizing:border-box;display:grid;place-items:center;background:none;border:0;padding:2px}
+.game-viewport .tt20-incantation-cards .card,.game-viewport .tt20-incantation-cards .tt3-order-handle .card{width:100%!important;height:auto!important;aspect-ratio:1/1.42!important;max-width:none!important;min-width:0!important}
+.game-viewport .tt20-incantation-cards .tt3-order-handle{width:100%;min-width:0;display:grid;place-items:center;touch-action:none}
+.game-viewport .tt20-incantation-cards .tt5-order-end{flex:0 0 16px;min-height:30px}
+.game-viewport .tt20-door-decision{display:flex!important;flex-flow:column nowrap!important;align-items:center;justify-content:center;gap:5px;width:100%}
+.game-viewport .tt20-door-choice{display:grid;place-items:center;width:clamp(54px,15vw,85px);padding:0;background:none;border:0;cursor:pointer}
+.game-viewport .tt20-door-choice .card{width:100%!important;height:auto!important;aspect-ratio:1/1.42!important}
+.game-viewport .tt20-door-choice:focus-visible,.game-viewport .tt20-incantation-choice:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
+.card .symbol>.ui-icon,.tt6-card-back .ui-icon{overflow:hidden!important;max-width:100%!important;max-height:100%!important}
+.tt6-card-back{overflow:hidden;box-sizing:border-box}.tt6-card-back span{display:grid;place-items:center;width:min(52%,28px);aspect-ratio:1;max-height:55%}.tt6-card-back .ui-icon{width:100%;height:100%}
+@media(max-height:450px){.game-viewport .tt20-incantation-choice,.game-viewport .tt20-incantation-reveal,.game-viewport .tt20-incantation-cards .tt3-order-item{width:clamp(39px,8vw,57px)!important}.game-viewport .tt20-door-choice{width:45px}}
