@@ -80,3 +80,6 @@ body{background:var(--table-background)}
 .tt5-object-icon .ui-icon,.tt5-mirror-symbol .ui-icon,.tt5-pm-face .ui-icon{width:1em;height:1em}
 /* The same focus/selection language works on all themed surfaces. */
 a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline-color:var(--ui-accent)}
+
+/* App identity: the supplied golden-door artwork replaces the placeholder header mark. */
+.brand .brand-icon{display:block;flex:none;width:24px;height:24px;object-fit:cover;border-radius:4px}
