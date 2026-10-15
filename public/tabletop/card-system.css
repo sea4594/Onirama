@@ -8,3 +8,15 @@
 .card.tiny.card-kind-denizen .card-label{display:none!important}
 .card:not(.tiny).card-kind-denizen .card-label{max-width:92%;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){.card.selected{transition:none!important}}
+
+/* Count sizes track the actual draw-card width, including narrow fitted tables. */
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt2-deck-back{container-type:inline-size}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count{
+  box-sizing:border-box;max-width:100%;min-width:0;padding:0 2px;
+  white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;line-height:1;
+  font-size:clamp(7px,calc(var(--tt15-mini,36px)*.42),21px)!important;
+  font-size:clamp(7px,44cqw,21px)!important;
+}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="2"]{font-size:clamp(7px,calc(var(--tt15-mini,36px)*.36),19px)!important;font-size:clamp(7px,38cqw,19px)!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="3"]{font-size:clamp(6px,calc(var(--tt15-mini,36px)*.27),16px)!important;font-size:clamp(6px,28cqw,16px)!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="4"]{font-size:clamp(5px,calc(var(--tt15-mini,36px)*.21),14px)!important;font-size:clamp(5px,22cqw,14px)!important}

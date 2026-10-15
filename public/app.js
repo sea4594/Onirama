@@ -15,7 +15,7 @@ import {renderOverlay} from './game-overlay.js';
 import {GUIDE_CHAPTERS,renderRulesReference,renderGuideTutorial,filterGuide} from './rules-guide.js';
 import {opponentReplay,replayOverlay,fitReplay,replayStage,replayCaption} from './multiplayer-replay.js';
 const app=document.querySelector('#app');
-const STATIC_SITE=location.hostname.endsWith('.github.io');
+const STATIC_SITE=location.hostname.endsWith('.github.io')||(typeof window!=='undefined'&&window.ONIRAMA_STATIC_BUILD===true);
 const REMOTE_API=typeof window!=='undefined'&&typeof window.ONIRAMA_API_ORIGIN==='string'&&/^https:\/\/[^/]+$/.test(window.ONIRAMA_API_ORIGIN)?window.ONIRAMA_API_ORIGIN:'';
 const base=STATIC_SITE?REMOTE_API:location.origin;
 const USE_FIREBASE=firebase.firebaseConfigured();
@@ -133,21 +133,21 @@ async function startStream(){
     }}
 }
 
-function home(){const active=session?.id==='local';return `<div class="route shell shell-home">
+function home(){const active=session?.id==='local',offline=navigator.onLine===false;const soloSave=offline&&session?.id!=='local'&&localStorage.getItem('onirama.solo.v1');const hotSave=offline&&session?.id!=='hotseat'&&localStorage.getItem('onirama.hotseat.v1');return `<div class="route shell shell-home">
   <div class="shell-emblem" aria-hidden="true"><span>${icon('sun')}</span><span>${icon('moon')}</span><span>${icon('key')}</span><span>${icon('door')}</span></div>
   <h1 class="shell-hero-title">Single Player</h1>
   <div class="shell-primary-actions">
     ${btn('Play solo','setup','primary shell-big')}
-    ${session?btn(active?'Resume game':'Resume game','resume','shell-small'):''}
+    ${session&&(!offline||IS_LOCAL_GAME())?btn('Resume game','resume','shell-small'):''}${soloSave?btn('Resume offline solo','resumeLocalSolo','shell-small'):''}${hotSave?btn('Resume offline hot seat','resumeLocalHotseat','shell-small'):''}
   </div>
   <div class="shell-links">${btn('Learn to play','tutorial','shell-text-button')}${btn('History','history','shell-text-button')}</div>
 </div>`;}
 function codeInputs(){const value=joinCode||roomCodeFromHash();return `<div class="shell-code-boxes" role="group" aria-label="Four-letter lobby code"><input id="roomcode" type="hidden" value="${escape(value)}">${Array.from({length:4},(_,i)=>`<input type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="1" data-code-index="${i}" aria-label="Code letter ${i+1}" value="${escape(value[i]||'')}">`).join('')}</div>`;}
-function multiplayer(){const hot=multiplayerTab==='hotseat',room=session?.id!=='local'&&session?.id!=='hotseat'&&state?.room&&!state.room.started?state.room:null;
+function multiplayer(){const hot=multiplayerTab==='hotseat',offline=navigator.onLine===false,room=session?.id!=='local'&&session?.id!=='hotseat'&&state?.room&&!state.room.started?state.room:null;
  const tab=`<div class="shell-segment shell-multiplayer-tabs" role="tablist" aria-label="Multiplayer mode"><button type="button" data-action="multiplayerTab:online" role="tab" aria-selected="${!hot}" class="${!hot?'active':''}">Online</button><button type="button" data-action="multiplayerTab:hotseat" role="tab" aria-selected="${hot}" class="${hot?'active':''}">Hot seat</button></div>`;
  if(hot)return `<div class="route shell shell-multiplayer"><h1 class="shell-title">Multiplayer</h1>${tab}<section class="shell-card shell-hotseat-players"><h2>Players</h2><div class="shell-dual"><label>Player 1<input class="inline-input" id="hotseatName1" placeholder="Display name" maxlength="40" value="${escape(hotseatName1)}"></label><label>Player 2<input class="inline-input" id="hotseatName2" placeholder="Display name" maxlength="40" value="${escape(hotseatName2)}"></label></div><p>Players share a device. The screen is hidden between turns and during drafting.</p></section>${setupOptions()}</div>`;
  if(room){if(!room.host){selectedExpansions=new Set(room.config?.expansions||[]);selectedDifficulties={...room.config?.difficulties};}return `<div class="route shell shell-multiplayer"><h1 class="shell-title">Multiplayer</h1>${tab}<div class="shell-online-rooms"><section class="shell-card shell-active-room"><div><small>${room.host?'Your lobby':'Joined lobby'}</small><h2 class="shell-active-code">${escape(room.code)}</h2><p>${room.connected?.filter(Boolean).length||0}/2 players connected</p></div><div>${btn('Copy code','copyCode')}${room.host?btn('End lobby','endRoom','shell-danger'):btn('Leave lobby','leaveRoom','shell-danger')}</div></section></div><section class="shell-card shell-lobby-players">${[0,1].map(i=>`<div class="shell-seat ${room.ready[i]?'ready':''}"><strong>${i===0?'Host':'Guest'}</strong><span>${room.connected[i]?(i===(room.hostSeat??0)?'Hosting':room.ready[i]?'Ready':'Not ready'):'Waiting to join'}</span></div>`).join('')}</section>${setupOptions({locked:!room.host,config:room.config})}${room.host?`<p class="shell-hint">Changing expansions resets the guest's readiness.</p>`:'<p class="shell-hint">The host controls expansion selection.</p>'}</div>`;}
- return `<div class="route shell shell-multiplayer"><h1 class="shell-title">Multiplayer</h1>${tab}<div class="shell-dual shell-online-rooms"><section class="shell-card shell-room"><h2>Host a lobby</h2><div class="shell-code-preview" aria-label="Your lobby code will appear here">${Array.from({length:4},()=>'<span>—</span>').join('')}</div><label for="name">Display name</label><input id="name" class="inline-input" maxlength="40" placeholder="Your name" value="${escape(playerDisplayName)}" autocomplete="nickname"><button type="button" class="primary shell-wide" data-action="coopStart" ${playerDisplayName.trim()?'':'disabled'}>Create code</button></section><section class="shell-card shell-room"><h2>Join a lobby</h2>${codeInputs()}<label for="joinname">Display name</label><input id="joinname" class="inline-input" maxlength="40" placeholder="Your name" value="${escape(partnerDisplayName)}" autocomplete="nickname"><button type="button" class="primary shell-wide" data-action="join" ${partnerDisplayName.trim()?'':'disabled'}>Join</button></section></div>${!CAN_MULTIPLAYER?'<p class="shell-hint">Online rooms require the multiplayer service to be configured.</p>':''}${setupOptions()}<p class="shell-hint">Choose your expansions before creating a code. The host can adjust them in the lobby.</p></div>`;
+ return `<div class="route shell shell-multiplayer"><h1 class="shell-title">Multiplayer</h1>${tab}<div class="shell-dual shell-online-rooms"><section class="shell-card shell-room"><h2>Host a lobby</h2><div class="shell-code-preview" aria-label="Your lobby code will appear here">${Array.from({length:4},()=>'<span>—</span>').join('')}</div><label for="name">Display name</label><input id="name" class="inline-input" maxlength="40" placeholder="Your name" value="${escape(playerDisplayName)}" autocomplete="nickname"><button type="button" class="primary shell-wide" data-action="coopStart" ${playerDisplayName.trim()&&!offline?'':'disabled'}>Create code</button></section><section class="shell-card shell-room"><h2>Join a lobby</h2>${codeInputs()}<label for="joinname">Display name</label><input id="joinname" class="inline-input" maxlength="40" placeholder="Your name" value="${escape(partnerDisplayName)}" autocomplete="nickname"><button type="button" class="primary shell-wide" data-action="join" ${partnerDisplayName.trim()&&!offline?'':'disabled'}>Join</button></section></div>${offline?'<p class="shell-hint" role="status">Offline: solo and hot seat still work; online multiplayer requires a connection.</p>':!CAN_MULTIPLAYER?'<p class="shell-hint">Online rooms require the multiplayer service to be configured.</p>':''}${setupOptions()}<p class="shell-hint">Choose your expansions before creating a code. The host can adjust them in the lobby.</p></div>`;
 }
 function settings(){const field=(id,label,options,key)=>`<label class="shell-setting"><span>${label}</span><select class="inline-input" id="${id}" data-setting="${key}" aria-label="${label}">${options}</select></label>`;
 const options=(key,choices)=>choices.map(([value,label])=>`<option value="${value}" ${uiSettings[key]===value?'selected':''}>${label}</option>`).join('');
@@ -427,7 +427,7 @@ async function handle(actionName){
   if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;return setRoute('#/');}
   if(actionName==='soloStart'){selectedMode='solo';return create('solo');}if(actionName==='coopStart'){selectedMode='coop';return create('coop');}
   if(actionName==='passReady'){passDevice=false;return render();}
-  if(actionName==='startHotseat'){if(session&&!['hotseat','local'].includes(session.id))return setError('Leave your online lobby before starting hot seat.');const n1=hotseatName1.trim(),n2=hotseatName2.trim();if(!n1||!n2)return setError('Enter both player names.');try{cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'coop',names:[n1,n2],config:currentSetup(),interactiveDraw:true,manualTurnEnd:true});localStorage.setItem('onirama.hotseat.v1',JSON.stringify(game));session={id:'hotseat',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));passDevice=true;beginGuestSession();await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;}
+  if(actionName==='startHotseat'){if(session&&!['hotseat','local'].includes(session.id)&&navigator.onLine!==false)return setError('Leave your online lobby before starting hot seat.');const n1=hotseatName1.trim(),n2=hotseatName2.trim();if(!n1||!n2)return setError('Enter both player names.');try{cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'coop',names:[n1,n2],config:currentSetup(),interactiveDraw:true,manualTurnEnd:true});localStorage.setItem('onirama.hotseat.v1',JSON.stringify(game));session={id:'hotseat',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));passDevice=true;beginGuestSession();await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;}
   if(actionName.startsWith('multiplayerTab:')){multiplayerTab=actionName.slice(15)==='hotseat'?'hotseat':'online';return render();}
   if(actionName==='history')return setRoute('#/history');
   if(actionName==='tutorial'){tutorialStep=0;tutorialChapter=0;return setRoute('#/tutorial');}
@@ -447,6 +447,13 @@ async function handle(actionName){
     }
     if(finished.mode==='solo')return create('solo',config);
     return doRoom('restart',{expectedVersion:version});
+  }
+  if(actionName==='resumeLocalSolo'||actionName==='resumeLocalHotseat'){
+    const hot=actionName==='resumeLocalHotseat',key=hot?'onirama.hotseat.v1':'onirama.solo.v1';
+    if(!localStorage.getItem(key))return setError('That saved game is unavailable.');
+    cancelStream();localEngine??=await import('./engine/game.js');
+    session={id:hot?'hotseat':'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));
+    passDevice=hot;state=null;version=0;await refresh();return setRoute('#/game');
   }
   if(actionName==='setup')return setRoute('#/setup');if(actionName==='roadmap')return setRoute('#/roadmap');if(actionName==='rules')return setRoute('#/rules');if(actionName==='joinPage')return setRoute('#/join');
   if(actionName==='solo'||actionName==='coop'){selectedMode=actionName;return setRoute('#/setup');}
@@ -646,7 +653,8 @@ app.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&(active===last||!popup.contains(active))){e.preventDefault();first.focus();}
 },true);
 addEventListener('hashchange',render);
-addEventListener('online',()=>{if(session&&!IS_LOCAL_SOLO())startStream();});
+addEventListener('online',()=>{render();if(session&&!IS_LOCAL_GAME())startStream();});
+addEventListener('offline',()=>{render();});
 addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startStream();});
 document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()){if(streamAbort===null)startStream();else if(session.transport==='firebase')startStream();else refresh();}});
 render();if(typeof createCardInspector==='function')cardInspector=createCardInspector({root:app});installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE||IS_HOTSEAT()){import('./engine/game.js').then(async m=>{localEngine=m;if(IS_LOCAL_GAME()){if(IS_HOTSEAT())passDevice=true;return refresh();}if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game'||page==='#/multiplayer')startStream();});}
@@ -670,3 +678,10 @@ if(typeof window!=='undefined'){
  window.addEventListener?.('pageshow',settleViewportOnce);
 }
 
+
+// Only the built static/PWA site installs the offline shell; local development
+// continues to use the Node server without registering a missing worker.
+if(STATIC_SITE&&'serviceWorker' in navigator){
+  navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'})
+    .catch(e=>console.warn('Offline installation unavailable:',e));
+}

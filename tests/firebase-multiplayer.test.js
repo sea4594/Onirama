@@ -46,7 +46,7 @@ test('Pages and local runtime use the exact six Firebase browser config values w
   const env={...process.env,ONIRAMA_API_ORIGIN:'',ONIRAMA_FIREBASE_API_KEY:'',ONIRAMA_FIREBASE_AUTH_DOMAIN:'',ONIRAMA_FIREBASE_PROJECT_ID:'',ONIRAMA_FIREBASE_APP_ID:'',ONIRAMA_FIREBASE_MESSAGING_SENDER_ID:'',ONIRAMA_FIREBASE_STORAGE_BUCKET:''};
   execFileSync(process.execPath,['scripts/build-pages.js',dir],{env});
   const local=readFileSync('public/runtime-config.js','utf8'),output=readFileSync(join(dir,'runtime-config.js'),'utf8');
-  assert.equal(output,local);
+  assert.equal(output,local+'\nwindow.ONIRAMA_STATIC_BUILD = true;\n');
   for(const expected of ['AIzaSyCJFNXowBzLyPfvFI0X2BHaPszLbfs2vlE','onirama-5124e.firebaseapp.com','onirama-5124e','onirama-5124e.firebasestorage.app','963565955083','1:963565955083:web:1ed229c286d73718633f0e'])assert.ok(output.includes(expected));
   assert.ok(readFileSync(join(dir,'firebase-room.js'),'utf8').includes('onSnapshot'));
   assert.ok(readFileSync(join(dir,'engine/firebase-protocol.js'),'utf8').includes('playRoom'));
