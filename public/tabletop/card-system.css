@@ -160,6 +160,10 @@
   background:radial-gradient(circle at center,#bda7d52a 0 18%,transparent 19%),repeating-linear-gradient(140deg,#47345a,#47345a 6px,#342d50 6px,#342d50 12px)!important;
   overflow:visible!important;clip-path:none!important;box-shadow:0 1px 4px #0007!important;
 }
+/* The expansion zone (not the card) was still clipping the outer corners:
+   adaptive.css marks ALL expansion zones overflow:hidden!important. */
+.game-viewport .tt2-root[data-tt15-layout] .tt5-expansions>.tt5-zone.tt5-premonitions{overflow:visible!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-premonitions>.tt5-contents{overflow:visible!important}
 .game-viewport .tt5-premonitions .tt14-reserve-back{display:none!important}
 
 /* Same-size count-menu backgrounds in every category. Tower groups still run
@@ -200,7 +204,18 @@
 /* iOS standalone: use the complete viewport including the background beneath
    the home indicator, while keeping controls inside its safe touch region. */
 .game-viewport>.tt6-workspace{padding-bottom:max(4px,env(safe-area-inset-bottom,0px))!important}
-.game-viewport .tt6-dock-scroll{align-items:center!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin}
+/* Action content belongs BELOW the header, not vertically centered around it.
+   Oversize decisions scroll inside the reserved shelf rather than disappearing
+   behind the status line. Keep the status outside the scrollport. */
+.game-viewport>.tt6-workspace{justify-content:flex-start!important;gap:3px!important;
+  padding-bottom:max(5px,calc(env(safe-area-inset-bottom,0px) / 2))!important}
+.game-viewport>.tt6-workspace .tt6-dock-status{position:relative;z-index:1;flex:0 0 auto!important;margin:0!important}
+.game-viewport>.tt6-workspace .tt6-dock-scroll{box-sizing:border-box;flex:1 1 0!important;min-height:0!important;
+  display:flex!important;align-items:safe center!important;justify-content:flex-start!important;
+  overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin;overscroll-behavior:contain;
+  padding:3px 0 2px!important;scroll-padding-top:3px}
+.game-viewport>.tt6-workspace .tt6-dock-decision{flex:0 0 auto!important;min-height:0!important;height:auto!important;
+  max-height:none!important;width:100%!important;overflow:visible!important}
 .game-viewport .tt6-dock-decision .decision{min-height:0!important;overflow:visible!important;max-height:none!important;align-content:center!important}
 .game-viewport .tt6-workspace .tt6-dock-status{flex:0 0 auto!important;line-height:1!important;padding:0!important;min-height:0!important}
 .game-viewport .tt6-workspace .tt6-dock-status strong{line-height:1.15!important}
@@ -270,3 +285,16 @@
 .tt6-pile-inspector .tt9-stack-details .card.tiny[data-tt-card-info]:focus-visible{
   outline:2px solid var(--ui-accent);outline-offset:2px;
 }
+
+/* Phase 8: The drawn-Door/Key decision is distinct from three-Locations
+   search. A full card stays at the left; only the actions share the right. */
+.game-viewport .tt6-workspace .tt25-drawn-door-decision{display:grid!important;grid-template-columns:minmax(0,clamp(70px,22vw,92px)) minmax(0,1fr)!important;
+  gap:clamp(7px,2vw,15px)!important;align-items:center!important;justify-content:center!important;
+  width:min(100%,420px)!important;max-width:100%!important;margin:0 auto!important;flex-wrap:nowrap!important}
+.game-viewport .tt25-drawn-door-preview{display:block;min-width:0!important;width:100%;min-height:0!important;
+  padding:0!important;border:0!important;background:transparent!important;line-height:0!important}
+.game-viewport .tt25-drawn-door-preview>.card{width:100%!important;min-width:0!important;max-width:100%!important;
+  height:auto!important;aspect-ratio:1/1.42!important;pointer-events:none}
+.game-viewport .tt25-drawn-door-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;min-width:0}
+.game-viewport .tt25-drawn-door-actions button{min-height:38px!important;padding:6px 10px!important}
+@media (max-height:480px){.game-viewport .tt6-workspace .tt25-drawn-door-decision{grid-template-columns:56px minmax(0,1fr)!important}.game-viewport .tt25-drawn-door-actions button{min-height:30px!important}}

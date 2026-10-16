@@ -48,5 +48,5 @@ test('portrait Denizens have their own equipment row; inventory boxes have equal
  assert.match(renderPileInspector(viewFor(g,0),'deck',0),/data-inventory-section="towers"/);
 });
 test('drawing a Door retains its original decision separately from searching a completed series',()=>{
- const app=read('public/app.js');assert.match(app,/if\(p\.type==='door'\)return `<section class="decision stack tt20-door-decision"/);assert.match(app,/if\(p\.type==='doorSearch'\)return doorSearchDecision\(g,p\)/);
+ const app=read('public/app.js');assert.match(app,/if\(p\.type==='door'\)return `<section class="decision tt25-drawn-door-decision"/);assert.match(app,/tt25-drawn-door-preview/);assert.match(app,/if\(p\.type==='doorSearch'\)return doorSearchDecision\(g,p\)/);
 });
