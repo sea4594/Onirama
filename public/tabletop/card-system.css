@@ -298,3 +298,58 @@
 .game-viewport .tt25-drawn-door-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;min-width:0}
 .game-viewport .tt25-drawn-door-actions button{min-height:38px!important;padding:6px 10px!important}
 @media (max-height:480px){.game-viewport .tt6-workspace .tt25-drawn-door-decision{grid-template-columns:56px minmax(0,1fr)!important}.game-viewport .tt25-drawn-door-actions button{min-height:30px!important}}
+
+/* Consistent legible card previews for every action-panel decision. A card can
+   scroll horizontally instead of being squeezed to an unreadable 25–35px. */
+.game-viewport .tt6-workspace{--tt26-panel-card:clamp(46px, min(17vw, calc((var(--tt6-dock-height,188px) - 48px)/1.42)), 72px)}
+.game-viewport .tt6-dock-decision :is(.tt24-reveal-list,.tt3-order-list,.tt4-card-choices,.tt20-incantation-cards,.tt22-prem-options){scrollbar-width:thin}
+.game-viewport .tt6-dock-decision .tt24-reveal-list .tt3-order-item,
+.game-viewport .tt6-dock-decision .tt3-order-list:not(.tt23-peek-cards)>.tt3-order-item{box-sizing:border-box;flex:0 0 var(--tt26-panel-card)!important;width:var(--tt26-panel-card)!important;min-width:var(--tt26-panel-card)!important;max-width:none!important}
+.game-viewport .tt6-dock-decision .tt3-order-handle{width:100%!important;max-width:none!important}
+.game-viewport .tt6-dock-decision .tt3-order-handle .card{box-sizing:border-box;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
+.game-viewport .tt6-dock-decision .tt4-card-choices{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto!important;overflow-y:hidden!important;min-width:0!important;max-width:100%!important}
+.game-viewport .tt6-dock-decision .tt4-card-option{flex:0 0 var(--tt26-panel-card)!important;width:var(--tt26-panel-card)!important;min-width:0!important;max-width:none!important;overflow:visible!important}
+.game-viewport .tt6-dock-decision .tt4-card-option .card{width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
+.game-viewport .tt6-dock-decision .tt22-prem-key .card{width:var(--tt26-panel-card)!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
+/* Happy Dream: the retained row hugs its cards. The discard zone immediately
+   follows it and expands by exactly the width of each discarded card. */
+.game-viewport .tt6-dock-decision .tt23-happy-peek{--tt23-card-width:var(--tt26-panel-card);gap:3px!important}
+.game-viewport .tt23-happy-row{justify-content:flex-start!important;gap:3px!important}
+.game-viewport .tt23-peek-cards{box-sizing:border-box;flex:0 1 auto!important;width:max-content!important;max-width:calc(100% - var(--tt23-card-width) - 10px)!important;min-width:0!important;justify-content:flex-start!important;gap:2px!important}
+.game-viewport .tt23-happy-discard{max-width:calc(100% - 8px)!important;min-height:calc(var(--tt23-card-width)*1.42 + 19px)!important;margin:0!important}
+.game-viewport .tt23-discard-stack{min-height:calc(var(--tt23-card-width)*1.42)!important}
+/* Prophecy needs the same readable size, without a stretch-gap before Discard. */
+.game-viewport .tt7-prophecy>.tt7-compact-row{display:flex!important;justify-content:flex-start!important;gap:4px!important;max-width:100%!important}
+.game-viewport .tt7-prophecy .tt26-prophecy-cards{box-sizing:border-box;width:max-content!important;flex:0 1 auto!important;min-width:0!important;max-width:calc(100% - var(--tt26-panel-card) - 12px)!important;justify-content:flex-start!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important}
+.game-viewport .tt7-prophecy .tt7-prophecy-slot{flex:0 0 calc(var(--tt26-panel-card) + 6px)!important;width:calc(var(--tt26-panel-card) + 6px)!important;height:calc(var(--tt26-panel-card)*1.42 + 8px)!important}
+.game-viewport .tt7-prophecy-slot .card{width:var(--tt26-panel-card)!important;height:auto!important;max-width:none!important}
+/* Happy Dream deck search: actual deck-sized, horizontally scrolling cards. */
+.game-viewport .tt26-happy-fetch{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;width:100%!important}
+.game-viewport .tt26-fetch-strip{display:flex;flex:0 0 auto;flex-wrap:nowrap;gap:5px;width:100%;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;overscroll-behavior-x:contain;padding:2px 3px 5px;touch-action:pan-x}
+.game-viewport .tt26-fetch-card{box-sizing:border-box;flex:0 0 var(--tt26-panel-card)!important;width:var(--tt26-panel-card)!important;min-width:var(--tt26-panel-card)!important;max-width:none!important;padding:0!important;background:transparent!important;border:2px solid transparent!important;border-radius:6px;min-height:0!important;line-height:0;cursor:pointer}
+.game-viewport .tt26-fetch-card .card{width:100%!important;height:auto!important;max-width:none!important;aspect-ratio:1/1.42!important;pointer-events:none}
+.game-viewport .tt26-fetch-card.tt26-fetch-selected{border-color:var(--table-gold)!important;outline:2px solid var(--table-gold)!important;outline-offset:0;filter:none!important}
+.game-viewport .tt26-fetch-confirm{align-self:center;flex:0 0 auto;min-height:32px!important;padding:5px 17px!important}
+/* The dock's 188px content budget must not lose another full home-indicator
+   inset. Add that inset to the dock's footprint and keep it as non-interactive
+   padding, with the background continuing to the very bottom of the screen. */
+@media (orientation:portrait){
+ #app>.page.game-viewport{--tt6-dock-height:calc(188px + env(safe-area-inset-bottom,0px))!important}
+ .game-viewport>.tt6-table-slot{bottom:var(--tt6-dock-height)!important}
+ .game-viewport>.tt6-workspace{height:var(--tt6-dock-height)!important;max-height:none!important;padding-bottom:max(4px,env(safe-area-inset-bottom,0px))!important}
+}
+@media (max-height:430px) and (max-width:599px){
+ #app>.page.game-viewport{--tt6-dock-height:calc(116px + env(safe-area-inset-bottom,0px))!important}
+}
+/* Touch activation never creates a lasting hover/selected appearance. Only
+   explicit selection classes or genuine keyboard focus indicate selection. */
+@media (hover:none){
+ .game-viewport .tt6-workspace button:not(.card):hover:not(:active):not([aria-pressed="true"]):not(.tt26-fetch-selected){filter:none!important;box-shadow:none!important;transform:none!important}
+ .game-viewport .tt6-workspace button.tt6-dock-button:hover:not(:active){background:var(--ui-soft)!important;border-color:var(--ui-border)!important;color:var(--ui-text)!important}
+ .game-viewport .tt6-workspace button.tt23-failsafe-urgent:hover:not(:active){background:#a62e3d!important;color:#fff!important}
+}
+@media (max-height:430px){.game-viewport .tt6-workspace{--tt26-panel-card:clamp(37px, min(10vw, calc((var(--tt6-dock-height,116px) - 58px)/1.42)), 43px)}}
+.game-viewport .tt6-dock-decision .tt26-prophecy-cards>.tt3-order-item,
+.game-viewport .tt6-dock-decision .tt24-reveal-list>.tt3-order-item{padding:0!important}
+.game-viewport .tt6-dock-decision .tt22-denizen-choice .card{width:var(--tt26-panel-card)!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
+.game-viewport .tt21-free-cards .card{width:var(--tt26-panel-card)!important;max-width:none!important;flex:0 0 var(--tt26-panel-card)!important;height:auto!important;aspect-ratio:1/1.42!important}

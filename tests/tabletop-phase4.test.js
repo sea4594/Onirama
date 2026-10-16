@@ -58,7 +58,7 @@ test('existing rules commands and event stack remain unchanged',()=>{
  const c=s.players[0].hand.find(c=>c.kind==='location'&&c.symbol!=='key');assert.ok(c);
  s=act(s,{type:'play',id:c.id});assertConserved(s);
  assert.match(appSource,/action\(\{type:'prophecy'/);
- assert.match(appSource,/action\(\{type:'mirrorReward'/);
+ assert.match(appSource,/type:'mirrorReward',ids,color/);
  assert.match(appSource,/action\(\{type:'moduleDecision'/);
  assert.match(appSource,/firebase\.firebaseAction/);
 });
