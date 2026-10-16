@@ -24,7 +24,7 @@ export function soloLegalTargets(g, cardId, seat=0){
 // resources are eligible. The other player's private card IDs are never targets.
 export function cooperativeLegalTargets(g,cardId,seat=0){
   if(!g||g.mode!=='coop'||g.status!=='active'||g.phase!=='action'||seat!==g.active||![0,1].includes(seat))return [];
-  const available=[...(g.players?.[seat]?.hand||[]),...(g.shared||[])];
+  const available=[...(g.players?.[seat]?.hand||[]),...(g.shared||[]),...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===seat)];
   const c=available.find(card=>card.id===cardId);
   if(!c||c.kind==='hidden'||c.kind==='deadEnd')return [];
   if(c.kind==='tower'){

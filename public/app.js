@@ -2,7 +2,7 @@ import {icon} from './icons.js';
 import {cleanConfig,readHistory,recordResult,summarizeHistory,readPresets,savePreset,deletePreset,clearHistory} from './guest-data.js';
 import * as firebase from './firebase-room.js';
 import {renderCard} from './tabletop/cards.js';
-import {createCardInspector} from './tabletop/card-inspection.js';
+import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
@@ -28,7 +28,7 @@ let localEngine=null;
 const COLOR=['red','blue','green','brown'];
 const EXP=[['Book of Steps','P4','book'],['Glyphs','P4','glyphs'],['Dreamcatchers','P4','dreamcatchers'],['Towers','P4','towers'],['Happy Dreams / Premonitions','P5','premonitions'],['Crossroads / Dead Ends','P5','crossroads'],['Door to the Oniverse','P5','oniverse'],['Mirrors (promo)','P6','mirrors'],['Sphinx / Diver / Confusion','P6','sphinx'],['Little Incubus','P6','incubus']];
 let mirrorSelection=new Set(),mirrorTarget=null,mirrorPairSelection=new Set(),cyclobotTarget=null,spellOpen=false;
-let happyPremonitionChoice=null,happyBanishMode=false,nightChoice=null,choicePage=0,spellGoals=[],swapPersonalId=null,swapSharedId=null,freeSearchId="";
+let denizenIntent=null,premonitionKeysSelected=new Set(),happyPremonitionChoice=null,happyBanishMode=false,nightChoice=null,choicePage=0,spellGoals=[],swapPersonalId=null,swapSharedId=null,freeSearchId="";
 let session=null;try{const saved=JSON.parse(localStorage.getItem('onirama.session')||'null');if(saved&&typeof saved.id==='string'&&saved.id.length<64&&(['local','hotseat'].includes(saved.id)||typeof saved.token==='string'||saved.transport==='firebase'))session=saved;}catch{localStorage.removeItem('onirama.session');}
 if(STATIC_SITE&&USE_FIREBASE&&!['local','hotseat'].includes(session?.id)&&session?.transport!=='firebase'){session=null;localStorage.removeItem('onirama.session');}
 let selectedExpansions=new Set(),selectedDifficulties={},spellSelected=new Set(),spellChoice='parallel',effectOrder=[],effectPick=null,incantationStage='claim',effectDiscards=new Set();
@@ -100,7 +100,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -273,6 +273,11 @@ function decision(g,canAct){
   if(p.type==='happyFetch')return `<section class="decision stack"><h2>Happy Dream — find a card</h2>${pagedCards(p.options,c=>`<button type="button" class="tt4-card-option" data-action="happyFetch:${escape(c.id)}">${card(c,{tiny:true})}</button>`)}${catcherSearchChoice(g,true)}</section>`;
   if(p.type==='rally')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap an eligible Location</span>${btn('Skip','rally:skip')}</div></section>`;
   if(p.type==='premonitionPick')return `<section class="decision stack"><h2>Dark Premonitions triggered</h2><p>Choose the order of resolving the active conditions.</p><div class="actions">${pagedCards(p.options,id=>btn(id,`premonitionPick:${id}`,'danger'),2)}</div></section>`;
+  if(p.type==='premonitionKeys'){
+    const ids=new Set(p.options.map(c=>c.id));for(const id of premonitionKeysSelected)if(!ids.has(id))premonitionKeysSelected.delete(id);
+    return `<section class="decision stack tt22-prem-keys"><p>Choose ${p.count} ${p.count===1?'Key':'Keys'} to discard (${premonitionKeysSelected.size}/${p.count}).</p><div class="tt22-prem-options">${p.options.map(c=>`<button type="button" class="tt22-prem-key ${premonitionKeysSelected.has(c.id)?'tt22-picked':''}" data-action="premonitionKey:${escape(c.id)}" aria-pressed="${premonitionKeysSelected.has(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div><button type="button" class="primary" data-action="premonitionKeysConfirm" ${premonitionKeysSelected.size===p.count?'':'disabled'}>Discard selected Keys</button></section>`;
+  }
+  if(p.type==='premonitionNightmare')return `<section class="decision stack"><p>Select which discarded Nightmare to return to Limbo.</p><div class="tt22-prem-options">${p.options.map(c=>`<button type="button" class="tt22-prem-key" data-action="premonitionNightmare:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div></section>`;
   if(p.type==='premonitionDoor')return `<section class="decision stack"><span class="tt7-micro">Tap a Door</span></section>`;
   if(['incantation','incantationOrder','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
   if(p.type==='catchChoose')return `<section class="decision stack">${btn('Continue',`catchChoose:${p.choices[0]}`,'primary')}</section>`;
@@ -300,6 +305,22 @@ function board(g,room){
 }
 // Phase 4: contextual UI lives outside the tabletop. All choices still dispatch
 // through the existing command handler and server/local engine.
+function denizenWorkspace(g){
+ const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent?.id&&x.owner===g.active);if(!d)return null;
+ const a=d.ability,info=cardHelp(d),stage=denizenIntent.step||'confirm';
+ const hand=[...(g.players[g.active]?.hand||[]),...(g.mode==='coop'?g.shared||[]:[])];
+ const movable=a==='keeper'?hand:[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)];
+ const eligible=a==='keeper'?movable.filter(c=>c.kind!=='deadEnd'):a==='architect'?movable.filter(c=>c.kind==='location'&&g.players[g.active].labyrinth.at(-1)?.symbol===c.symbol):movable.filter(c=>c.kind==='location');
+ const chromaticKeys=g.pending?.type==='door'?(g.pending.keys||[]).map(x=>[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)].find(c=>c.id===x.id)).filter(c=>c&&c.color!==g.pending.card.color&&c.color!=='wild'):[];
+ const chromaticDoors=g.pending?.type==='doorSearch'?(g.pending.targets||[]).filter(c=>c.color!==g.pending.color&&c.color!=='wild'):[];
+ const available=a==='mirror'?g.pending?.type==='nightmare'&&!g.pending?.incubus:a==='chromatic'?Boolean(chromaticKeys.length||chromaticDoors.length):a==='keeper'?!g.expansion.oniverse.treasure.some(c=>c.holderId===d.id)&&eligible.length>0:a==='hammer'?g.players[g.active].labyrinth.length>0:a==='architect'?eligible.length>0:a==='cyclobot'?eligible.length>0&&g.discard.some(c=>c.kind==='location'):['squirrel','harpoon'].includes(a)?g.deckCount>0:false;
+ let content='';
+ if(stage==='confirm')content=`<div class="tt22-denizen-card">${card(d,{tiny:true})}</div><p><strong>${escape(info.title)}.</strong> ${escape(info.detail)}</p><div class="tt22-denizen-actions"><button class="primary" data-action="denizenUse" ${available?'':'disabled'}>Use</button>${btn('Cancel','denizenCancel')}</div>`;
+ else if(stage==='pick')content=`<p>Select a ${a==='keeper'?'card to store':a==='architect'?'Location to play':'Location to exchange'}.</p><div class="tt22-denizen-choices">${eligible.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenCard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
+ else if(stage==='discard')content=`<p>Select the Location to take from the discard pile.</p><div class="tt22-denizen-choices">${g.discard.filter(c=>c.kind==='location').map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenDiscard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
+ else if(stage==='chromaticKey')content=`<p>Choose a differently colored Key to claim the Door.</p><div class="tt22-denizen-choices">${chromaticKeys.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenChromaticKey:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
+ return {type:'denizen',key:`denizen:${d.id}:${stage}`,html:`<section class="decision tt22-denizen-dialog">${content}</section>`};
+}
 function contextualDialog(g,room){
  if(g.status!=='active'||!['action','decision','turnComplete'].includes(g.phase)||room.seat!==g.active)return null;
  const e=g.expansion||{},cards=handAndShared(g);
@@ -328,6 +349,7 @@ function contextualDialog(g,room){
 }
 function gameWorkspace(g,room){
  if(!g||!room||g.status!=='active'||room.paused)return null;
+ if(denizenIntent){const box=denizenWorkspace(g);if(box&&room.seat===g.active)return box;denizenIntent=null;}
  if(g.phase==='decision'&&['drawReady','drawn'].includes(g.pending?.type))return null;
  if(g.phase==='decision'&&spellOpen&&g.expansion?.book)return contextualDialog(g,room);
  if(g.phase==='decision'&&g.pending?.type==='coopSwap')return null;
@@ -549,17 +571,37 @@ async function handle(actionName){
   if(actionName.startsWith('rally:'))return action({type:'rally',cardId:actionName.slice(6)});
   if(actionName.startsWith('premonitionPick:'))return action({type:'premonitionPick',id:actionName.slice(16)});
   if(actionName.startsWith('premonitionDoor:'))return action({type:'premonitionDoor',doorId:actionName.slice(16)});
+  if(actionName.startsWith('premonitionKey:')&&g.pending?.type==='premonitionKeys'){
+    const id=actionName.slice(15);if(!g.pending.options.some(c=>c.id===id))return;
+    if(premonitionKeysSelected.has(id))premonitionKeysSelected.delete(id);else if(premonitionKeysSelected.size<g.pending.count)premonitionKeysSelected.add(id);return render();
+  }
+  if(actionName==='premonitionKeysConfirm'&&g.pending?.type==='premonitionKeys'&&premonitionKeysSelected.size===g.pending.count)return action({type:'premonitionKeys',ids:[...premonitionKeysSelected]});
+  if(actionName.startsWith('premonitionNightmare:')&&g.pending?.type==='premonitionNightmare')return action({type:'premonitionNightmare',id:actionName.slice(21)});
   if(actionName.startsWith('effectDiscard:')){const id=actionName.slice(14);if(effectDiscards.has(id))effectDiscards.delete(id);else effectDiscards.add(id);return render();}
-  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id);if(!denizen)return setError('Denizen unavailable');
-    const ability=denizen.ability;if(['squirrel','harpoon','hammer'].includes(ability))return action({type:'useDenizen',id});
-    const cards=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])];
-    if(ability==='architect'||ability==='keeper'){
-      const c=cards.find(x=>x.id===selected);if(!c)return setError('Select a Location from your hand or shared resources first.');return action({type:'useDenizen',id,cardId:c.id});
-    }
-    if(ability==='cyclobot'){
-      const c=cards.find(x=>x.id===selected);if(!c||c.kind!=='location')return setError('Select a hand Location to exchange first.');
-      cyclobotTarget=id;return render();
-    }
+  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen)return;denizenIntent={id,step:'confirm'};return render();}
+  if(actionName==='denizenCancel'){denizenIntent=null;return render();}
+  if(actionName==='denizenUse'&&denizenIntent){const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent.id&&x.owner===g.active);if(!d)return;const a=d.ability;
+    if(a==='mirror'&&g.pending?.type==='nightmare')return action({type:'nightmare',option:'mirror',denizenId:d.id});
+    if(a==='chromatic'&&g.pending?.type==='door'){denizenIntent.step='chromaticKey';return render();}
+    if(a==='chromatic'&&g.pending?.type==='doorSearch'){denizenIntent=null;return render();}
+    if(['squirrel','harpoon','hammer'].includes(a))return action({type:'useDenizen',id:d.id});
+    if(['architect','keeper','cyclobot'].includes(a)){denizenIntent.step='pick';return render();}return;
+  }
+  if(actionName.startsWith('denizenCard:')&&denizenIntent?.step==='pick'){
+    const id=actionName.slice(12),d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent.id&&x.owner===g.active);
+    const pool=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared||[]:[]),...(d?.ability!=='keeper'?(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active):[])];
+    if(!d||!pool.some(c=>c.id===id))return;
+    if(d.ability==='cyclobot'){denizenIntent={...denizenIntent,step:'discard',cardId:id};return render();}
+    return action({type:'useDenizen',id:d.id,cardId:id});
+  }
+  if(actionName.startsWith('denizenChromaticKey:')&&denizenIntent?.step==='chromaticKey'){
+    const id=actionName.slice('denizenChromaticKey:'.length),p=g.pending;
+    if(p?.type==='door'&&p.keys.some(k=>k.id===id))return action({type:'chooseDoor',keyId:id});
+    return;
+  }
+  if(actionName.startsWith('denizenDiscard:')&&denizenIntent?.step==='discard'){
+    const id=actionName.slice(15);if(!g.discard.some(c=>c.id===id&&c.kind==='location'))return;
+    return action({type:'useDenizen',id:denizenIntent.id,cardId:denizenIntent.cardId,discardId:id});
   }
   if(actionName==='cyclobotCancel'){cyclobotTarget=null;return render();}
   if(actionName.startsWith('cyclobotSwap:')){

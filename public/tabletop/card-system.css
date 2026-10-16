@@ -55,3 +55,56 @@
 .game-viewport .tt21-free-buttons button{min-height:27px!important;padding:4px 9px!important}
 .game-viewport .tt21-free-buttons .tt21-muted{opacity:.65}
 @media(orientation:landscape) and (min-width:600px){.game-viewport .tt21-search-options{align-content:center}.game-viewport .tt21-search-choice{width:83px}.game-viewport .tt21-free-detail{flex-wrap:wrap}.game-viewport .tt21-free-cards{max-width:100%}.game-viewport .tt21-free-buttons{flex-direction:row}}
+
+/* Keep intrinsic card colors on selection: selection is an outline, not a recolor. */
+.game-viewport .tt2-root .card:is(.selected,.tt7-eligible){filter:none!important;opacity:1!important;transform:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
+.game-viewport .tt2-root .card:is(.selected,.tt7-eligible):is(.red,.blue,.green,.brown){border-color:currentColor}
+.game-viewport .tt2-root .card.red:is(.selected,.tt7-eligible){border-color:var(--red)!important}
+.game-viewport .tt2-root .card.blue:is(.selected,.tt7-eligible){border-color:var(--blue)!important}
+.game-viewport .tt2-root .card.green:is(.selected,.tt7-eligible){border-color:var(--green)!important}
+.game-viewport .tt2-root .card.brown:is(.selected,.tt7-eligible){border-color:var(--brown)!important}
+.game-viewport .tt2-root .card:active{filter:none!important}
+
+/* One outline card at the end of every Labyrinth; a vertical stroke marks the
+   last three-Location Door group, even when there are no newer Locations. */
+.game-viewport :is(.tt2-labyrinth-row,.tt6-labyrinth-cards)>.tt22-next-slot{display:block!important;flex:0 0 var(--tt15-mini,var(--tt2-mini,35px))!important;width:var(--tt15-mini,var(--tt2-mini,35px))!important;height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.42)!important;max-width:none!important;aspect-ratio:1/1.42!important;border:2px dashed var(--table-gold-line)!important;border-radius:5px;opacity:.8;margin:0 4px;box-shadow:none!important;background:transparent!important}
+.game-viewport :is(.tt2-labyrinth-row,.tt6-labyrinth-cards)>.tt22-door-boundary{display:block!important;flex:0 0 3px!important;align-self:stretch;min-height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.3);max-height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.42);margin:0 5px!important;border-radius:3px;background:var(--table-gold)!important;opacity:.9;z-index:3}
+.game-viewport .tt2-labyrinth-row>.tt22-door-boundary{position:relative}
+
+/* The Keeper's held card is a card, not a square tile. It stays attached to
+   its own Keeper, with the stored card above and available for normal play. */
+.game-viewport .tt17-denizen-holder{position:relative;flex:0 0 var(--tt15-mini,38px);width:var(--tt15-mini,38px);height:calc(var(--tt15-mini,38px)*1.42);display:inline-flex;justify-content:center;align-items:center;margin-right:4px}
+.game-viewport .tt17-denizen-card{appearance:none;display:grid;place-items:center;flex:none;position:relative;padding:0!important;border:0!important;background:none!important;min-height:0!important;width:100%;height:100%;color:inherit;cursor:pointer}
+.game-viewport .tt17-denizen-card>.card.tiny{display:grid;width:100%!important;height:100%!important;aspect-ratio:1/1.42!important;min-width:0!important;pointer-events:auto}
+.game-viewport .tt17-denizen-card:disabled{opacity:1;cursor:default}
+.game-viewport .tt17-denizen-card:focus-visible{outline:2px solid var(--table-gold);outline-offset:2px}
+.game-viewport .tt22-keeper-overlay{position:absolute;display:block;z-index:5;left:30%;top:19%;width:70%;height:78%;transform:rotate(5deg);filter:drop-shadow(1px 2px 2px #0009)}
+.game-viewport .tt22-keeper-overlay>.card.tiny{box-sizing:border-box!important;width:100%!important;height:100%!important;min-width:0!important;aspect-ratio:1/1.42!important;margin:0!important;display:grid;place-items:center}
+.game-viewport :is(.tt17-denizen-cards,.tt5-denizens>.tt5-contents){overflow-y:visible!important;padding-right:calc(var(--tt15-mini,38px)*.4);padding-top:2px;padding-bottom:4px}
+
+/* Reserve backs need their rounded corners visible; don't clip at the
+   enclosing button's rectangular bounds. */
+.game-viewport .tt5-premonitions .tt14-reserve{overflow:visible!important;box-sizing:border-box!important;padding:2px!important;border-radius:6px!important}
+.game-viewport .tt5-premonitions .tt14-reserve-back{overflow:visible!important;border-radius:6px!important;flex:0 0 auto!important;height:calc(100% - 4px)!important;max-height:100%!important;clip-path:none!important}
+
+/* All card-back icons share the same geometric center in both orientations. */
+.game-viewport :is(.tt6-card-back,.tt2-deck-back,.tt14-catcher-back,.tt14-reserve-back){display:grid!important;place-items:center!important;text-align:center}
+.game-viewport :is(.tt6-card-back,.tt2-deck-back,.tt14-catcher-back,.tt14-reserve-back) :is(.symbol,.ui-icon,svg){margin:auto;place-self:center;transform-origin:center}
+
+/* Denizen and Premonition choices use only the existing bottom action panel. */
+.tt6-dock-decision .tt22-denizen-dialog{display:flex;align-items:center;justify-content:center;gap:8px!important;flex-wrap:nowrap;max-width:100%;width:100%;height:100%;min-width:0}
+.tt22-denizen-card{flex:0 0 44px;display:flex;align-items:center;justify-content:center}
+.tt22-denizen-card .card{width:36px!important;height:51px!important;flex:none}
+.tt22-denizen-dialog>p{flex:1 1 auto!important;max-width:360px;min-width:0;margin:0!important;font-size:.73rem!important;line-height:1.3!important;overflow-y:auto;max-height:100%}
+.tt22-denizen-actions{display:flex;flex:0 0 auto;flex-direction:column;gap:4px}
+.tt22-denizen-choices,.tt22-prem-options{display:flex;gap:5px;align-items:center;overflow-x:auto;max-width:100%;min-width:0;padding:2px}
+.tt22-denizen-choice,.tt22-prem-key{display:grid;place-items:center;padding:3px!important;border:1px solid transparent!important;border-radius:5px;background:transparent!important;flex:0 0 auto;min-height:0!important}
+.tt22-denizen-choice .card,.tt22-prem-key .card{width:30px!important;height:auto!important;aspect-ratio:1/1.42!important;pointer-events:none}
+.tt22-prem-key.tt22-picked{outline:2px solid var(--table-gold)!important;outline-offset:-2px;filter:none!important}
+.tt22-prem-keys{display:flex;align-items:center!important;gap:6px;flex-wrap:nowrap!important;max-width:100%}
+.tt22-prem-keys p{flex:0 1 auto!important;min-width:60px;max-width:140px}
+@media(orientation:landscape) and (min-width:600px){.tt6-dock-decision .tt22-denizen-dialog{flex-wrap:wrap;align-content:center;gap:4px!important}.tt22-denizen-dialog>p{flex:1 1 100%!important;max-height:80px}.tt22-denizen-actions{flex-direction:row}.tt22-prem-keys{flex-wrap:wrap!important}.tt22-prem-keys p{flex:1 1 100%!important;max-width:100%}}
+
+/* The fitted Premonition strip must not clip the reserve's rounded silhouette. */
+.game-viewport .tt2-root[data-tt15-layout] .tt5-premonitions>.tt5-contents{overflow:visible!important}
+.game-viewport .tt2-root .tt5-premonitions .tt14-reserve-back{min-height:0!important;outline-offset:0}

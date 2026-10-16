@@ -10,7 +10,7 @@ const preview=c=>c.kind==='hidden'?`<div class="tt6-card-back" aria-label="Face-
 export function cooperativeTabletopModel(g,seat,{selectedId=null,canAct=true}={}){
   if(g?.mode!=='coop'||![0,1].includes(seat)||g.players?.length!==2)throw Error('Cooperative tabletop requires two players and a valid seat');
   const mine=g.players[seat],partner=g.players[1-seat],active=canAct&&g.status==='active'&&g.phase==='action'&&g.active===seat;
-  const permitted=[...mine.hand,...(g.shared||[])],selected=permitted.find(c=>c.id===selectedId)||null;
+  const permitted=[...mine.hand,...(g.shared||[]),...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===seat)],selected=permitted.find(c=>c.id===selectedId)||null;
   const legal=selected?cooperativeLegalTargets(g,selectedId,seat):[];
   return {seat,mine,partner,shared:g.shared||[],draft:g.draft||[],selected,legal,active,isDraft:g.phase==='draft',canDraft:canAct&&g.active===seat&&g.status==='active',deckCount:g.deckCount??0,discard:g.discard||[],limbo:g.limbo||[]};
 }
@@ -22,7 +22,7 @@ function doors(g,options){
 function labyrinth(g,p,i,canAct){
   return `<section class="tt17-player-labyrinth tt6-player-labyrinth ${canAct&&g.active===i&&g.phase==='action'?'tt6-active-labyrinth':''}" aria-label="${esc(p.name)} Labyrinth" ${canAct&&g.active===i&&g.phase==='action'?'data-tt-drop="play"':''}>
     <div class="tt6-region-heading"><strong>${esc(p.name)} · Labyrinth</strong><b>${p.labyrinth.length}</b></div>
-    <div class="tt6-labyrinth-cards" data-tabletop-scroll="labyrinth-${i}">${p.labyrinth.length?p.labyrinth.map(preview).join(''):'<span class="tt14-empty-labyrinth" aria-hidden="true"></span>'}</div>
+    <div class="tt6-labyrinth-cards" data-tabletop-scroll="labyrinth-${i}">${p.labyrinth.map(c=>`${preview(c)}${c.id===p.lastDoorSeriesEnd?'<span class="tt22-door-boundary" aria-label="Last Door-search group ends here"></span>':''}`).join('')}<span class="tt2-blank-target tt14-empty-labyrinth tt22-next-slot" aria-label="Next card position" title="Next Location"></span></div>
   </section>`;
 }
 function handArea(cards,label,{active=false,selectedId='',privateBacks=false,shared=false,decisionTargets=new Set(),decisionSelected=new Set()}={}){
@@ -49,7 +49,7 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
       <div class="tt17-coop-equipment">${piles(g,m)}${renderTowerTabletop(g,{canAct:active,decisionTargets})}${expansion}</div>
       ${m.isDraft?draft:''}
       <div class="tt17-coop-labyrinths">${g.players.map((p,i)=>labyrinth(g,p,i,active)).join('')}</div>
-      ${g.expansion?.oniverse?`<div class="tt17-coop-denizens" aria-label="Players’ Denizens">${g.players.map((p,i)=>renderDenizenTabletop(g,{owner:i,canAct:active,decisionTargets})).join('')}</div>`:''}
+      ${g.expansion?.oniverse?`<div class="tt17-coop-denizens" aria-label="Players’ Denizens">${g.players.map((p,i)=>renderDenizenTabletop(g,{owner:i,canAct,decisionTargets})).join('')}</div>`:''}
       <div class="tt17-coop-hands"><div class="${seat===0?'tt6-self':'tt6-opponent'} tt17-${seat===0?'your':'partner'}-hand">${handFor(0)}</div>${shared}<div class="${seat===1?'tt6-self':'tt6-opponent'} tt17-${seat===1?'your':'partner'}-hand">${handFor(1)}</div></div>
     </div>
   </div>`;
