@@ -2,7 +2,7 @@ import {PENDING_DECISIONS} from './dialogs.js';
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 import {renderCard} from './cards.js';
 import {premonitionFace} from './expansions.js';
-const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Overload!',towerPenalty:'Towers',moduleDecision:'Effect'};
+const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Overload!',towerPenalty:'Choose a Tower',moduleDecision:'Effect'};
 export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
 export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null,failsafeChoosing=false}={}){
  if(game.status==='won')return {title:'You escaped the dream!',hint:''};

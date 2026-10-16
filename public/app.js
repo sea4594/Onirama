@@ -315,7 +315,7 @@ function decision(g,canAct){
   if(['incantation','incantationOrder','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
   if(p.type==='catchChoose')return `<section class="decision stack">${btn('Continue',`catchChoose:${p.choices[0]}`,'primary')}</section>`;
   if(p.type==='catchOverload')return `<section class="decision stack tt23-overload"><button type="button" class="primary" data-action="catchOverload:remove">Remove Dreamcatcher</button></section>`;
-  if(p.type==='towerPenalty')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap a Tower</span>${btn('False destruction','towerFake')}</div></section>`;
+  if(p.type==='towerPenalty')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap an outlined Tower to destroy it</span>${btn('False destruction','towerFake')}</div></section>`;
   if(p.type==='moduleDecision')return `<section class="decision stack"><h2>Choose effect: ${escape(p.id)}</h2><div class="actions">${pagedCards(p.options,o=>btn(escape(o),`moduleDecision:${encodeURIComponent(o)}`,'primary'),2)}</div></section>`;
   return `<div class="notice">Resolving an effect.</div>`;
 }

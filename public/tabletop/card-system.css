@@ -9,6 +9,16 @@
 .card:not(.tiny).card-kind-denizen .card-label{max-width:92%;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){.card.selected{transition:none!important}}
 
+/* A selectable Tower is a button, while a resting Tower is a div. Reset the
+   generic button padding so its symbols keep the same dimensions in either state. */
+.game-viewport .tt8-towers-slot .tt5-preview button.card.card-kind-tower{
+  box-sizing:border-box!important;padding:0!important;appearance:none;
+  align-items:center;justify-content:center;min-width:0
+}
+.game-viewport .tt8-towers-slot .tt5-preview button.card.card-kind-tower:focus-visible{
+  outline:3px solid var(--table-gold)!important;outline-offset:2px!important
+}
+
 /* Count sizes track the actual draw-card width, including narrow fitted tables. */
 .game-viewport :is(.tt2-pile,.tt6-pile) .tt2-deck-back{container-type:inline-size}
 .game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count{
