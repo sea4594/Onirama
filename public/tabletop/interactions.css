@@ -12,7 +12,7 @@
 .tt2-root [data-tt-drop].tt3-drop-hover.tt3-zone-action{background:#fff2bd;box-shadow:0 0 0 3px #fcdf9588}
 .tt2-root [data-tt-drop].tt3-target-ready.tt2-pile{padding:4px;border:2px solid #f9d989;border-radius:8px}
 .tt2-root .tt2-hand-card .card:focus-visible{outline:3px solid #ffdc82;outline-offset:4px}
-@media(hover:hover){.tt2-root [data-tt-card]:hover:not(:disabled){box-shadow:0 6px 18px #0009;border-color:#f2d59a}}
+@media(hover:hover){.tt2-root [data-tt-card]:hover:not(:disabled){outline:2px solid var(--table-gold);outline-offset:-2px;box-shadow:none}}
 @media(prefers-reduced-motion:reduce){.tt2-root [data-tt-drop],.tt3-ghost{transition:none!important}}
 /* Gap-based drag reordering with touch/keyboard fallback. */
 .tt3-order-list .tt3-order-item{min-width:0;align-items:center;position:relative;border:1px solid transparent;border-radius:10px;padding:3px}

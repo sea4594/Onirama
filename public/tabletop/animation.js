@@ -66,11 +66,26 @@ export function planGameTransitions(previous,next){
 const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
 const rectOK=r=>r&&r.width>0&&r.height>0&&Number.isFinite(r.left);
 const rect=element=>element?.getBoundingClientRect?.();
+// Towers contain several independently positioned icons. Keep their rendered
+// geometry on the flight clone: the clone lives in document.body, outside
+// selectors that depend on the tabletop's adaptive-layout ancestor.
+function motionTemplate(el){
+  const clone=el.cloneNode(true);
+  if(!el.classList?.contains('card-kind-tower')||typeof getComputedStyle!=='function')return clone;
+  const parts='.tt5-tower-face,.tt8-tower-marks,.tt8-tower-mark,.tt11-tower-emblem,.tt11-tower-number,.ui-icon';
+  const source=el.querySelectorAll(parts),destination=clone.querySelectorAll(parts);
+  const properties=['display','position','left','right','top','bottom','width','height','font-size','line-height','transform','align-items','justify-content'];
+  source.forEach((node,i)=>{
+    const style=getComputedStyle(node);
+    for(const property of properties)destination[i].style.setProperty(property,style.getPropertyValue(property),'important');
+  });
+  return clone;
+}
 function capture(root){
   const found=new Map();
   for(const el of root.querySelectorAll?.('.tt6-table-slot .tt2-root [data-tt-motion-id], .tt6-workspace [data-tt-motion-id]')||[]){
     const id=el.dataset.ttMotionId,r=rect(el);
-    if(id&&!found.has(id)&&rectOK(r))found.set(id,{el,r,template:el.cloneNode(true)});
+    if(id&&!found.has(id)&&rectOK(r))found.set(id,{el,r,template:motionTemplate(el)});
   }
   found.backs=[...(root.querySelectorAll?.('.tt6-table-slot .tt6-opponent .tt6-card-back')||[])].map(el=>({el,r:rect(el),template:el.cloneNode(true)})).filter(entry=>rectOK(entry.r));
   return found;

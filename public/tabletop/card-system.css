@@ -59,11 +59,8 @@
 
 /* Keep intrinsic card colors on selection: selection is an outline, not a recolor. */
 .game-viewport .tt2-root .card:is(.selected,.tt7-eligible){filter:none!important;opacity:1!important;transform:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
-.game-viewport .tt2-root .card:is(.selected,.tt7-eligible):is(.red,.blue,.green,.brown){border-color:currentColor}
-.game-viewport .tt2-root .card.red:is(.selected,.tt7-eligible){border-color:var(--red)!important}
-.game-viewport .tt2-root .card.blue:is(.selected,.tt7-eligible){border-color:var(--blue)!important}
-.game-viewport .tt2-root .card.green:is(.selected,.tt7-eligible){border-color:var(--green)!important}
-.game-viewport .tt2-root .card.brown:is(.selected,.tt7-eligible){border-color:var(--brown)!important}
+/* Keep intrinsic border colors as well as the face colors; the new gold outline
+   alone indicates the selection. */
 .game-viewport .tt2-root .card:active{filter:none!important}
 
 /* One outline card at the end of every Labyrinth; a vertical stroke marks the
@@ -128,23 +125,31 @@
 .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers .tt14-catcher-face{width:calc((var(--tt15-landscape-shelf,78px) - 20px)*.705)!important;height:calc(var(--tt15-landscape-shelf,78px) - 20px)!important}
 
 /* A true four-color Crossroad, with its own rainbow frame retained on selection. */
-.game-viewport .tt2-root .card.wild.card-kind-location,
-.game-viewport .tt2-root .card.wild.card-kind-location:is(.selected,.tt7-eligible){
+/* Crossroads use all four Location colors across the card FACE, not just
+   the border. The same artwork is used in selection, reveal, and flight ghosts. */
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front>.card).wild.card-kind-location{
   border:3px solid transparent!important;
-  background:linear-gradient(145deg,#5b3c57,#283e57 55%,#465341) padding-box,
-  conic-gradient(from 15deg,#f5747b 0 23%,#f2b96a 24% 43%,#5cce99 44% 64%,#64b5f6 65% 84%,#f4a1d8 85% 100%) border-box!important;
-  color:#fce7b5!important;
+  background:
+    radial-gradient(ellipse at 50% 48%,#2434496e 0%,transparent 65%) padding-box,
+    conic-gradient(from 35deg at 50% 52%,#386e93 0 22%,#447453 25% 47%,#936039 50% 72%,#8b435b 75% 97%,#386e93 100%) padding-box,
+    conic-gradient(from 15deg,#f48e95 0 23%,#eeb96e 24% 43%,#6addac 44% 64%,#75bffa 65% 84%,#e9a0d2 85% 100%) border-box!important;
+  color:#fff1d5!important;
 }
-.game-viewport .tt2-root .card.wild.card-kind-location::before{content:'';position:absolute;inset:7%;border-radius:5px;pointer-events:none;background:conic-gradient(from 15deg,#ff7c9018,#ffdd842c,#74e2aa25,#7fb9ff30,#ff7c9018);z-index:0}
-.game-viewport .tt2-root .card.wild.card-kind-location:is(.selected,.tt7-eligible){outline:2px solid #fff0bc!important;outline-offset:2px!important}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front>.card).wild.card-kind-location::before{
+  content:'';position:absolute;inset:7%;border-radius:5px;pointer-events:none;
+  background:radial-gradient(ellipse,#fff0c915,transparent 70%);z-index:0;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front>.card).wild.card-kind-location:is(.selected,.tt7-eligible){outline:2px solid #fff0bc!important;outline-offset:2px!important}
 
-/* Dead End and all face icons keep their center independently of card display and button padding. */
-.game-viewport .card:not(.card-kind-tower)>.symbol{position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;margin:0!important;display:grid!important;place-items:center!important;width:66%!important;height:auto!important;aspect-ratio:1!important;max-height:74%!important;min-height:0!important;padding:0!important}
-.game-viewport .card:not(.card-kind-tower)>.symbol>.ui-icon{display:block!important;position:static!important;margin:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;transform:none!important}
-.game-viewport .card.card-kind-denizen>.symbol{top:45%!important;width:64%!important}
-.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) {display:grid!important;place-items:center!important;padding:0!important}
-.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back)>span{display:grid!important;place-items:center!important;position:static!important;margin:0!important;transform:none!important}
-.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) .ui-icon{width:65%!important;height:65%!important;min-width:0!important;min-height:0!important;margin:auto!important;transform:none!important}
+/* Every card face uses identical relative icon geometry on the tabletop AND
+   on fixed-position flight/reveal clones appended outside the game viewport.
+   Otherwise the icon snaps to another size at the first/last animation frame. */
+:is(.game-viewport .card,.tt8-flying-card.card,.tt10-reveal-front>.card):not(.card-kind-tower)>.symbol{position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;margin:0!important;display:grid!important;place-items:center!important;width:66%!important;height:auto!important;aspect-ratio:1!important;max-height:74%!important;min-height:0!important;padding:0!important}
+:is(.game-viewport .card,.tt8-flying-card.card,.tt10-reveal-front>.card):not(.card-kind-tower)>.symbol>.ui-icon{display:block!important;position:static!important;margin:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;transform:none!important}
+:is(.game-viewport .card,.tt8-flying-card.card,.tt10-reveal-front>.card).card-kind-denizen>.symbol{top:45%!important;width:64%!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back),.tt8-flying-card:is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back){display:grid!important;place-items:center!important;padding:0!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back)>span,.tt8-flying-card:is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back)>span{display:grid!important;place-items:center!important;position:static!important;margin:0!important;transform:none!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) .ui-icon,.tt8-flying-card:is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) .ui-icon{width:65%!important;height:65%!important;min-width:0!important;min-height:0!important;margin:auto!important;transform:none!important}
 .game-viewport .tt2-root .tt2-deck-back{display:grid!important;place-items:center!important;padding:0!important}
 .game-viewport .tt2-root .tt2-deck-back>.tt10-draw-count{display:block!important;position:static!important;inset:auto!important;transform:none!important;line-height:1!important;margin:0!important;text-align:center!important}
 
