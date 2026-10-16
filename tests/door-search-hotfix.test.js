@@ -62,6 +62,6 @@ test('Freeing animates catcher-to-deck even if same action draws cards and net d
 test('Door search interface offers source-specific choices and a separate optional freeing stage',()=>{
  const source=readFileSync('public/app.js','utf8');
  for(const route of ['doorSearch:choose:', 'doorSearch:direct:', 'doorSearch:shuffle:', 'doorSearch:free:', 'doorSearch:passFree', 'doorSearch:skip'])assert(source.includes(route),route);
- assert.match(source,/Trigger a freeing\?/);assert.match(source,/searchBeforeClaim:true/);
+ assert.match(source,/Free a dreamcatcher\?/);assert.match(source,/searchBeforeClaim:true/);
  assert.match(source,/searchableCatchers\(state.game,doorSearchIntent\)/);
 });

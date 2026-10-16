@@ -140,7 +140,7 @@ test('Door search then freeing is a separate selector, and the selected catcher 
  ctx.fixture=g;
  vm.runInContext("doorSearchIntent={option:'claim',doorId:'blue-door',selected:null}",ctx);
  const prompt=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
- assert.match(prompt,/Trigger a freeing\?/);assert.doesNotMatch(prompt,/doorSearch:free:/);
+ assert.match(prompt,/Free a dreamcatcher\?/);assert.doesNotMatch(prompt,/doorSearch:free:/);
  vm.runInContext('doorSearchIntent.selected=1',ctx);
  const chosen=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
  assert.match(chosen,/doorSearch:free:1/);assert.match(chosen,/doorSearch:passFree/);

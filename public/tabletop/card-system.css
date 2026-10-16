@@ -365,3 +365,36 @@
 @media (orientation:landscape) and (max-height:430px){
  .game-viewport .tt6-workspace :is(.tt6-dock-button,.tt21-search-choice,.tt21-chromatic,.tt21-muted,.tt7-option,.tt16-spell-choice){min-height:30px}
 }
+
+/* Nightmare Door targets are still ordinary Door slots. A button must occupy
+   precisely the same space as the resting card, with no default button inset. */
+.game-viewport .tt8-door-slot>button.card.tiny{
+  appearance:none!important;box-sizing:border-box!important;
+  width:min(100%,var(--tt4-mini))!important;max-width:100%!important;
+  min-width:0!important;min-height:0!important;height:auto!important;
+  padding:0!important;margin:0!important;aspect-ratio:1/1.42!important;
+  flex:0 0 auto!important;transform:none!important
+}
+/* In phone portrait, relocate the existing Premonitions zone below the Doors.
+   Its fixed card/zone dimensions are deliberately unchanged. */
+@media (orientation:portrait) and (max-width:679px){
+ .game-viewport .tt2-root[data-tabletop-solo] .tt2-grid{
+   grid-template-areas:'doors piles' 'premonitions premonitions' 'towers towers' 'catchers catchers' 'secondary secondary' 'labyrinth labyrinth' 'hand hand'!important;
+   grid-template-rows:auto auto auto auto auto minmax(calc(var(--tt4-mini)*1.65),1fr) auto!important
+ }
+ .game-viewport .tt2-root[data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{
+   grid-template-areas:'doors piles' 'premonitions premonitions' 'catchers catchers' 'secondary secondary' 'labyrinth labyrinth' 'hand hand'!important;
+   grid-template-rows:auto auto auto auto minmax(calc(var(--tt4-mini)*1.65),1fr) auto!important
+ }
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{
+   grid-template-areas:'doors doors' 'premonitions premonitions' 'towers towers' 'catchers catchers' 'secondary secondary' 'piles denizens' 'labyrinth labyrinth' 'hand hand'!important;
+   grid-template-rows:auto auto auto auto auto auto minmax(calc(var(--tt4-mini)*1.65),1fr) auto!important
+ }
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
+   grid-template-areas:'doors doors' 'premonitions premonitions' 'catchers catchers' 'secondary secondary' 'piles denizens' 'labyrinth labyrinth' 'hand hand'!important;
+   grid-template-rows:auto auto auto auto auto minmax(calc(var(--tt4-mini)*1.65),1fr) auto!important
+ }
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-primary{display:contents!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt5-zone.tt5-premonitions{grid-area:premonitions!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt5-zone.tt5-catchers{grid-area:catchers!important}
+}

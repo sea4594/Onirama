@@ -256,7 +256,7 @@ function searchFreeCatchers(g){
 }
 function searchFreeWorkspace(g){
  const available=searchFreeCatchers(g),chosen=available.find(x=>x.i===searchFreeIntent?.selected);
- return `<section class="decision stack tt21-free-step"><p>Trigger a freeing?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`searchFree:free:${chosen.i}`,'primary')}${btn('Pass','searchFree:pass','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','searchFree:pass','tt21-muted')}</div>`}</section>`;
+ return `<section class="decision stack tt21-free-step"><p>Free a dreamcatcher?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`searchFree:free:${chosen.i}`,'primary')}${btn('Pass','searchFree:pass','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','searchFree:pass','tt21-muted')}</div>`}</section>`;
 }
 // Search is an engine action; choosing an optional Dreamcatcher is a UI-only step.
 // This does not expose deck identities or change state until the player confirms.
@@ -269,7 +269,7 @@ function doorSearchDecision(g,p){
  const valid=intent&&(!intent.doorId||all.some(t=>t.id===intent.doorId));
  if(valid&&g.expansion?.dreamcatchers){
   const available=searchableCatchers(g,intent),chosen=available.find(x=>x.i===intent.selected);
-  return `<section class="decision stack tt21-free-step"><p>Trigger a freeing?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
+  return `<section class="decision stack tt21-free-step"><p>Free a dreamcatcher?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
  }
  const chromatic=!!(g.expansion?.oniverse?.rallied||[]).find(d=>d.owner===g.active&&d.ability==='chromatic');
  const more=doorSearchChromatic&&chromatic;
@@ -387,12 +387,12 @@ function contextualDialog(g,room){
 function gameWorkspace(g,room){
  if(!g||!room||g.status!=='active'||room.paused)return null;
  if(searchFreeIntent&&!(searchFreeIntent.command.type==='mirrorPair'?g.phase==='action':g.pending?.type===searchFreeIntent.command.type))searchFreeIntent=null;
- if(searchFreeIntent&&room.seat===g.active)return {type:'freeSearch',key:'search-free:'+searchFreeIntent.command.type,html:searchFreeWorkspace(g)};
+ if(searchFreeIntent&&room.seat===g.active)return {type:'freeSearch',freeing:true,key:'search-free:'+searchFreeIntent.command.type,html:searchFreeWorkspace(g)};
  if(denizenIntent){const box=denizenWorkspace(g);if(box&&room.seat===g.active)return box;denizenIntent=null;}
  if(g.phase==='decision'&&['drawReady','drawn'].includes(g.pending?.type))return null;
  if(g.phase==='decision'&&spellOpen&&g.expansion?.book)return contextualDialog(g,room);
  if(g.phase==='decision'&&g.pending?.type==='coopSwap')return null;
- if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,html:decision(g,true)}:null;}
+ if(g.phase==='decision'){const key=decisionDialogKey(g,room.seat);return key?{type:g.pending.type,key,mandatory:true,freeing:g.pending.type==='doorSearch'&&Boolean(doorSearchIntent),html:decision(g,true)}:null;}
  return contextualDialog(g,room);
 }
 function closeOptionalDialog(){mirrorTarget=null;mirrorPairSelection.clear();cyclobotTarget=null;spellOpen=false;spellSelected.clear();render();}

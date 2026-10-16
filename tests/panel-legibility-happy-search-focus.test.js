@@ -24,7 +24,7 @@ test('Happy Dream deck search shows every card in one scrollable lane, with one 
 test('Search-based freeing has same Free/Pass selection flow as Door searches, with no Dreamcatcher dropdown anywhere',()=>{
  assert.match(app,/function beginSearchFree\(g,command\)/);
  assert.match(app,/function searchFreeWorkspace\(g\)/);
- assert.match(app,/Trigger a freeing\?/);
+ assert.match(app,/Free a dreamcatcher\?/);
  assert.match(app,/data-action="happyFetchSelect"/);
  assert.match(app,/beginSearchFree\(g,\{type:'happyFetch',cardId:happyFetchSelection\}\)/);
  assert.match(app,/searchFree:free:/);assert.match(app,/searchFree:pass/);

@@ -3,11 +3,11 @@
 body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0,#293454 0,#141b2d 48%,#101526 100%)}
 button,input{font:inherit}
 button{cursor:pointer;border:1px solid var(--border);border-radius:11px;padding:10px 14px;background:#303b56;color:#f0edeb;transition:background .15s,border-color .15s,transform .12s}
-button:not(.card):hover:not(:disabled){background:#415273;border-color:#c5b28a}
+@media (hover:hover) and (pointer:fine){button:not(.card):hover:not(:disabled){background:#415273;border-color:#c5b28a}}
 button:focus-visible,input:focus-visible{outline:3px solid #efc77e;outline-offset:3px}
 button:disabled{opacity:.45;cursor:not-allowed}
 .primary{background:#ceaa73;color:#1b2232;border-color:#e6c48f;font-weight:750}
-.primary:hover:not(:disabled){background:#e5bf83}
+@media (hover:hover) and (pointer:fine){.primary:hover:not(:disabled){background:#e5bf83}}
 .ghost{background:transparent}
 .danger{border-color:#a46269;color:#f3b6b9}
 .mini{font-size:.8rem;padding:7px 9px;border-radius:8px}
@@ -104,9 +104,9 @@ body{background:var(--ui-bg);color:var(--ui-text)}
 .eyebrow,.section-label{color:var(--ui-accent)}
 .chip{color:var(--ui-accent);border-color:var(--ui-border);background:var(--ui-soft)}
 button{color:var(--ui-text);background:var(--ui-soft);border-color:var(--ui-border)}
-button:not(.card):hover:not(:disabled){background:var(--ui-border);border-color:var(--ui-accent)}
+@media (hover:hover) and (pointer:fine){button:not(.card):hover:not(:disabled){background:var(--ui-border);border-color:var(--ui-accent)}}
 button.primary,.primary{background:var(--ui-accent);border-color:var(--ui-accent);color:var(--ui-panel)}
-button.primary:hover:not(:disabled){filter:brightness(1.14);background:var(--ui-accent)}
+@media (hover:hover) and (pointer:fine){button.primary:hover:not(:disabled){filter:brightness(1.14);background:var(--ui-accent)}}
 .inline-input{background:var(--ui-panel);border:1px solid var(--ui-border);color:var(--ui-text)}
 .inline-input:focus-visible{outline:3px solid var(--ui-accent);outline-offset:2px}
 .notice{border-color:var(--ui-border);background:var(--ui-soft);color:var(--ui-text)}

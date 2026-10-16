@@ -7,6 +7,7 @@ export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
 export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null,failsafeChoosing=false}={}){
  if(game.status==='won')return {title:'You escaped the dream!',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
+ if(dialog?.freeing&&seat===game.active)return {title:'Free a dreamcatcher?',hint:''};
  if(game.phase==='turnComplete')return {title:seat===game.active?'Turn complete':'Waiting for partner',hint:''};
  if(game.phase==='draft')return {title:seat===game.active?'Draft':'Partner drafting',hint:''};
  if(game.phase==='refill')return {title:'Draw',hint:''};

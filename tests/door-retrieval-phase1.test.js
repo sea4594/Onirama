@@ -49,7 +49,7 @@ test('Exhausted deck Door permits catcher direct or failed search, but cannot fr
  assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:a.id,searchBeforeClaim:true,freeId:0}),/Cannot free/);
  const serial=s.shuffleSerial||0,n=act(s,{type:'doorSearch',option:'claim',doorId:a.id,searchBeforeClaim:true,freeId:1});assertConserved(n);
  assert.equal(n.shuffleSerial,serial+1);assert(n.players[0].doors.some(x=>x.id===a.id));assert(n.deck.some(x=>x.id===b.id)||n.players[0].hand.some(x=>x.id===b.id));
- ui.setIntent({option:'claim',doorId:a.id,searchBeforeClaim:true,selected:null});assert.match(ui.render(),/Trigger a freeing\?/);
+ ui.setIntent({option:'claim',doorId:a.id,searchBeforeClaim:true,selected:null});assert.match(ui.render(),/Free a dreamcatcher\?/);
  ui.setIntent({option:'claim',doorId:a.id,searchBeforeClaim:true,selected:1});assert(commands(ui.render()).includes('doorSearch:free:1'));assert(!commands(ui.render()).includes('doorSearch:free:0'));
 });
 test('Deck search with no Door can free a different occupied catcher without claiming anything',()=>{
