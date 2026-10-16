@@ -274,19 +274,19 @@ function doorSearchDecision(g,p){
  const chromatic=!!(g.expansion?.oniverse?.rallied||[]).find(d=>d.owner===g.active&&d.ability==='chromatic');
  const more=doorSearchChromatic&&chromatic;
  const preview=color=>card({kind:'door',color,expansion:color==='wild'?'oniverse':undefined},{tiny:true});
- const option=(color,label,action,source='')=>`<button type="button" class="tt21-search-choice" data-action="${escape(action)}" aria-label="${escape(color==='wild'?'Oniverse':color)} Door: ${escape(label)}${source?' — '+escape(source):''}">${preview(color)}<strong>${escape(label)}</strong>${source?`<span class="tt21-source">${escape(source)}</span>`:''}</button>`;
+ const option=(color,source,shuffles,action)=>`<button type="button" class="tt21-search-choice" data-action="${escape(action)}" aria-label="${escape(color==='wild'?'Oniverse':color)} Door, ${escape(source)}, ${shuffles?'shuffle':'no shuffle'}">${preview(color)}<strong>${escape(source)}</strong><span class="tt21-source">${shuffles?'Shuffle':'No shuffle'}</span></button>`;
  const colors=more?COLOR.filter(c=>c!==p.color):[p.color,...(g.expansion?.oniverse?['wild']:[])];
  const actions=[];
  for(const color of colors){
   const deck=all.find(t=>t.source==='deck'&&t.color===color);
   const caught=all.filter(t=>t.source.startsWith('catch')&&t.color===color).filter((t,i,items)=>items.findIndex(x=>x.source===t.source)===i);
   const suffix=more?':chromatic':'';
-  if(deck)actions.push(option(color,'Search & shuffle',`doorSearch:choose:${deck.id}${suffix}`,'Deck'));
-  else if(!caught.length)actions.push(option(color,'Search & shuffle',`doorSearch:search:${color}${suffix}`,'Deck'));
+  if(deck)actions.push(option(color,'from deck',true,`doorSearch:choose:${deck.id}${suffix}`));
+  else if(!caught.length)actions.push(option(color,'from deck',true,`doorSearch:search:${color}${suffix}`));
   for(const t of caught){
    const index=Number(t.source.slice(5))+1;
-   actions.push(option(color,'Take',`doorSearch:direct:${t.id}${suffix}`,`Catcher ${index} · no shuffle`));
-   if(!deck)actions.push(option(color,'Search & shuffle',`doorSearch:shuffle:${t.id}${suffix}`,`then take · Catcher ${index}`));
+   actions.push(option(color,`from catcher ${index}`,false,`doorSearch:direct:${t.id}${suffix}`));
+   if(!deck)actions.push(option(color,`from catcher ${index}`,true,`doorSearch:shuffle:${t.id}${suffix}`));
   }
  }
  const switcher=more?btn('Back','doorSearch:normal','tt21-muted'):chromatic?btn('Chromatic Chaos','doorSearch:chromatic','tt21-chromatic'):'';

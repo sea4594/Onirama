@@ -59,11 +59,11 @@ test('card preview sizes are consistently readable and Happy Dream/Prophecy rows
  assert.match(css,/\.tt24-reveal-list \.tt3-order-item,[\s\S]*?flex:0 0 var\(--tt26-panel-card\)!important/);
 });
 
-test('button focus is only re-established after keyboard interaction; dock reserves the iOS home indicator without reducing its 188px content budget',()=>{
+test('button focus is only re-established after keyboard interaction; dock has a fixed 188px budget',()=>{
  assert.match(app,/const focusKind=lastInputWasKeyboard\?/);
  assert.match(app,/app\.addEventListener\('pointerdown',\(\)=>\{lastInputWasKeyboard=false;/);
  assert.match(app,/if\(lastInputWasKeyboard&&focusKind/);
  assert.match(css,/@media \(hover:none\)/);
- assert.match(css,/--tt6-dock-height:calc\(188px \+ env\(safe-area-inset-bottom,0px\)\)!important/);
- assert.match(css,/padding-bottom:max\(4px,env\(safe-area-inset-bottom,0px\)\)!important/);
+ assert.match(readFileSync(new URL('../public/tabletop/phase16.css',import.meta.url),'utf8'),/--tt6-dock-height:188px!important/);
+ assert.match(css,/padding-bottom:5px!important/);
 });

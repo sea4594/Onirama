@@ -24,7 +24,7 @@ test('Phase 8: bottom-panel header is outside the scrollport, with safe centerin
  assert.match(css,/align-items:safe center!important/);
  assert.match(css,/overflow-y:auto!important;overflow-x:hidden!important/);
  assert.match(css,/\.tt6-dock-decision\{flex:0 0 auto!important;min-height:0!important;height:auto!important/);
- assert.match(css,/padding-bottom:max\(5px,calc\(env\(safe-area-inset-bottom,0px\) \/ 2\)\)!important/);
+ assert.match(css,/padding-bottom:5px!important/);
 });
 
 test('Phase 8: Premonition zone and card reserve do not inherit curved clipping from a parent',()=>{

@@ -42,10 +42,8 @@
 .game-viewport .tt8-door-slot.wild .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
 /* A held card can be long-pressed to inspect its rules, independently of the catcher button. */
 .game-viewport .tt5-catcher .tt14-held-card .card{pointer-events:auto;touch-action:manipulation}
-.game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px solid var(--table-gold)!important;outline-offset:2px;box-shadow:0 0 0 4px var(--ui-accent),0 0 15px var(--ui-accent)!important;animation:tt-free-pulse 1.2s ease-in-out infinite alternate}
-.game-viewport .tt5-catcher.tt-search-free-chosen{outline:3px solid #fff4bd!important;box-shadow:0 0 0 4px var(--table-gold)!important}
-@keyframes tt-free-pulse{from{filter:brightness(1)}to{filter:brightness(1.3)}}
-@media(prefers-reduced-motion:reduce){.game-viewport .tt5-catcher.tt-search-free-eligible{animation:none}}
+.game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px dashed var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;filter:none!important;animation:none!important}
+.game-viewport .tt5-catcher.tt-search-free-chosen{outline:3px solid #fff4bd!important;outline-offset:-3px!important;box-shadow:inset 0 0 0 2px var(--table-gold)!important;filter:none!important;animation:none!important}
 /* The dock heading must never overlap a decision card, including in landscape. */
 .game-viewport .tt6-dock-decision .tt20-door-choice{width:clamp(40px,12vw,61px)!important}
 .game-viewport .tt6-dock-decision .tt20-incantation-choice,.game-viewport .tt6-dock-decision .tt20-incantation-reveal,.game-viewport .tt6-dock-decision .tt20-incantation-cards .tt3-order-item{width:clamp(35px,10vw,62px)!important}
@@ -55,8 +53,9 @@
 .game-viewport .tt21-door-search,.game-viewport .tt21-free-step{display:flex!important;flex-direction:column!important;gap:4px!important;align-items:center!important;justify-content:center!important;min-height:0}
 .game-viewport .tt21-search-options{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;max-width:100%}
 .game-viewport .tt21-search-choice{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 5px!important;max-width:98px;min-width:0;min-height:0!important;font-size:10px!important;line-height:1.05;text-align:center}
-.game-viewport .tt21-search-choice .card{width:clamp(25px,7vw,40px);height:auto;aspect-ratio:.705;pointer-events:none}
-.game-viewport .tt21-search-choice .tt21-source{font-size:9px;opacity:.85}
+.game-viewport .tt21-search-choice .card{width:clamp(38px,11vw,52px);height:auto;aspect-ratio:.705;pointer-events:none}
+.game-viewport .tt21-search-choice strong{font-size:11px;font-weight:750;line-height:1.13;white-space:nowrap}
+.game-viewport .tt21-search-choice .tt21-source{font-size:10px;line-height:1.1;opacity:.9;white-space:nowrap}
 .game-viewport .tt21-search-options>.tt21-chromatic{border:1px solid var(--table-gold)!important;box-shadow:inset 0 0 0 1px #ffffff24;font-weight:700;padding:7px 9px!important}
 .game-viewport .tt21-free-step p{margin:0;font-size:12px;line-height:1.15;text-align:center}
 .game-viewport .tt21-free-detail{display:flex;align-items:center;justify-content:center;gap:7px;max-width:100%;min-width:0}
@@ -201,14 +200,11 @@
 /* Other layouts keep the Denizen shelf with the remaining accessories. */
 
 
-/* iOS standalone: use the complete viewport including the background beneath
-   the home indicator, while keeping controls inside its safe touch region. */
-.game-viewport>.tt6-workspace{padding-bottom:max(4px,env(safe-area-inset-bottom,0px))!important}
 /* Action content belongs BELOW the header, not vertically centered around it.
    Oversize decisions scroll inside the reserved shelf rather than disappearing
    behind the status line. Keep the status outside the scrollport. */
 .game-viewport>.tt6-workspace{justify-content:flex-start!important;gap:3px!important;
-  padding-bottom:max(5px,calc(env(safe-area-inset-bottom,0px) / 2))!important}
+  padding-bottom:5px!important}
 .game-viewport>.tt6-workspace .tt6-dock-status{position:relative;z-index:1;flex:0 0 auto!important;margin:0!important}
 .game-viewport>.tt6-workspace .tt6-dock-scroll{box-sizing:border-box;flex:1 1 0!important;min-height:0!important;
   display:flex!important;align-items:safe center!important;justify-content:flex-start!important;
@@ -273,7 +269,7 @@
 .game-viewport .tt23-failsafe-button{font-weight:700;letter-spacing:.01em}
 .game-viewport .tt23-failsafe-urgent{background:#a62e3d!important;color:#fff!important;border:2px solid #e87780!important;box-shadow:0 0 0 2px #bc405444}
 .game-viewport .tt23-failsafe-hint{color:var(--ui-text);font-weight:600;font-size:clamp(.72rem,2.4vw,.9rem)}
-.game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px solid var(--ui-accent)!important;outline-offset:1px;box-shadow:0 0 0 4px #edcc7a33!important;cursor:pointer}
+.game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px dashed var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;filter:none!important;cursor:pointer}
 .game-viewport .tt23-overload{justify-content:center;align-items:center;min-width:0}
 .game-viewport .tt23-overload button{font-weight:750}
 
@@ -330,17 +326,11 @@
 .game-viewport .tt26-fetch-card .card{width:100%!important;height:auto!important;max-width:none!important;aspect-ratio:1/1.42!important;pointer-events:none}
 .game-viewport .tt26-fetch-card.tt26-fetch-selected{border-color:var(--table-gold)!important;outline:2px solid var(--table-gold)!important;outline-offset:0;filter:none!important}
 .game-viewport .tt26-fetch-confirm{align-self:center;flex:0 0 auto;min-height:32px!important;padding:5px 17px!important}
-/* The dock's 188px content budget must not lose another full home-indicator
-   inset. Add that inset to the dock's footprint and keep it as non-interactive
-   padding, with the background continuing to the very bottom of the screen. */
-@media (orientation:portrait){
- #app>.page.game-viewport{--tt6-dock-height:calc(188px + env(safe-area-inset-bottom,0px))!important}
- .game-viewport>.tt6-table-slot{bottom:var(--tt6-dock-height)!important}
- .game-viewport>.tt6-workspace{height:var(--tt6-dock-height)!important;max-height:none!important;padding-bottom:max(4px,env(safe-area-inset-bottom,0px))!important}
-}
-@media (max-height:430px) and (max-width:599px){
- #app>.page.game-viewport{--tt6-dock-height:calc(116px + env(safe-area-inset-bottom,0px))!important}
-}
+/* Fixed-size dock: the preceding 188px/116px rules define its entire
+   footprint. Do not grow it or reserve an additional iOS inset. The inner
+   scrollport uses the available pixels down to the bottom edge. */
+.game-viewport>.tt6-table-slot{bottom:var(--tt6-dock-height)!important}
+.game-viewport>.tt6-workspace{height:var(--tt6-dock-height)!important;max-height:var(--tt6-dock-height)!important;padding-bottom:5px!important}
 /* Touch activation never creates a lasting hover/selected appearance. Only
    explicit selection classes or genuine keyboard focus indicate selection. */
 @media (hover:none){
@@ -353,3 +343,25 @@
 .game-viewport .tt6-dock-decision .tt24-reveal-list>.tt3-order-item{padding:0!important}
 .game-viewport .tt6-dock-decision .tt22-denizen-choice .card{width:var(--tt26-panel-card)!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
 .game-viewport .tt21-free-cards .card{width:var(--tt26-panel-card)!important;max-width:none!important;flex:0 0 var(--tt26-panel-card)!important;height:auto!important;aspect-ratio:1/1.42!important}
+
+/* Shared game selection language: available targets are dashed, selected items
+   are solid. No hover/selection wash or color change to the card face. */
+.game-viewport .tt2-root :is(.card.selected,.card.tt7-eligible,.tt7-premonition-selected,.tt8-goal-chosen),
+.game-viewport .tt2-root :is(.tt7-selected,.tt7-premonition-selected,.tt8-goal-chosen),
+.game-viewport .tt6-workspace :is(.tt7-option-active,.tt16-selected,.tt24-goal-chosen,.tt22-picked,.tt26-fetch-selected),
+.game-viewport .tt5-premonition.tt7-premonition-selected{
+ outline:3px solid var(--table-gold)!important;outline-offset:-2px!important;
+ filter:none!important;transform:none!important;
+}
+.game-viewport .tt2-root .card.tt7-eligible:not(.selected){outline-style:dashed!important}
+.game-viewport .tt6-workspace .tt24-spell-goal.tt24-goal-chosen{border-color:var(--table-gold)!important;background:transparent!important}
+.game-viewport .tt6-workspace .tt16-spell-choice.tt16-selected{background:var(--ui-panel)!important}
+.game-viewport .tt6-workspace button:focus-visible,
+.game-viewport .tt2-root button:focus-visible{outline:3px solid #fff1af!important;outline-offset:1px!important}
+.game-viewport .tt6-workspace :is(.tt6-dock-button,.tt21-search-choice,.tt21-chromatic,.tt21-muted,.tt7-option,.tt16-spell-choice){min-height:36px}
+.game-viewport .tt21-search-choice{min-width:69px!important;padding:5px 5px!important;border-radius:7px}
+.game-viewport .tt21-free-buttons button{min-height:34px!important}
+.game-viewport .tt6-workspace button:disabled{opacity:.46!important;cursor:not-allowed}
+@media (orientation:landscape) and (max-height:430px){
+ .game-viewport .tt6-workspace :is(.tt6-dock-button,.tt21-search-choice,.tt21-chromatic,.tt21-muted,.tt7-option,.tt16-spell-choice){min-height:30px}
+}
