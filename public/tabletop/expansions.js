@@ -50,7 +50,7 @@ export function expansionTabletopZones(g,{canAct=true,decisionTargets=new Set(),
 export function renderExpansionTabletop(g,options={}){
   const zones=expansionTabletopZones(g,options).filter(z=>!z.includes('data-tt-zone="alignment"')&&!(options.excludeDenizens&&z.includes('data-tt-zone="denizens"')));
   if(!zones.length)return '';
-  if(options.group){const ids=options.group==='primary'?['catchers','premonitions']:['denizens','mirrors','incubus'];
+  if(options.group){const ids=options.group==='primary'?['catchers','premonitions']:options.group==='denizens'?['denizens']:['mirrors','incubus'];
     const rows=zones.filter(z=>ids.some(id=>z.includes(`data-tt-zone="${id}"`)));
     return rows.length?`<div class="tt5-expansions tt9-exp-${options.group}" aria-label="${options.group} expansion components" data-tt5-count="${rows.length}">${rows.join('')}</div>`:'';}
   return `<div class="tt5-expansions" aria-label="Expansion components" data-tt5-count="${zones.length}">${zones.join('')}</div>`;

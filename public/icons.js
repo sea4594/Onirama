@@ -38,7 +38,7 @@ const shapes=Object.freeze({
  'nightmare-art':'<path d="M5 8 3 3l6 3 3-2 3 2 6-3-2 5 2 6-4 7H7l-4-7 2-6Z"/><path d="m7 11 3 2m7-2-3 2M9 17l3 2 3-2"/><path d="M9 7h6"/>',
  'lost-dream-art':'<path d="M7 20V9a5 5 0 0 1 10 0v11l-3-2-2 2-3-2-2 2Z"/><circle cx="10" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="11" r="1" fill="currentColor" stroke="none"/><path d="M2 5h4M18 5h4M2 18h4M18 18h4"/>',
  'happy-dream-art':'<path d="M5 14a7 7 0 0 0 12 4 6 6 0 0 1-8-10A7 7 0 0 0 5 14Z"/><path d="m18 3 1.1 2.9L22 7l-2.9 1.1L18 11l-1.1-2.9L14 7l2.9-1.1L18 3Z"/><path d="m4 3 .6 1.4L6 5l-1.4.6L4 7l-.6-1.4L2 5l1.4-.6L4 3Z"/>',
- 'dead-end-art':'<path d="M5 21V3M19 21V3"/><path d="M5 5h14" stroke-width="3.5"/><path d="M9 19v-8m0 0-3 3m3-3 3 3"/><path d="M15 12v7"/><path d="M12 8h6" stroke-width="2.5"/>',
+ 'dead-end-art':'<path d=\"M5 5L19 19M19 5L5 19\" stroke-width=\"3.8\" stroke-linecap=\"round\"/>',
  'sphinx-art':'<path d="M3 20h18M5 19v-5l4-2 3 2 5-1 3 3v3H5Z"/><path d="M14 13V8l-2-2 2-4 4 2v6l-4 3ZM15 8h.1"/><path d="M5 14Q1 11 4 8M9 13l2 7M18 15l1 5"/>',
  'diver-art':'<circle cx="13" cy="5" r="2.5"/><path d="m12 8-3 5 5 2 2 5m-7-7-5 2m10 0 5-4m-3 9 4 2m-4-2-3 2"/><path d="M2 19q2-2 4 0t4 0M18 10q2-2 4 0"/>',
  'confusion-art':'<path d="M9 7a4 4 0 1 1 6 4c-3 2-3 3-3 5"/><path d="M12 20h.01"/><path d="M6 3 3 7l4 2M18 21l3-4-4-2"/><path d="M3 11a9 9 0 0 0 4 9M21 13a9 9 0 0 0-4-9"/>',

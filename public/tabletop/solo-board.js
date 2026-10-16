@@ -42,6 +42,7 @@ export function renderSoloTabletop(g,{selectedId=null,canAct=true,decisionHtml='
       <section class="tt2-zone tt2-hand" aria-label="Your hand"><header><span>Hand</span><b>${m.hand.length}/5</b></header><div class="tt2-hand-row">${handCards}</div></section>
       ${renderExpansionTabletop(g,{canAct,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,group:"primary"})}
       ${renderExpansionTabletop(g,{canAct,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,group:"secondary"})}
+      ${renderExpansionTabletop(g,{canAct,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,group:"denizens"})}
     </div>
     ${isDecision?`<div class="tt2-decision" role="region" aria-label="Resolve card effect">${decisionHtml}</div>`:''}
   </div>`;

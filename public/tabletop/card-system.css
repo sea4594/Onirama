@@ -108,3 +108,138 @@
 /* The fitted Premonition strip must not clip the reserve's rounded silhouette. */
 .game-viewport .tt2-root[data-tt15-layout] .tt5-premonitions>.tt5-contents{overflow:visible!important}
 .game-viewport .tt2-root .tt5-premonitions .tt14-reserve-back{min-height:0!important;outline-offset:0}
+
+/* 2026-10 mobile tabletop corrections. The fitted board uses --tt15-mini,
+   but interactive accessory cards must not become narrower than their artwork. */
+.game-viewport .tt5-catchers .tt5-catcher{padding:1px!important}
+.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt14-catcher-face{
+  width:min(100%,calc((var(--tt15-catcher-h,110px) - 20px)*.705))!important;
+  height:calc(var(--tt15-catcher-h,110px) - 20px)!important;
+  max-width:100%!important;max-height:100%!important;overflow:visible!important;
+}
+.game-viewport .tt5-catchers .tt14-catcher-fan{overflow:visible!important}
+.game-viewport .tt5-catchers .tt14-held-card{
+  left:0!important;right:auto!important;top:0!important;bottom:0!important;
+  width:calc(100% - min(6px,(var(--tt14-held) - 1)*1.5px))!important;
+  transform:translateX(calc(var(--tt14-held-index)*1.5px));
+}
+.game-viewport .tt5-catchers .tt14-held-card .card.tiny{aspect-ratio:1/1.42!important;width:100%!important;height:100%!important}
+.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers .tt14-catcher-face{width:calc((var(--tt15-landscape-shelf,78px) - 20px)*.705)!important;height:calc(var(--tt15-landscape-shelf,78px) - 20px)!important}
+
+/* A true four-color Crossroad, with its own rainbow frame retained on selection. */
+.game-viewport .tt2-root .card.wild.card-kind-location,
+.game-viewport .tt2-root .card.wild.card-kind-location:is(.selected,.tt7-eligible){
+  border:3px solid transparent!important;
+  background:linear-gradient(145deg,#5b3c57,#283e57 55%,#465341) padding-box,
+  conic-gradient(from 15deg,#f5747b 0 23%,#f2b96a 24% 43%,#5cce99 44% 64%,#64b5f6 65% 84%,#f4a1d8 85% 100%) border-box!important;
+  color:#fce7b5!important;
+}
+.game-viewport .tt2-root .card.wild.card-kind-location::before{content:'';position:absolute;inset:7%;border-radius:5px;pointer-events:none;background:conic-gradient(from 15deg,#ff7c9018,#ffdd842c,#74e2aa25,#7fb9ff30,#ff7c9018);z-index:0}
+.game-viewport .tt2-root .card.wild.card-kind-location:is(.selected,.tt7-eligible){outline:2px solid #fff0bc!important;outline-offset:2px!important}
+
+/* Dead End and all face icons keep their center independently of card display and button padding. */
+.game-viewport .card:not(.card-kind-tower)>.symbol{position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;margin:0!important;display:grid!important;place-items:center!important;width:66%!important;height:auto!important;aspect-ratio:1!important;max-height:74%!important;min-height:0!important;padding:0!important}
+.game-viewport .card:not(.card-kind-tower)>.symbol>.ui-icon{display:block!important;position:static!important;margin:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;transform:none!important}
+.game-viewport .card.card-kind-denizen>.symbol{top:45%!important;width:64%!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) {display:grid!important;place-items:center!important;padding:0!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back)>span{display:grid!important;place-items:center!important;position:static!important;margin:0!important;transform:none!important}
+.game-viewport .tt2-root :is(.tt2-empty-pile,.tt14-empty-pile,.tt6-card-back) .ui-icon{width:65%!important;height:65%!important;min-width:0!important;min-height:0!important;margin:auto!important;transform:none!important}
+.game-viewport .tt2-root .tt2-deck-back{display:grid!important;place-items:center!important;padding:0!important}
+.game-viewport .tt2-root .tt2-deck-back>.tt10-draw-count{display:block!important;position:static!important;inset:auto!important;transform:none!important;line-height:1!important;margin:0!important;text-align:center!important}
+
+/* The reserve card itself is the rounded card silhouette, not a rounded child
+   behind a separately clipped button. Preserve its complete corners. */
+.game-viewport .tt5-premonitions .tt14-reserve{
+  box-sizing:border-box!important;display:block!important;flex:0 0 auto!important;
+  align-self:center!important;width:auto!important;aspect-ratio:1/1.42!important;
+  height:calc(var(--tt15-prem-h,102px) - 24px)!important;max-height:calc(100% - 4px)!important;max-width:64px!important;
+  min-height:0!important;padding:0!important;margin:2px 0!important;border:2px solid #d9b6dc!important;border-radius:6px!important;
+  background:radial-gradient(circle at center,#bda7d52a 0 18%,transparent 19%),repeating-linear-gradient(140deg,#47345a,#47345a 6px,#342d50 6px,#342d50 12px)!important;
+  overflow:visible!important;clip-path:none!important;box-shadow:0 1px 4px #0007!important;
+}
+.game-viewport .tt5-premonitions .tt14-reserve-back{display:none!important}
+
+/* Same-size count-menu backgrounds in every category. Tower groups still run
+   three per row, but each cell occupies a four-column-sized track. */
+.tt6-pile-inspector .tt6-inventory-rows{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%!important;gap:5px!important}
+.tt6-pile-inspector .tt6-inventory-rows[data-inventory-section="towers"]{grid-template-columns:repeat(3,minmax(0,calc((100% - 15px)/4)))!important;width:100%!important}
+.tt6-pile-inspector .tt6-inventory-rows .tt6-inventory-line{width:100%!important;max-width:none!important;min-width:0!important;justify-content:flex-start!important}
+.tt6-pile-inspector .tt6-inventory-rows .tt7-inventory-card{width:100%!important;height:54px!important;display:grid!important;place-items:center!important}
+.tt6-pile-inspector .tt6-inventory-rows .tt7-inventory-card .card{flex:none!important;width:37px!important;height:52px!important;max-width:100%!important;aspect-ratio:1/1.42!important}
+
+/* Avoid shrinking Denizens with narrow fitting variables. Scroll within the
+   shelf rather than turn their cards into illegible slivers. */
+.game-viewport .tt2-root .tt17-denizen-holder{flex:0 0 44px!important;width:44px!important;height:63px!important;min-width:44px!important}
+.game-viewport .tt2-root .tt17-denizen-card{width:44px!important;height:63px!important;min-width:44px!important;flex:none!important}
+.game-viewport .tt2-root .tt17-denizen-card>.card.tiny{width:44px!important;height:63px!important;max-width:none!important}
+.game-viewport .tt2-root :is(.tt17-denizen-cards,.tt5-denizens>.tt5-contents){min-height:68px!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:thin}
+
+/* Solo portrait layout when Denizens exist: full-width Towers, then Piles
+   beside Denizens immediately above the Labyrinth. */
+@media(orientation:portrait) and (max-width:650px){
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  grid-template-areas:'doors doors' 'towers towers' 'primary primary' 'secondary secondary' 'piles denizens' 'labyrinth labyrinth' 'hand hand'!important;
+  grid-template-rows:auto auto auto auto auto minmax(0,1fr) auto!important;
+ }
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
+  grid-template-areas:'doors doors' 'primary primary' 'secondary secondary' 'piles denizens' 'labyrinth labyrinth' 'hand hand'!important;
+  grid-template-rows:auto auto auto auto minmax(0,1fr) auto!important;
+ }
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-denizens{grid-area:denizens!important;min-width:0!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-denizens .tt5-denizens{height:100%!important;min-width:0!important;width:100%!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-denizens .tt5-denizens>.tt5-contents{position:static!important;transform:none!important;width:100%!important;max-width:100%!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt2-piles{align-self:stretch}
+}
+/* Other layouts keep the Denizen shelf with the remaining accessories. */
+
+
+/* iOS standalone: use the complete viewport including the background beneath
+   the home indicator, while keeping controls inside its safe touch region. */
+.game-viewport>.tt6-workspace{padding-bottom:max(4px,env(safe-area-inset-bottom,0px))!important}
+.game-viewport .tt6-dock-scroll{align-items:center!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin}
+.game-viewport .tt6-dock-decision .decision{min-height:0!important;overflow:visible!important;max-height:none!important;align-content:center!important}
+.game-viewport .tt6-workspace .tt6-dock-status{flex:0 0 auto!important;line-height:1!important;padding:0!important;min-height:0!important}
+.game-viewport .tt6-workspace .tt6-dock-status strong{line-height:1.15!important}
+.game-viewport .tt6-dock-decision :is(.tt3-order-handle,.tt4-card-option,.tt20-door-choice){overflow:visible!important}
+.game-viewport .tt6-dock-decision :is(.tt3-order-handle,.tt4-card-option,.tt20-door-choice) .card{max-height:100%!important}
+/* Incantation previews can use the width and height already reserved by the dock. */
+.game-viewport .tt6-workspace .tt20-incantation-cards :is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item){width:clamp(50px,14vw,77px)!important}
+.game-viewport .tt6-workspace .tt20-incantation-cards .card{width:100%!important;height:auto!important;max-width:none!important}
+.game-viewport .tt6-workspace .tt20-incantation-cards{max-height:calc(var(--tt6-dock-height,188px) - 45px)!important;overflow-x:auto!important;overflow-y:hidden!important}
+
+/* Happy Dream: all seven revealed cards, a prophecy-style drop target, and a
+   visible overlapping discard stack. No individual Discard buttons. */
+.game-viewport .tt6-dock-decision .tt23-happy-peek{display:flex!important;flex-direction:column!important;gap:3px!important;width:100%;max-width:100%;align-items:center!important}
+.game-viewport .tt23-happy-row{display:flex;width:100%;min-width:0;max-width:100%;align-items:center;justify-content:center;gap:5px;min-height:0}
+.game-viewport .tt23-peek-cards{display:flex!important;align-items:center!important;justify-content:flex-start!important;flex:1 1 auto!important;min-width:0!important;width:auto!important;max-width:none!important;overflow-x:auto!important;overflow-y:hidden!important;gap:2px!important;padding:4px 2px!important;scrollbar-width:thin}
+.game-viewport .tt23-peek-cards .tt3-order-item{flex:0 0 35px!important;width:35px!important;max-width:none!important;min-width:35px!important;padding:0!important}
+.game-viewport .tt23-peek-cards .tt3-order-handle{width:100%!important}
+.game-viewport .tt23-peek-cards .card{width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
+.game-viewport .tt23-happy-discard{flex:0 0 66px!important;width:66px!important;height:69px!important;min-height:69px!important;position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;overflow:hidden!important;border:2px dashed var(--table-gold)!important;border-radius:6px;padding:2px!important;background:var(--ui-soft)!important}
+.game-viewport .tt23-discard-label{font-size:9px;line-height:1.1;white-space:nowrap}
+.game-viewport .tt23-discard-stack{position:relative;display:block;width:100%;flex:1;min-height:0;overflow:visible}
+.game-viewport .tt23-discard-card{position:absolute;display:block;left:calc(var(--tt23-i)*3px);top:1px;width:35px;height:48px;filter:drop-shadow(1px 1px 1px #0008)}
+.game-viewport .tt23-discard-card .card{height:100%!important;width:100%!important}
+.game-viewport .tt23-happy-controls{display:flex;gap:5px;justify-content:center;align-items:center}
+.game-viewport .tt23-happy-controls button{min-height:27px!important;padding:4px 9px!important}
+
+/* Explicit areas for the separate Denizen shelf on non-phone layouts. */
+.game-viewport .tt2-root[data-tabletop-solo]:has(.tt9-exp-denizens) .tt9-exp-denizens{grid-area:denizens!important;display:block!important;width:100%!important;min-width:0!important}
+.game-viewport .tt2-root[data-tabletop-solo] .tt9-exp-denizens>.tt5-denizens{width:100%!important;min-width:0!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{
+ grid-template-areas:'doors piles' 'towers piles' 'primary secondary' 'denizens denizens' 'labyrinth labyrinth' 'hand hand'!important;
+ grid-template-rows:auto auto auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="tablet"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
+ grid-template-areas:'doors piles' 'primary secondary' 'denizens denizens' 'labyrinth labyrinth' 'hand hand'!important;
+ grid-template-rows:auto auto auto minmax(0,1fr) auto!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{
+ grid-template-areas:'doors labyrinth piles' 'towers hand piles' 'primary primary secondary' 'denizens denizens denizens'!important;
+ grid-template-rows:minmax(0,1fr) auto auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
+ grid-template-areas:'doors labyrinth piles' 'doors hand piles' 'primary primary secondary' 'denizens denizens denizens'!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{
+ grid-template-areas:'doors labyrinth piles' 'towers hand hand' 'primary primary primary' 'secondary secondary secondary' 'denizens denizens denizens'!important;
+ grid-template-rows:minmax(0,1fr) auto auto auto auto!important}
+.game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
+ grid-template-areas:'doors labyrinth piles' 'doors hand hand' 'primary primary primary' 'secondary secondary secondary' 'denizens denizens denizens'!important}

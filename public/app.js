@@ -74,7 +74,18 @@ async function api(route,method='GET',body=null){
   const res=await fetch(`${base}${route}`,{method,headers,body:body?JSON.stringify(body):undefined});const data=await res.json();
   if(!res.ok)throw Error(data.error||'Request failed');return data;
 }
-async function refresh(){if(IS_LOCAL_GAME()){const hot=IS_HOTSEAT(),raw=localStorage.getItem(hot?'onirama.hotseat.v1':'onirama.solo.v1');if(raw&&localEngine){const game=JSON.parse(raw),seat=hot?game.active:0;state={room:{seat,mode:hot?'coop':'solo',started:true,hotseat:hot,host:true},game:localEngine.viewFor(game,seat),version:(version||0)+1};session={id:hot?'hotseat':'local',seat};online=true;sessionMeta();recordCurrentResult();render();announceCurrent();}return;}if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
+async function refresh(){if(IS_LOCAL_GAME()){
+ const hot=IS_HOTSEAT(),key=hot?'onirama.hotseat.v1':'onirama.solo.v1',raw=localStorage.getItem(key);
+ if(!raw){session=null;state=null;localStorage.removeItem('onirama.session');error='The active saved game is missing. You can start a new game or resume another save.';setRoute('#/');return;}
+ if(!localEngine)return;
+ try{
+  const game=JSON.parse(raw);if(game?.mode!==(hot?'coop':'solo')||![0,1].includes(game.active)||!Array.isArray(game.players))throw Error('Unrecognized saved game');
+  const seat=hot?game.active:0,view=localEngine.viewFor(game,seat);
+  state={room:{seat,mode:hot?'coop':'solo',started:true,hotseat:hot,host:true},game:view,version:(version||0)+1};
+  session={id:hot?'hotseat':'local',seat};online=true;error='';sessionMeta();recordCurrentResult();render();announceCurrent();
+ }catch(e){console.error('Unable to resume local game',e);session=null;state=null;version=0;localStorage.removeItem('onirama.session');error='Cannot open this saved game ('+e.message+'). The save has been preserved; you can start a new game or resume the other save.';setRoute('#/');}
+ return;
+ }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
 function closeEndedRoom(){stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the lobby.';setRoute('#/multiplayer');}
 async function departRoom(end=false){
  if(!session||['local','hotseat'].includes(session.id))return;
@@ -133,12 +144,12 @@ async function startStream(){
     }}
 }
 
-function home(){const active=session?.id==='local',offline=navigator.onLine===false;const soloSave=offline&&session?.id!=='local'&&localStorage.getItem('onirama.solo.v1');const hotSave=offline&&session?.id!=='hotseat'&&localStorage.getItem('onirama.hotseat.v1');return `<div class="route shell shell-home">
+function home(){const active=session?.id==='local',offline=navigator.onLine===false;const soloSave=session?.id!=='local'&&localStorage.getItem('onirama.solo.v1');const hotSave=session?.id!=='hotseat'&&localStorage.getItem('onirama.hotseat.v1');return `<div class="route shell shell-home">
   <div class="shell-emblem" aria-hidden="true"><span>${icon('sun')}</span><span>${icon('moon')}</span><span>${icon('key')}</span><span>${icon('door')}</span></div>
   <h1 class="shell-hero-title">Single Player</h1>
   <div class="shell-primary-actions">
     ${btn('Play solo','setup','primary shell-big')}
-    ${session&&(!offline||IS_LOCAL_GAME())?btn('Resume game','resume','shell-small'):''}${soloSave?btn('Resume offline solo','resumeLocalSolo','shell-small'):''}${hotSave?btn('Resume offline hot seat','resumeLocalHotseat','shell-small'):''}
+    ${session&&(!offline||IS_LOCAL_GAME())?btn('Resume game','resume','shell-small'):''}${soloSave?btn('Resume saved solo','resumeLocalSolo','shell-small'):''}${hotSave?btn('Resume saved hot seat','resumeLocalHotseat','shell-small'):''}
   </div>
   <div class="shell-links">${btn('Learn to play','tutorial','shell-text-button')}${btn('History','history','shell-text-button')}</div>
 </div>`;}
@@ -217,7 +228,14 @@ function incantationDecision(p){
  if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
  return `<section class="decision stack tt20-incantation" data-tt-incantation-step="order"><h2>Incantation: Rearrange and put on bottom</h2><div class="tt20-incantation-cards tt3-order-list" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" tabindex="0" role="button" aria-label="Reorder ${escape(c.kind)} card">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div>${btn('Confirm','effectConfirm','primary')}</section>`;
 }
-function effectReorder(p){if(!p.cards)return '';if(['incantation','incantationOrder'].includes(p.type))return incantationDecision(p);const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
+function happyPeekDecision(p){
+ const ids=p.cards.map(c=>c.id);
+ if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id))){effectOrder=[...ids];effectDiscards.clear();}
+ const kept=effectOrder.filter(id=>!effectDiscards.has(id)),discarded=effectOrder.filter(id=>effectDiscards.has(id));
+ const face=id=>card(p.cards.find(c=>c.id===id),{tiny:true});
+ return `<section class="decision stack tt23-happy-peek"><div class="tt23-happy-row"><div class="tt23-peek-cards tt3-order-list" data-tt-order-group="effect" aria-label="Seven revealed cards, drag to reorder or discard">${kept.map(id=>`<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Move card; drag to discard">${face(id)}</div></div>`).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div><button type="button" class="tt23-happy-discard" data-tt-happy-discard aria-label="Discard area. Drag cards here, or tap a selected card then tap here"><span class="tt23-discard-label">Discard ${discarded.length}</span><span class="tt23-discard-stack">${discarded.map((id,i)=>`<span class="tt23-discard-card" style="--tt23-i:${i};z-index:${i+1}">${face(id)}</span>`).join('')}</span></button></div><div class="tt23-happy-controls">${discarded.length?btn('Undo last',`effectRestore:${discarded.at(-1)}`):''}${btn('Confirm','effectConfirm','primary')}</div></section>`;
+}
+function effectReorder(p){if(!p.cards)return '';if(p.type==='happyPeek')return happyPeekDecision(p);if(['incantation','incantationOrder'].includes(p.type))return incantationDecision(p);const ids=p.cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
  const modes={sphinxResolve:'Sphinx — choose the top card if your named aspect matched; arrange the others bottom-first.',diver:'Diver — stop and put last card on top, continue revealing, or resolve a Nightmare.',denizenPeek:'Denizen insight — reorder inspected cards.',happyPeek:'Happy Dream — choose zero or more cards to discard, then reorder the rest.',incantation:'Incantation — choose one Door (if available) and order the others from bottom to top.',towerLook:'Tower insight — order inspected cards from top to bottom.',spellPeek:'Paradoxical Prophecy — pick one card to put on top; order the others from bottom to top.'};
  const options=p.cards.filter(c=>p.type==='incantation'?c.kind==='door':['spellPeek','sphinxResolve'].includes(p.type));
  if(effectPick&&!options.some(c=>c.id===effectPick))effectPick=null;
@@ -502,7 +520,7 @@ async function handle(actionName){
     if(!localStorage.getItem(key))return setError('That saved game is unavailable.');
     cancelStream();localEngine??=await import('./engine/game.js');
     session={id:hot?'hotseat':'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));
-    passDevice=hot;state=null;version=0;await refresh();return setRoute('#/game');
+    passDevice=hot;state=null;version=0;await refresh();if(session)return setRoute('#/game');return;
   }
   if(actionName==='setup')return setRoute('#/setup');if(actionName==='roadmap')return setRoute('#/roadmap');if(actionName==='rules')return setRoute('#/rules');if(actionName==='joinPage')return setRoute('#/join');
   if(actionName==='solo'||actionName==='coop'){selectedMode=actionName;return setRoute('#/setup');}
@@ -577,6 +595,7 @@ async function handle(actionName){
   }
   if(actionName==='premonitionKeysConfirm'&&g.pending?.type==='premonitionKeys'&&premonitionKeysSelected.size===g.pending.count)return action({type:'premonitionKeys',ids:[...premonitionKeysSelected]});
   if(actionName.startsWith('premonitionNightmare:')&&g.pending?.type==='premonitionNightmare')return action({type:'premonitionNightmare',id:actionName.slice(21)});
+  if(actionName.startsWith('effectRestore:')){effectDiscards.delete(actionName.slice(14));return render();}
   if(actionName.startsWith('effectDiscard:')){const id=actionName.slice(14);if(effectDiscards.has(id))effectDiscards.delete(id);else effectDiscards.add(id);return render();}
   if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen)return;denizenIntent={id,step:'confirm'};return render();}
   if(actionName==='denizenCancel'){denizenIntent=null;return render();}
@@ -691,10 +710,11 @@ function installTabletopController(){
   });
   createDecisionReorder({root:app,
     canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&state.game.pending.cards.some(c=>c.kind==='door')),
-    onDiscard:id=>{if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
+    onDiscard:id=>{if(state?.game?.pending?.type==='happyPeek'){effectDiscards.add(id);render();return;}if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
     onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
       if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){if(!prophecyDiscard)return;const ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);prophecyOrder=[...moved,...(prophecyDiscard?[prophecyDiscard]:[])];}
+      else if(kind==='effect'&&state.game.pending?.type==='happyPeek'){const kept=effectOrder.filter(id=>!effectDiscards.has(id)),discarded=effectOrder.filter(id=>effectDiscards.has(id));effectOrder=[...moveOrderedCardToGap(kept,from,gap),...discarded];}
       else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(['incantation','incantationOrder'].includes(state.game.pending?.type)?0:orderSlice(effectOrder).offset)+gap);
       else return;
       render();
