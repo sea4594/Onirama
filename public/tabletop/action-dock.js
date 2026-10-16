@@ -2,9 +2,9 @@ import {PENDING_DECISIONS} from './dialogs.js';
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 import {renderCard} from './cards.js';
 import {premonitionFace} from './expansions.js';
-const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Sacrifice a Dreamcatcher',towerPenalty:'Towers',moduleDecision:'Effect'};
+const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Overload!',towerPenalty:'Towers',moduleDecision:'Effect'};
 export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
-export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null}={}){
+export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null,failsafeChoosing=false}={}){
  if(game.status==='won')return {title:'You escaped the dream!',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
  if(game.phase==='turnComplete')return {title:seat===game.active?'Turn complete':'Waiting for partner',hint:''};
@@ -21,11 +21,12 @@ export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDis
  }
  if(seat!==game.active)return {title:`${game.players[game.active]?.name||'Partner'}’s turn`,hint:''};
  if(dialog)return {title:dialog.type==='mirrorPair'?'Mirror':dialog.type==='cyclobot'?'Cyclobot':'Spellbook',hint:''};
- return selectedId?{title:'Play / discard',hint:''}:{title:'Your turn',hint:''};
+ if(failsafeChoosing)return {title:'Choose a Dreamcatcher',hint:''};
+ return {title:'Play or discard',hint:''};
 }
 const button=(label,action)=>`<button type="button" data-action="${escape(action)}" class="tt6-dock-button">${escape(label)}</button>`;
-export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null}={}){
- const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog});
+export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false}={}){
+ const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing});
  let controls='';
  if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');
  if(game.phase==='decision'&&game.pending?.type==='coopSwap'&&seat===game.active)controls=button('Pass','swapPass');
@@ -33,8 +34,16 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  // Legacy saves paused mid-draw need a one-time, neutral recovery action.
  if(!dialog&&game.status==='active'&&seat===game.active&&game.pending?.type==='drawn')controls=button('Continue','confirmDraw');
  if(!dialog&&game.phase==='action'&&game.status==='active'&&seat===game.active){
-  // Selecting a card only outlines its legal tabletop destinations. No duplicate action buttons.
-  if(game.config?.expansions?.includes('crossroads'))controls+=button('Escape','escape');
+  const d=game.expansion?.dreamcatchers,active=d?.active||[],occupied=active.map((yes,i)=>yes&&d.stacks?.[i]?.length>0?i:-1).filter(i=>i>=0);
+  if(failsafeChoosing&&d?.failsafes>0&&occupied.length){controls=`<span class="tt23-failsafe-hint">Tap an outlined Dreamcatcher to free it.</span>${button('Cancel','failsafeCancel')}`;}
+  else {
+   if(d?.failsafes>0){
+    const urgent=active.some(Boolean)&&active.every((yes,i)=>!yes||d.stacks?.[i]?.length>0);
+    controls+=`<button type="button" data-action="failsafeStart" class="tt6-dock-button tt23-failsafe-button ${urgent?'tt23-failsafe-urgent':''}" ${occupied.length?'':'disabled'}>Use Failsafe</button>`;
+   }
+   // Selecting a card only outlines its legal tabletop destinations.
+   if(game.config?.expansions?.includes('crossroads'))controls+=button('Escape','escape');
+  }
  }
  if(game.status!=='active')controls=button('Exit','exitFinished')+button('Play again','playAgain');
  const content=dialog?.html||controls||'';

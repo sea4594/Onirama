@@ -46,4 +46,4 @@ test('landscape multi-row card reorder uses both axes',()=>{
  assert.equal(gapAtPoint(list,0,90),2);assert.equal(gapAtPoint(list,102,90),4);
 });
 
-test('selection with no legal move receives informative prompt',()=>{const g=viewFor(newGame({seed:66}),0);assert.match(actionDockPrompt(g,0,{selectedId:'c999',legal:[]}).title,/Play \/ discard/);});
+test('selection with no legal move receives informative prompt',()=>{const g=viewFor(newGame({seed:66}),0);assert.match(actionDockPrompt(g,0,{selectedId:'c999',legal:[]}).title,/Play or discard/);});

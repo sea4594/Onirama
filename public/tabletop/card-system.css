@@ -244,3 +244,11 @@
  grid-template-rows:minmax(0,1fr) auto auto auto auto!important}
 .game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{
  grid-template-areas:'doors labyrinth piles' 'doors hand hand' 'primary primary primary' 'secondary secondary secondary' 'denizens denizens denizens'!important}
+
+/* Phase 2 — contextual Failsafe / overload controls. */
+.game-viewport .tt23-failsafe-button{font-weight:700;letter-spacing:.01em}
+.game-viewport .tt23-failsafe-urgent{background:#a62e3d!important;color:#fff!important;border:2px solid #e87780!important;box-shadow:0 0 0 2px #bc405444}
+.game-viewport .tt23-failsafe-hint{color:var(--ui-text);font-weight:600;font-size:clamp(.72rem,2.4vw,.9rem)}
+.game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px solid var(--ui-accent)!important;outline-offset:1px;box-shadow:0 0 0 4px #edcc7a33!important;cursor:pointer}
+.game-viewport .tt23-overload{justify-content:center;align-items:center;min-width:0}
+.game-viewport .tt23-overload button{font-weight:750}

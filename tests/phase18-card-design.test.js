@@ -39,9 +39,9 @@ test('all Premonitions have different wordless progress-marked pictograms; reser
 test('Door gain/pass, legal crossroad selection and Dreamcatcher overload sacrifice are distinct',()=>{
  assert.match(app,/data-action=\"useKey:gain\"/);assert.match(app,/btn\('Pass','useKey:limbo'/);
  assert.match(app,/actionName==='useKey:gain'/);assert.match(app,/type:'chooseDoor',keyId:best.id/);
- assert.match(app,/`Sacrifice \${i\+1}`/);
+ assert.match(app,/Remove Dreamcatcher/);
  assert.doesNotMatch(app,/Send Door to Limbo|btn\(`Free \${i\+1}`,`catchOverload/);
- const status=game(['dreamcatchers']);status.phase='decision';status.pending={type:'catchOverload',choices:[0]};assert.equal(actionDockPrompt(status,0).title,'Sacrifice a Dreamcatcher');
+ const status=game(['dreamcatchers']);status.phase='decision';status.pending={type:'catchOverload',choices:[0]};assert.equal(actionDockPrompt(status,0).title,'Overload!');
 });
 test('discard history is chronological and retains every card with newest to the right',()=>{
  const cards=[{id:'first',kind:'location',color:'red',symbol:'sun'},{id:'middle',kind:'location',color:'blue',symbol:'moon'},{id:'last',kind:'location',color:'green',symbol:'key'}];

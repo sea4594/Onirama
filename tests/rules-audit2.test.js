@@ -9,13 +9,13 @@ const game=(expansions,seed=515,difficulties={},mode='solo')=>newGame({seed,conf
 function take(s,predicate,from=s.deck){const i=from.findIndex(predicate);assert.ok(i>=0,'Missing expected card');return from.splice(i,1)[0];}
 function inHand(s,predicate){const p=s.players[s.active];let c=p.hand.find(predicate);if(c)return c;c=take(s,predicate);s.deck.push(p.hand.splice(0,1,c)[0]);return c;}
 function startMirror(s,name){const stack=s.moduleState.mirrors.zones[name],match=c=>c.kind==='location'&&(c.color===name||c.symbol===name);stack.push(take(s,match),take(s,match));const p=s.players[0];for(let i=0;i<2;i++)if(!match(p.hand[i])){const wanted=take(s,match);s.deck.push(p.hand.splice(i,1,wanted)[0]);}return p.hand.slice(0,2).map(c=>c.id);}
-test('Overload releases all four Dreamcatcher stacks, but sacrifices only the chosen catcher',()=>{
+test('Legacy pending overload is recovered and only the rightmost Dreamcatcher is removed',()=>{
  let s=game(['dreamcatchers']);const stacks=s.moduleState.dreamcatchers.zones;
  for(let i=0;i<4;i++)stacks['catch'+i].push(take(s,c=>c.kind==='location'));
  const released=Object.values(stacks).flat().map(c=>c.id);s.limbo.push(take(s,c=>c.kind==='lostDream'));
  s.pending={type:'catchOverload',choices:[0,1,2,3]};s.phase='decision';assertConserved(s);
- s=act(s,{type:'catchOverload',index:2});assertConserved(s);
- assert.deepEqual(s.moduleState.dreamcatchers.active,[true,true,false,true]);assert.ok(Object.values(stacks).length===4);
+ s=act(s,{type:'catchOverload'});assertConserved(s);
+ assert.deepEqual(s.moduleState.dreamcatchers.active,[true,true,true,false]);assert.ok(Object.values(stacks).length===4);
  assert.ok(Object.values(s.moduleState.dreamcatchers.zones).every(a=>!a.length));
  assert.ok(released.every(id=>s.deck.some(c=>c.id===id)));
 });

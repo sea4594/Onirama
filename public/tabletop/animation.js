@@ -56,6 +56,8 @@ export function planGameTransitions(previous,next){
     turn:previous.turn!==next.turn||previous.active!==next.active,
     phase:previous.phase!==next.phase||previous.pending?.type!==next.pending?.type,
     finished:previous.status==='active'&&next.status!=='active',
+    overload:previous.pending?.type!=='catchOverload'&&next.pending?.type==='catchOverload'&&next.pending?.returned===true,
+    overloadLimbo:(previous.limbo||[]).length,
     catcherCaptured:catcherTransferCounts(previous,next),
     catcherFreed:(previous.expansion?.dreamcatchers?.stacks||[]).map((stack,index)=>({index,removed:(stack||[]).filter(c=>!(next.expansion?.dreamcatchers?.stacks?.[index]||[]).some(d=>d.id===c.id)&&!after.has(c.id))})).filter(x=>x.removed.length&&(next.shuffleSerial||0)>(previous.shuffleSerial||0)),
     draft:previous.phase==='draft'||next.phase==='draft'
@@ -230,18 +232,30 @@ export function createTabletopAnimator({root}){
       if(plan.draw&&!released)flash(pile(root,'deck'),'tt8-draw-cue');
       if(plan.shuffle){
         const back=pile(root,'deck'),origin=(old?.size||0)>0?rect(pile(root,'limbo')):null;
-        for(const transfer of plan.catcherFreed||[]){
+        if(plan.overload){
+          let index=0;
+          for(const transfer of plan.catcherFreed||[]){
+            const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
+            const from=rect(catcher);
+            for(const c of transfer.removed){
+              const source=old.get(c.id),start=source?.r||from;
+              if(rectOK(start)&&rectOK(deck)&&back)animateFlight(source?.template||back,start,deck,null,Math.min(index++*32,600),cleanups);
+            }
+          }
+          const from=rect(pile(root,'limbo'));
+          for(let i=0;i<plan.overloadLimbo;i++)if(back&&rectOK(from)&&rectOK(deck))animateFlight(back,from,deck,null,Math.min(index++*32,600),cleanups);
+        }else for(const transfer of plan.catcherFreed||[]){
           const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
           const from=rect(catcher);if(back&&rectOK(from)&&rectOK(deck))
             for(let i=0;i<Math.min(3,transfer.removed.length);i++)animateFlight(back,from,deck,null,i*85,cleanups);
         }
-        if(back&&rectOK(origin)&&rectOK(deck)&&(game.limbo||[]).length<(previous?.limbo||[]).length){
+        if(!plan.overload&&back&&rectOK(origin)&&rectOK(deck)&&(game.limbo||[]).length<(previous?.limbo||[]).length){
           // Two generic card backs visualize the return from Limbo.
           // No hidden card identity, order, or new game step is disclosed.
           animateFlight(back,origin,deck,null,25,cleanups);
           animateFlight(back,origin,deck,null,110,cleanups);
         }
-        shuffleOverlay(pile(root,'deck'),cleanups,plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
+        shuffleOverlay(pile(root,'deck'),cleanups,plan.overload?CARD_MOTION.move+650:plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
         flash(pile(root,'deck'),'tt8-shuffle-cue',CARD_MOTION.shuffle);
       }
       if(!released&&(plan.turn||plan.phase||plan.finished))flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');

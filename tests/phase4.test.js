@@ -47,11 +47,11 @@ test('Dreamcatchers: group catches, free with Failsafe, overload releases all st
  let s=mk(['dreamcatchers']);s.limbo.push(...s.deck.splice(0,2));const first=s.limbo.map(c=>c.id);
  s=a(s,{type:'discard',id:s.players[0].hand[0].id});while(s.phase==='decision'&&s.pending.type!=='catchOverload')s=a(s,choose(s));assert.deepEqual(s.moduleState.dreamcatchers.zones.catch0.map(c=>c.id),first); // additional limbo possible
  const old=s.moduleState.dreamcatchers.failsafes;s=a(s,{type:'freeCatcher',index:0});assert.equal(s.moduleState.dreamcatchers.failsafes,old-1);assert.equal(s.moduleState.dreamcatchers.zones.catch0.length,0);
- // Force all four occupied and the next Limbo group; overload one stack only.
+ // Fill all four, trigger overload, and remove only the rightmost catcher.
  s=mk(['dreamcatchers']);for(let i=0;i<4;i++){s.moduleState.dreamcatchers.zones['catch'+i].push(s.deck.pop());}
  const keep=s.moduleState.dreamcatchers.zones.catch1[0].id;s.limbo.push(s.deck.pop());
  s=a(s,{type:'discard',id:s.players[0].hand[0].id});while(s.pending?.type==='nightmare'||s.pending?.type==='door'||s.pending?.type==='prophecy')s=a(s,choose(s));
- assert.equal(s.pending.type,'catchOverload');s=a(s,{type:'catchOverload',index:0});assert.equal(s.moduleState.dreamcatchers.active[0],false);assert.equal(s.moduleState.dreamcatchers.zones.catch1.length,0);assert.ok(s.deck.some(c=>c.id===keep));
+ assert.equal(s.pending.type,'catchOverload');assert.equal(s.moduleState.dreamcatchers.zones.catch1.length,0);s=a(s,{type:'catchOverload'});assert.equal(s.moduleState.dreamcatchers.active[3],false);assert.equal(s.moduleState.dreamcatchers.zones.catch1.length,0);assert.ok(s.deck.some(c=>c.id===keep));
 });
 test('Towers: one shared alignment, adjacency, discard insight, Nightmare consequence',()=>{
  let s=mk(['towers']);const t=s.deck.find(c=>c.kind==='tower');[s.players[0].hand[0],s.deck[s.deck.indexOf(t)]]=[t,s.players[0].hand[0]];

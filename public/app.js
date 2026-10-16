@@ -36,7 +36,7 @@ const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
-let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false;
+let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false,failsafeChoosing=false;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'forest',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'forest',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
@@ -66,7 +66,7 @@ const btn=(label,action,klass='')=>`<button type="button" class="${klass}" data-
 const card=(c,options={})=>renderCard(c,{...options,selectedId:selected});
 function nav(){return `<header class="nav shell-nav"><a class="brand" href="#/" aria-label="Onirama home"><img class="brand-icon" src="./icons/icon-64.png" width="24" height="24" alt="" aria-hidden="true"><span>ONIRAMA</span></a><div class="nav-right"><a href="#/rules" title="Rules" aria-label="Rules">${icon('help')}</a><a href="#/settings" title="Settings" aria-label="Settings">${icon('settings')}</a></div></header>`;}
 function bottomNav(){if(page==='#/game')return '';const entries=[['#/','Single Player','single'],['#/multiplayer','Multiplayer','users'],['#/settings','Settings','settings']];const active=page==='#/multiplayer'||page.startsWith('#/join')?'#/multiplayer':(page==='#/settings'||page==='#/history'||page==='#/roadmap')?'#/settings':'#/';return `<nav class="bottom-nav" aria-label="Primary">${entries.map(([url,label,iconName])=>`<a href="${url}" class="bottom-nav-item${active===url?' active':''}" ${active===url?'aria-current="page"':''}><span aria-hidden="true" class="bottom-icon">${icon(iconName)}</span><span>${label}</span></a>`).join('')}</nav>`;}
-function setRoute(path){if(path!=='#/game'){stopReplay();gameOverlay=null;gameRulesFromPause=false;pileOpen=null;}location.hash=path;page=path;render();}
+function setRoute(path){if(path!=='#/game'){stopReplay();gameOverlay=null;gameRulesFromPause=false;pileOpen=null;failsafeChoosing=false;}location.hash=path;page=path;render();}
 function setError(msg){error=msg;render();}
 async function api(route,method='GET',body=null){
   const headers={'Content-Type':'application/json'};if(session?.token)headers.Authorization=`Bearer ${session.token}`;
@@ -111,7 +111,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -313,7 +313,7 @@ function decision(g,canAct){
   if(p.type==='premonitionDoor')return `<section class="decision stack"><span class="tt7-micro">Tap a Door</span></section>`;
   if(['incantation','incantationOrder','towerLook','spellPeek','happyPeek','denizenPeek'].includes(p.type))return effectReorder(p);
   if(p.type==='catchChoose')return `<section class="decision stack">${btn('Continue',`catchChoose:${p.choices[0]}`,'primary')}</section>`;
-  if(p.type==='catchOverload')return `<section class="decision stack"><div class="actions">${p.choices.map(i=>btn(`Sacrifice ${i+1}`,`catchOverload:${i}`)).join('')}</div></section>`;
+  if(p.type==='catchOverload')return `<section class="decision stack tt23-overload"><button type="button" class="primary" data-action="catchOverload:remove">Remove Dreamcatcher</button></section>`;
   if(p.type==='towerPenalty')return `<section class="decision stack"><div class="actions"><span class="tt7-micro">Tap a Tower</span>${btn('False destruction','towerFake')}</div></section>`;
   if(p.type==='moduleDecision')return `<section class="decision stack"><h2>Choose effect: ${escape(p.id)}</h2><div class="actions">${pagedCards(p.options,o=>btn(escape(o),`moduleDecision:${encodeURIComponent(o)}`,'primary'),2)}</div></section>`;
   return `<div class="notice">Resolving an effect.</div>`;
@@ -401,7 +401,7 @@ function fitGameTabletop(){
   return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
 }
 let lastRenderedMarkup=null;
-function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
+function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='active')failsafeChoosing=false;tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]);const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousLabyrinths=new Map([...(app.querySelectorAll?.('[data-tabletop-scroll]')||[])].map(el=>[el.dataset.tabletopScroll,{count:el.querySelectorAll('.card.tiny').length,left:el.scrollLeft}]));
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
   const previousPile=app.querySelector?.('.tt6-pile-scroll'),pileScroll=previousPile?.scrollTop||0;
@@ -421,7 +421,7 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   const errorMessage=error?`<div class="shell-notice-layer" data-notice-backdrop><section class="shell-notice-dialog" role="alertdialog" aria-modal="true" aria-label="Information" tabindex="-1"><p>${escape(error)}</p>${btn('OK','clearError','primary')}</section></div>`:'';
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
-  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button><button type="button" data-action="openGamePause">Game menu</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard}):''):'';
+  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button><button type="button" data-action="openGamePause">Game menu</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing}):''):'';
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
@@ -432,6 +432,13 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
     const pending=state.game.pending;
+    if(failsafeChoosing&&state.game.phase==='action'&&state.room?.seat===state.game.active&&state.game.expansion?.dreamcatchers){
+      const d=state.game.expansion.dreamcatchers;
+      for(const catcher of app.querySelectorAll('.tt5-catcher[data-action^="inspectCatcher:"]')){
+        const i=Number(catcher.dataset.action.slice(15));
+        catcher.classList.toggle('tt23-failsafe-target',Boolean(d.active[i]&&d.stacks[i]?.length));
+      }
+    }
     if(pending?.type==='doorSearch'&&doorSearchIntent&&state.game.expansion?.dreamcatchers){
       const available=new Set(searchableCatchers(state.game,doorSearchIntent).map(x=>x.i));
       for(const catcher of app.querySelectorAll('.tt5-catcher[data-action^="inspectCatcher:"]')){
@@ -548,12 +555,23 @@ async function handle(actionName){
   if(actionName==='start')return doRoom('start');
   if(actionName==='copyCode'||actionName==='copyInvite'){try{if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');await navigator.clipboard.writeText(actionName==='copyCode'?state.room.code:inviteLink(state.room.code));error=actionName==='copyCode'?'Room code copied.':'Invite link copied.';render();}catch{return setError('Clipboard permission unavailable. Select and copy the displayed code or invite link field instead.');}return;}
   if(actionName.startsWith('inspectCatcher:')){const index=Number(actionName.slice(15));if(Number.isInteger(index)&&index>=0&&index<4&&state?.game?.expansion?.dreamcatchers){
+    if(failsafeChoosing){
+      const g=state.game,d=g.expansion.dreamcatchers;
+      if(g.phase==='action'&&state.room?.seat===g.active&&d.failsafes>0&&d.active[index]&&d.stacks[index]?.length){pileOpen=null;return action({type:'freeCatcher',index});}
+      return;
+    }
     if(state.game.pending?.type==='doorSearch'&&doorSearchIntent){
       if(searchableCatchers(state.game,doorSearchIntent).some(x=>x.i===index)){doorSearchIntent.selected=index;pileOpen=null;render();}return;
     }
     const id=`catcher:${index}`;pileOpen=pileOpen===id?null:id;return render();}return;}
   if(actionName.startsWith('inspectPile:')){const pile=actionName.slice(12);if(['deck','discard','limbo','reserve'].includes(pile)){pileOpen=pileOpen===pile?null:pile;return render();}return;}
   if(actionName==='closePile'){pileOpen=null;return render();}
+  if(actionName==='failsafeStart'){
+    const g=state?.game,d=g?.expansion?.dreamcatchers;
+    if(g?.phase==='action'&&state.room?.seat===g.active&&d?.failsafes>0&&d.active.some((a,i)=>a&&d.stacks[i]?.length)){failsafeChoosing=true;pileOpen=null;return render();}
+    return;
+  }
+  if(actionName==='failsafeCancel'){failsafeChoosing=false;return render();}
   if(actionName==='choicePrev'){choicePage=Math.max(0,choicePage-1);return render();}
   if(actionName==='choiceNext'){choicePage++;return render();}
   if(actionName.startsWith('goalPick:')){const i=Number(actionName.slice(9));if(!spellOpen||spellChoice!=='parallel'||!Number.isInteger(i))return;spellGoals=spellGoals.includes(i)?spellGoals.filter(j=>j!==i):[...spellGoals.slice(-1),i];return render();}
@@ -698,7 +716,7 @@ async function handle(actionName){
   if(actionName.startsWith('prophecyDiscard:')){prophecyDiscard=actionName.slice(16);return render();}
   if(actionName.startsWith('freeCatcher:'))return action({type:'freeCatcher',index:Number(actionName.slice(12))});
   if(actionName.startsWith('catchChoose:'))return action({type:'catchChoose',index:Number(actionName.slice(12))});
-  if(actionName.startsWith('catchOverload:'))return action({type:'catchOverload',index:Number(actionName.slice(14))});
+  if(actionName==='catchOverload:remove')return action({type:'catchOverload'});
   if(actionName.startsWith('towerPenalty:'))return action({type:'towerPenalty',option:'discard',towerId:actionName.slice(13)});
   if(actionName==='towerFake')return action({type:'towerPenalty',option:'fake'});
   if(actionName.startsWith('spellCost:')){const id=actionName.slice(10);if(spellSelected.has(id))spellSelected.delete(id);else spellSelected.add(id);return render();}

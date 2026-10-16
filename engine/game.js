@@ -153,12 +153,17 @@ function loseDoor(s,id){const p=own(s),idx=p.doors.findIndex(c=>c.id===id);need(
 }
 function dealLocation(s,to){while(true){if(!s.deck.length){s.status='lost';s.phase='ended';note(s,'No Location remains to complete the hand.');return false;}const c=takeTop(s);if(c.kind==='location'||c.kind==='tower'||c.kind==='deadEnd'){to.push(c);return true;}s.limbo.push(c);}}
 function fillSpecial(s){while(hand(s).length<quota(s))if(!dealLocation(s,hand(s)))return false;if(s.mode==='coop')while(s.shared.length<2)if(!dealLocation(s,s.shared))return false;return true;}
+function returnOverloadCards(s){
+ for(const i of catcherIds(s))s.deck.push(...stacks(s)['catch'+i].splice(0));
+ s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,'Overload! All Dreamcatcher cards returned to the deck and were shuffled.');
+}
 function endTurn(s){
  if(s.status!=='active')return;
  if(has(s,'dreamcatchers')&&s.limbo.length){
    const empty=catcherIds(s).filter(i=>stacks(s)['catch'+i].length===0);
    if(empty.length){const i=empty[0];stacks(s)['catch'+i].push(...s.limbo.splice(0));note(s,`Limbo was caught by Dreamcatcher ${i+1}.`);advanceTurn(s);return;}
-   s.pending={type:'catchOverload',choices:catcherIds(s)};s.phase='decision';return;
+   const rightmost=Math.max(...catcherIds(s));returnOverloadCards(s);
+   s.pending={type:'catchOverload',choices:[rightmost],returned:true};s.phase='decision';return;
  }
  if(s.limbo.length){s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,'Limbo shuffled into deck.');event(s,'limboResolved');}
  advanceTurn(s);
@@ -487,9 +492,11 @@ export function act(previous,command){
    need(command.type==='catchChoose'&&p.choices.includes(command.index),'Choose a free Dreamcatcher');stacks(s)['catch'+command.index].push(...s.limbo.splice(0));note(s,`Limbo was caught by Dreamcatcher ${command.index+1}.`);s.pending=null;advanceTurn(s);return s;
  }
  if(p.type==='catchOverload'){
-   need(command.type==='catchOverload'&&p.choices.includes(command.index),'Choose a Dreamcatcher to sacrifice');
-   for(const i of catcherIds(s))s.limbo.push(...stacks(s)['catch'+i].splice(0));dream(s).active[command.index]=false;
-   s.deck.push(...s.limbo.splice(0));shuffle(s,s.deck);note(s,`Dreamcatcher ${command.index+1} was lost to overload.`);
+   const rightmost=Math.max(...catcherIds(s));
+   need(command.type==='catchOverload'&&(command.index===undefined||command.index===rightmost),'Remove the rightmost Dreamcatcher');
+   // Older resumable saves may still contain the pre-Phase-2 overload state.
+   if(!p.returned)returnOverloadCards(s);
+   dream(s).active[rightmost]=false;note(s,`Dreamcatcher ${rightmost+1} was lost to overload.`);
    if(!catcherIds(s).length){s.status='lost';s.phase='ended';s.pending=null;note(s,'All Dreamcatchers have been lost.');return s;}
    s.pending=null;advanceTurn(s);return s;
  }
