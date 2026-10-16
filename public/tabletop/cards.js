@@ -7,7 +7,7 @@ export const htmlEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&a
 export function cardDescription(c){
   return c.kind==='location'?`${c.color==='wild'?'Crossroad':c.color} ${c.symbol}`:c.kind==='tower'?`${c.color} Tower · ${c.number} · ${c.left||'blank'}/${c.right||'blank'}`:c.kind==='door'?(c.expansion==='oniverse'?'Door to the Oniverse':`${c.color} Door`):c.kind==='hidden'?'Hidden':c.kind==='denizen'?(DENIZEN_NAMES[c.ability]||c.ability):c.kind==='deadEnd'?'Dead End':c.kind==='happyDream'?'Happy Dream':c.kind;
 }
-export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,interactive=false,highlight=false}={}){
+export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,interactive=false,highlight=false,focusable=false}={}){
   const symbol=cardSymbol(c.kind==='location'?c.symbol:c.kind==='denizen'?DENIZEN_ART[c.ability]||'leaf':c.kind,{compact:tiny});
   const text=htmlEscape(cardDescription(c));
   const faceName=htmlEscape(c.kind==='denizen'&&c.ability==='keeper'?'Treasure Keeper':cardDescription(c));
@@ -15,7 +15,7 @@ export function renderCard(c,{select=false,tiny=false,dim=false,selectedId=null,
   // Inspect metadata only for a card already visible to this viewer. Never
   // serialize IDs, private hands, deck order, or unrevealed card details.
   const visible={kind:c.kind,color:c.color||'',symbol:c.symbol||'',expansion:c.kind==='door'&&c.expansion!=='oniverse'?'':c.expansion||'',ability:c.ability||'',number:c.number||'',left:c.left||'',right:c.right||''};
-  const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"${c.kind!=='hidden'&&c.id?` data-tt-motion-id="${htmlEscape(c.id)}"`:``}`;
+  const inspect=` data-tt-card-info="${htmlEscape(JSON.stringify(visible))}"${focusable?` tabindex="0"`:``}${c.kind!=='hidden'&&c.id?` data-tt-motion-id="${htmlEscape(c.id)}"`:``}`;
   const towerEdge=(marks,side)=>`<span class="tt8-tower-marks tt8-tower-${side}">${marks.split('+').filter(Boolean).map(mark=>`<span class="tt8-tower-mark" data-tower-mark="${htmlEscape(mark)}">${cardSymbol(mark)}</span>`).join('')}</span>`;
   const face=c.kind==='tower'?`<span class="tt5-tower-face">${towerEdge(c.left||'', 'left')}<span class="tt11-tower-emblem" aria-hidden="true">${cardSymbol('tower')}</span><strong class="tt11-tower-number">${htmlEscape(c.number)}</strong>${towerEdge(c.right||'', 'right')}</span>`:`<span class="symbol">${symbol}</span>`;
   return select?`<button class="${classes}" aria-pressed="${selectedId===c.id}" title="${text}" aria-label="${text}" data-pick="${htmlEscape(c.id)}"${inspect} ${interactive?`data-tt-card="${htmlEscape(c.id)}"`:``} ${dim?'disabled':''}>${face}${c.kind==='denizen'?`<span class="card-label">${faceName}</span>`:''}</button>`:`<div class="${classes}" title="${text}" aria-label="${text}"${inspect}>${face}${c.kind==='denizen'?`<span class="card-label">${faceName}</span>`:''}</div>`;

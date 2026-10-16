@@ -120,19 +120,6 @@
 /* 2026-10 mobile tabletop corrections. The fitted board uses --tt15-mini,
    but interactive accessory cards must not become narrower than their artwork. */
 .game-viewport .tt5-catchers .tt5-catcher{padding:1px!important}
-.game-viewport .tt2-root[data-tt15-layout] .tt5-catchers .tt14-catcher-face{
-  width:min(100%,calc((var(--tt15-catcher-h,110px) - 20px)*.705))!important;
-  height:calc(var(--tt15-catcher-h,110px) - 20px)!important;
-  max-width:100%!important;max-height:100%!important;overflow:visible!important;
-}
-.game-viewport .tt5-catchers .tt14-catcher-fan{overflow:visible!important}
-.game-viewport .tt5-catchers .tt14-held-card{
-  left:0!important;right:auto!important;top:0!important;bottom:0!important;
-  width:calc(100% - min(6px,(var(--tt14-held) - 1)*1.5px))!important;
-  transform:translateX(calc(var(--tt14-held-index)*1.5px));
-}
-.game-viewport .tt5-catchers .tt14-held-card .card.tiny{aspect-ratio:1/1.42!important;width:100%!important;height:100%!important}
-.game-viewport .tt2-root[data-tt15-layout="short"] .tt5-catchers .tt14-catcher-face{width:calc((var(--tt15-landscape-shelf,78px) - 20px)*.705)!important;height:calc(var(--tt15-landscape-shelf,78px) - 20px)!important}
 
 /* A true four-color Crossroad, with its own rainbow frame retained on selection. */
 /* Crossroads use all four Location colors across the card FACE, not just
@@ -274,3 +261,12 @@
 .game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px solid var(--ui-accent)!important;outline-offset:1px;box-shadow:0 0 0 4px #edcc7a33!important;cursor:pointer}
 .game-viewport .tt23-overload{justify-content:center;align-items:center;min-width:0}
 .game-viewport .tt23-overload button{font-weight:750}
+
+/* Cards in an OPENED Dreamcatcher are inspectable on touch hold, right click,
+   or keyboard, without making ordinary taps trigger a game action. */
+.tt6-pile-inspector .tt9-stack-details .card.tiny[data-tt-card-info]{
+  pointer-events:auto;touch-action:pan-y;cursor:help;
+}
+.tt6-pile-inspector .tt9-stack-details .card.tiny[data-tt-card-info]:focus-visible{
+  outline:2px solid var(--ui-accent);outline-offset:2px;
+}

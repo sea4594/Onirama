@@ -47,11 +47,11 @@
 .game-viewport .tt5-expansions>.tt5-zone.tt5-catchers{grid-column:1/-1!important;min-height:0!important;max-height:none!important;height:clamp(105px,32vw,148px)!important}
 .game-viewport .tt5-catchers>.tt5-contents{position:static!important;transform:none!important;left:auto!important;top:auto!important;width:100%!important;max-width:100%!important;height:calc(100% - 18px)!important;min-height:0!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:clamp(5px,1.4vw,13px)!important;justify-items:center!important;align-items:stretch!important;overflow:visible!important;flex:1 1 auto!important}
 .game-viewport .tt5-catchers .tt5-catcher{display:flex!important;position:relative;justify-content:center;align-items:center;min-width:0!important;max-width:none!important;width:100%!important;height:100%;min-height:0!important;padding:2px!important;appearance:none;border-radius:7px}
-.game-viewport .tt5-catchers .tt14-catcher-face{display:block;position:relative;width:min(100%,76px);height:100%;max-height:100%;aspect-ratio:.705;border-radius:5px;overflow:hidden}
+.game-viewport .tt5-catchers .tt14-catcher-face{display:contents}
 .game-viewport .tt14-catcher-back{display:block;width:100%;height:100%;border:1px solid #dcc89166;border-radius:5px;background:repeating-linear-gradient(140deg,var(--card-back-a),var(--card-back-a) 7px,var(--card-back-b) 7px,var(--card-back-b) 13px)}
 .game-viewport .tt14-catcher-fan{display:block;position:relative;width:100%;height:100%}
-.game-viewport .tt14-held-card{position:absolute;top:0;bottom:0;left:calc(var(--tt14-held-index)*min(5px,15%));right:calc((var(--tt14-held) - var(--tt14-held-index) - 1)*min(5px,15%));display:block;min-width:0}
-.game-viewport .tt14-held-card .card.tiny{height:100%!important;width:100%!important;max-width:none!important;max-height:none!important;min-width:0!important;margin:0!important}
+
+
 .game-viewport .tt5-catchers .tt5-count{font-size:clamp(10px,1.9vw,12px)}
 /* Normal aspect ratio Premonitions, reserve deck clearly inspectable. */
 .game-viewport .tt5-expansions>.tt5-zone.tt5-premonitions{grid-column:1/-1!important;max-height:none!important;min-height:0!important;height:clamp(94px,26vw,126px)!important}
@@ -163,4 +163,32 @@
 @media(orientation:landscape) and (max-height:530px) and (min-width:680px){
  .game-viewport .tt2-root[data-tabletop-solo]:has(.tt8-towers-slot):has(.tt9-exp-primary):not(:has(.tt9-exp-secondary)) .tt2-grid{grid-template-areas:'doors piles' 'towers primary' 'labyrinth primary' 'hand primary'!important;grid-template-rows:auto auto minmax(45px,1fr) auto!important}
  .game-viewport .tt2-root[data-tabletop-solo]:not(:has(.tt8-towers-slot)):has(.tt9-exp-primary):not(:has(.tt9-exp-secondary)) .tt2-grid{grid-template-areas:'doors piles' 'labyrinth primary' 'hand primary'!important;grid-template-rows:auto minmax(45px,1fr) auto!important}
+}
+
+/* Dreamcatchers are the actual compartments, not frames around narrower card-shaped boxes.
+   Card widths derive from the available height and keep the physical 1:1.42 ratio.
+   Each card spans the full usable horizontal range without ever being flattened. */
+.game-viewport .tt5-catchers .tt5-catcher{
+  container-type:size;overflow:hidden;
+  background:repeating-linear-gradient(135deg,#233d35,#233d35 5px,#35534b 5px,#35534b 10px)!important;
+}
+.game-viewport .tt5-catchers .tt14-catcher-face{display:contents!important}
+.game-viewport .tt5-catchers .tt14-catcher-fan{
+  display:block;position:relative;height:100%;overflow:hidden;margin-inline:auto;
+  --tt14-card-w:min(calc((100cqh - 6px)*.705),calc(100cqw - 4px));
+  width:min(100%,calc(var(--tt14-card-w) + (var(--tt14-held) - 1)*min(14px,calc(var(--tt14-card-w)*.28))));
+}
+.game-viewport .tt5-catchers .tt14-held-card{
+  display:block;position:absolute;top:50%;bottom:auto;right:auto;
+  left:calc((100% - var(--tt14-card-w))*var(--tt14-position));
+  width:var(--tt14-card-w);height:calc(var(--tt14-card-w)*1.42);
+  min-width:0;transform:translateY(-50%);
+}
+.game-viewport .tt5-catchers .tt14-held-card .card.tiny{
+  display:flex;width:100%!important;height:100%!important;max-width:100%!important;
+  max-height:100%!important;min-width:0!important;margin:0!important;
+  aspect-ratio:1/1.42!important;
+}
+.game-viewport .tt5-catchers .tt14-catcher-back{
+  display:block;width:100%;height:100%;border:0;background:transparent!important;
 }

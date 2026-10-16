@@ -7,7 +7,7 @@ const index=readFileSync('public/index.html','utf8');
 test('adaptive layout is last in the production stylesheet order and retains physical card proportions',()=>{
  assert.ok(index.indexOf('phase14.css')<index.indexOf('adaptive.css'));
  assert.match(css,/aspect-ratio:1\s*\/\s*1\.42/);
- assert.match(css,/\.tt5-catchers \.tt14-catcher-face\{width:auto!important/);
+ assert.match(readFileSync('public/tabletop/phase14.css','utf8'),/\.tt5-catchers \.tt14-catcher-face\{display:contents!important/);
  assert.match(css,/\.tt5-expansions:empty\{display:none!important/);
 });
 test('distinct solo and co-op compositions use board geometry rather than entire-screen font zoom',()=>{
