@@ -166,6 +166,14 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   return {syncTargets,dispose(){clearDrag();root.removeEventListener('pointerdown',onPointerDown);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',onCancel);window.removeEventListener('blur',onCancel);root.removeEventListener('click',onClick,true);root.removeEventListener('keydown',onKey);}};
 }
 
+/** Restore a Happy Dream discard into an exact insertion gap, without losing order. */
+export function restoreDiscardedCardToGap(ids,discardedIds,id,gap){
+  if(!Array.isArray(ids)||!discardedIds.has(id)||!ids.includes(id))return ids;
+  const kept=ids.filter(x=>x!==id&&!discardedIds.has(x));
+  if(!Number.isInteger(gap)||gap<0||gap>kept.length)return ids;
+  const discarded=ids.filter(x=>x!==id&&discardedIds.has(x));
+  return [...kept.slice(0,gap),id,...kept.slice(gap),...discarded];
+}
 /** Reordering uses a GAP index (0..length), not the card under the cursor. */
 export function moveOrderedCardToGap(ids,from,gap){
   if(!Array.isArray(ids)||!ids.includes(from)||!Number.isInteger(gap)||gap<0||gap>ids.length)return ids;
@@ -197,7 +205,7 @@ export function gapAtPoint(list,x,y){
  for(const c of row.cards)if(x<c.box.left+c.box.width/2)return c.index;
  return row.cards.at(-1).index+1;
 }
-export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{}}){
+export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{},onRestore=()=>{}}){
   let press=null,ghost=null,highlight=null,tap=null,suppress=false;
   const group=kind=>[...root.querySelectorAll('[data-tt-order-group]')].find(l=>l.dataset.ttOrderGroup===kind);
   function eraseLine(){highlight?.classList.remove('tt5-insert-before','tt5-insert-after');highlight=null;}
@@ -209,14 +217,20 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
     highlight?.classList.add(gap===items.length?'tt5-insert-after':'tt5-insert-before');
   }
   function dragGap(x,y){
-    const list=group(press.kind);if(!list)return null;
+    const list=group(press.kind==='happyDiscard'?'effect':press.kind);if(!list)return null;
     const rect=list.getBoundingClientRect();if(y<rect.top-45||y>rect.bottom+45||x<rect.left-42||x>rect.right+42)return null;
     if(x<rect.left+30)list.scrollLeft-=11;
     if(x>rect.right-30)list.scrollLeft+=11;
-    return {list,index:gapAtPoint(list,x,y)};
+    return {list,index:gapAtPoint(list,x,y)??0};
   }
   function down(e){
     if(e.button!==0&&e.pointerType==='mouse')return;
+    const restore=e.target.closest?.('[data-tt-happy-restore]');
+    if(restore&&root.querySelector('[data-tt-happy-discard]')){
+      const rect=restore.getBoundingClientRect();
+      press={pointerId:e.pointerId,id:restore.dataset.ttHappyRestore,kind:'happyDiscard',item:restore,grip:restore,x:e.clientX,y:e.clientY,offsetX:e.clientX-rect.left,offsetY:e.clientY-rect.top,dragging:false};
+      return;
+    }
     const grip=e.target.closest?.('[data-tt-order-handle]');
     const item=grip?.closest?.('[data-tt-order-id]'),list=item?.closest?.('[data-tt-order-group]');
     if(!item||!list||!canReorder(list.dataset.ttOrderGroup))return;
@@ -242,7 +256,9 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
     const slot=isHappy|| (press.kind==='prophecy'?root.querySelector('[data-tt-prophecy-discard]'):null);
     const box=slot?.getBoundingClientRect();const discarded=dragging&&box&&e.clientX>=box.left-10&&e.clientX<=box.right+10&&e.clientY>=box.top-10&&e.clientY<=box.bottom+10;
     if(dragging){suppress=true;setTimeout(()=>suppress=false,0);}
-    clear();if(discarded){onDiscard(id,isHappy?'happyPeek':'prophecy');return;}if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
+    const fromDiscard=press.kind==='happyDiscard';
+    clear();if(fromDiscard){if(target?.index!==null&&target?.index!==undefined)onRestore(id,target.index);return;}
+    if(discarded){onDiscard(id,isHappy?'happyPeek':'prophecy');return;}if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
   }
   function activate(item){
     const list=item?.closest('[data-tt-order-group]');if(!list||!canReorder(list.dataset.ttOrderGroup))return;
@@ -252,7 +268,8 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
     cancelTap();tap={id,kind};item.classList.add('tt5-order-selected');list.classList.add('tt5-order-picking');
   }
   function click(e){
-    if(suppress&&e.target.closest?.('[data-tt-order-group]')){suppress=false;e.preventDefault();e.stopImmediatePropagation();return;}
+    if(suppress&&e.target.closest?.('[data-tt-order-group],[data-tt-happy-restore]')){suppress=false;e.preventDefault();e.stopImmediatePropagation();return;}
+    if(e.target.closest?.('[data-tt-happy-restore]'))return; // A discarded card restores itself, not the selected retained card.
     const slot=e.target.closest?.('[data-tt-prophecy-discard],[data-tt-happy-discard]');
     if(slot&&tap&&(tap.kind==='prophecy'||(tap.kind==='effect'&&slot.hasAttribute('data-tt-happy-discard')))){const id=tap.id,kind=slot.hasAttribute('data-tt-happy-discard')?'happyPeek':'prophecy';cancelTap();onDiscard(id,kind);e.preventDefault();return;}
     const end=e.target.closest?.('[data-tt-order-end]');

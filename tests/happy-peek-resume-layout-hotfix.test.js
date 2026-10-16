@@ -18,16 +18,16 @@ test('Happy Dream peek reveals all seven, accepts multiple discards and keeps ph
  const ids=peek.pending.cards.map(c=>c.id),next=act(peek,{type:'happyPeek',discardIds:ids.slice(0,3),order:ids.slice(3).reverse()});
  assertConserved(next);assert.equal(next.discard.filter(c=>ids.slice(0,3).includes(c.id)).length,3);
 });
-test('peek UI displays complete seven-card order and interactive stacked discard slot',()=>{
+test('peek UI displays seven cards and horizontally expanding discard area',()=>{
  const app=read('public/app.js'),gestures=read('public/tabletop/interactions.js'),css=read('public/tabletop/card-system.css');
  assert.match(app,/function happyPeekDecision\(p\)/);
  const peek=app.split('function happyPeekDecision(p)')[1].split('function effectReorder(p)')[0];
  assert.match(peek,/const kept=effectOrder\.filter/);
  assert.match(peek,/data-tt-happy-discard/);
- assert.match(peek,/tt23-discard-card/);
+ assert.match(peek,/tt23-discard-card/);assert.match(peek,/data-tt-happy-restore/);assert(peek.includes("Discard (${discarded.length})"));
  assert.doesNotMatch(peek,/orderSlice|effectDiscard:/);
  assert.match(gestures,/data-tt-happy-discard/);
- assert.match(css,/\.tt23-peek-cards/);
+ assert.match(css,/\.tt23-peek-cards/);assert.match(css,/position:static!important/);assert.doesNotMatch(css,/\.tt23-discard-card\{position:absolute/);
 });
 test('solo and hot-seat saves are independently recoverable after restart',()=>{
  const app=read('public/app.js');
