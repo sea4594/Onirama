@@ -2,6 +2,7 @@ import {icon} from './icons.js';
 import {cleanConfig,readHistory,recordResult,summarizeHistory,readPresets,savePreset,deletePreset,clearHistory} from './guest-data.js';
 import * as firebase from './firebase-room.js';
 import {renderCard} from './tabletop/cards.js';
+import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
@@ -366,16 +367,8 @@ function contextualDialog(g,room){
   const html=`<section class="decision stack"><h2>Cyclobot exchange</h2><p>Select a hand Location, then select its replacement.</p><div class="tt4-card-choices">${eligible.map(c=>`<button type="button" class="tt4-card-option" data-action="cyclobotSwap:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')||'<span>No Locations available.</span>'}</div><div class="actions">${btn('Cancel','cyclobotCancel')}</div></section>`;
   return {type:'cyclobot',key:`context:cyclobot:${cyclobotTarget}`,html};
  }
- if(spellOpen&&e.book){const b=e.book;
-  const choices=[
-   {id:'parallel',name:'Parallel Planning',description:'Swap any two Goal cards in the Book of Steps. Tap the two Goals on the tabletop.',allowed:true},
-   {id:'paradox',name:'Paradoxical Prophecy',description:'Look at up to five cards from the bottom of the deck. Put one on top and return the others to the bottom.',allowed:g.deckCount>0},
-   {id:'punishment',name:'Powerful Punishment',description:'Cancel a Nightmare just drawn, without applying its penalty.',allowed:g.pending?.type==='nightmare'&&!g.pending?.incubus}
-  ].sort((a,b)=>g.expansion.book.costs[a.id]-g.expansion.book.costs[b.id]);
-  const active=choices.find(x=>x.id===spellChoice)||choices[0];
-  const enough=g.discard.length>=b.costs[active.id];
-  const html=`<section class="decision stack tt16-spell-dialog"><h2>Book of Steps · ${g.discard.length} discarded cards</h2><div class="tt16-spell-choices" role="radiogroup" aria-label="Choose spell">${choices.map(c=>`<button type="button" role="radio" aria-checked="${spellChoice===c.id}" class="tt16-spell-choice ${spellChoice===c.id?'tt16-selected':''}" data-action="spellSelect:${c.id}"><strong>${c.name}</strong><span class="tt16-spell-cost">${b.costs[c.id]} cards${c.allowed?'':' · unavailable'}</span></button>`).join('')}</div><p class="tt16-spell-description">${active.description}</p>${spellChoice==='parallel'?`<p class="tt16-spell-payment">Select two Goals (${spellGoals.length}/2)</p>`:''}<div class="tt16-spell-actions"><button type="button" class="primary" data-action="castSpell" ${!enough||!active.allowed||spellChoice==='parallel'&&spellGoals.length!==2?'disabled':''}>Cast spell</button>${btn('Cancel','dialogClose')}</div></section>`;
-  return {type:'spellbook',key:'context:spellbook',html};
+ if(spellOpen&&e.book){
+  return {type:'spellbook',key:'context:spellbook',html:renderSpellbook(g,{choice:spellChoice,selectedGoals:spellGoals})};
  }
  return null;
 }
@@ -574,7 +567,7 @@ async function handle(actionName){
   if(actionName==='failsafeCancel'){failsafeChoosing=false;return render();}
   if(actionName==='choicePrev'){choicePage=Math.max(0,choicePage-1);return render();}
   if(actionName==='choiceNext'){choicePage++;return render();}
-  if(actionName.startsWith('goalPick:')){const i=Number(actionName.slice(9));if(!spellOpen||spellChoice!=='parallel'||!Number.isInteger(i))return;spellGoals=spellGoals.includes(i)?spellGoals.filter(j=>j!==i):[...spellGoals.slice(-1),i];return render();}
+  if(actionName.startsWith('goalPick:')){const i=Number(actionName.slice(9));if(!spellOpen||spellChoice!=='parallel'||!Number.isInteger(i)||i<0||i>=(state?.game?.expansion?.book?.goals?.length||0))return;spellGoals=spellGoals.includes(i)?spellGoals.filter(j=>j!==i):[...spellGoals.slice(-1),i];return render();}
   if(actionName==='dialogClose'){if(state?.game?.phase!=='decision'||spellOpen)closeOptionalDialog();return;}
   if(actionName.startsWith('spellSelect:')){const next=actionName.slice('spellSelect:'.length);if(!['parallel','paradox','punishment'].includes(next))return;spellChoice=next;spellGoals=[];return render();}
   if(actionName==='openSpells'){spellOpen=true;spellSelected.clear();spellGoals=[];choicePage=0;freeSearchId='';return render();}
@@ -720,7 +713,7 @@ async function handle(actionName){
   if(actionName.startsWith('towerPenalty:'))return action({type:'towerPenalty',option:'discard',towerId:actionName.slice(13)});
   if(actionName==='towerFake')return action({type:'towerPenalty',option:'fake'});
   if(actionName.startsWith('spellCost:')){const id=actionName.slice(10);if(spellSelected.has(id))spellSelected.delete(id);else spellSelected.add(id);return render();}
-  if(actionName==='castSpell'){const goals=state.game.expansion?.book?.goals||[];const [a,b]=spellGoals;return action({type:'cast',spell:spellChoice,...(spellChoice==='parallel'?{first:a,second:b}:{})});}
+  if(actionName==='castSpell'){const g=state?.game,eligibility=spellEligibility(g,spellChoice,spellGoals);if(!spellOpen||!eligibility.ready)return;const [a,b]=spellGoals;return action({type:'cast',spell:spellChoice,...(spellChoice==='parallel'?{first:a,second:b}:{})});}
   if(actionName.startsWith('incantationClaim:')&&g.pending?.type==='incantation')return action({type:'incantationClaim',doorId:actionName.slice('incantationClaim:'.length)});
   if(actionName.startsWith('effectPick:')){effectPick=actionName.slice(11);return render();}
   if(actionName.startsWith('moduleDecision:'))return action({type:'moduleDecision',decisionId:g.pending.id,choice:decodeURIComponent(actionName.slice(15))});

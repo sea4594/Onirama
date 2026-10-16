@@ -9,7 +9,7 @@ export function renderDoorSlots(doors,config,{targets=new Set(),spellGoalMode=fa
    const chosen=index!==null&&spellGoals.includes(index),eligible=card&&targets.has(card.id);
    const preview=!card&&!previewUsed&&incantationPreview?.kind==='door'&&incantationPreview.color===color&&(!book?.length||nextBookGoal?.color===color&&index===book.indexOf(nextBookGoal));if(preview)previewUsed=true;
    const child=card?renderCard(card,{tiny:true,select:Boolean(eligible),highlight:Boolean(eligible)}):preview?`<span class="tt12-door-preview" aria-label="Pending Incantation Door">${renderCard(incantationPreview,{tiny:true})}</span>`:`<span class="tt8-door-empty ${htmlEscape(color)}" aria-hidden="true">${icon('diamond')}</span>`;
-   const body=spellGoalMode&&index!==null?`<button type="button" class="tt8-goal-spot ${chosen?'tt8-goal-chosen':''}" data-action="goalPick:${index}" aria-pressed="${chosen}" aria-label="Choose Step ${index+1}, ${htmlEscape(color)} Door">${child}</button>`:child;
+   const body=spellGoalMode&&index!==null?`<button type="button" class="tt8-goal-spot ${chosen?'tt8-goal-chosen':''}" data-action="goalPick:${index}" aria-pressed="${chosen}" aria-label="Choose Goal ${index+1}, ${htmlEscape(color)} Door${chosen?`, selected ${spellGoals.indexOf(index)+1}`:''}">${child}${chosen?`<span class="tt24-door-picked" aria-hidden="true">${spellGoals.indexOf(index)+1}</span>`:''}</button>`:child;
    return `<span class="tt8-door-slot ${htmlEscape(color)} ${done?'tt8-door-complete':''} ${book?.length&&index===book.findIndex(g=>!g.done)?'tt8-current-goal':''}" aria-label="${htmlEscape(color)} Door ${position+1}${card?' collected':''}">${body}</span>`;
  }).join('');
 }

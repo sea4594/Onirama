@@ -27,7 +27,7 @@ test('Incantation has explicit choice and bottom-order phases, spellbook has des
  assert.match(source,/Incantation: Take a door/);
  assert.match(source,/Incantation: Rearrange and put on bottom/);
  assert.match(source,/spellSelect:/);
- assert.match(source,/Look at up to five cards from the bottom of the deck/);
+ assert.match(read('public/tabletop/spellbook.js'),/Look at up to five cards from the bottom of the deck/);
  assert.doesNotMatch(source,/<select id="spellChoice"/);
  assert.doesNotMatch(source,/>Out'</);
 });

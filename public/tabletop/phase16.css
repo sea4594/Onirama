@@ -72,3 +72,18 @@
  .game-viewport .tt16-spell-choices{grid-template-columns:repeat(3,minmax(0,1fr))!important}
  .game-viewport .tt6-pile-inspector{bottom:120px!important}
 }
+/* Phase 4: availability is clear without changing spell or Goal card colors. */
+.game-viewport .tt16-spell-choice.tt24-spell-ready{border-color:var(--table-gold);background:var(--ui-panel);opacity:1;color:var(--ui-text)}
+.game-viewport .tt16-spell-choice.tt24-spell-unready{border-color:var(--ui-border);background:var(--ui-soft);opacity:.48;color:var(--ui-muted);filter:grayscale(1)}
+.game-viewport .tt16-spell-choice.tt16-selected{outline:2px solid var(--table-gold)!important;outline-offset:-2px!important;box-shadow:inset 0 0 0 1px var(--table-gold-line)}
+.game-viewport .tt24-goal-header{font-size:10px;font-weight:700;text-align:center;line-height:1.2}
+.game-viewport .tt24-spell-goals{display:flex;align-items:center;justify-content:flex-start;gap:5px;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:3px 3px 5px;flex-shrink:0}
+.game-viewport .tt24-spell-goal{position:relative;display:flex;flex:0 0 39px;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:39px;padding:2px;border:2px solid transparent;border-radius:6px;background:transparent;color:var(--ui-text);cursor:pointer;min-width:0;touch-action:manipulation}
+.game-viewport .tt24-spell-goal .card.tiny{width:29px!important;height:auto!important;aspect-ratio:.705!important;pointer-events:none;flex:none;max-width:none}
+.game-viewport .tt24-spell-goal.tt24-goal-chosen{border-color:var(--table-gold)!important;outline:1px solid var(--table-gold)!important;outline-offset:0!important;background:transparent!important;filter:none!important}
+.game-viewport .tt24-goal-number{font-size:9px;font-weight:700;line-height:1}
+.game-viewport .tt24-goal-picked{position:absolute;top:12px;right:0;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--table-gold);color:#231c16;font-weight:900;font-size:10px;box-shadow:0 0 0 1px var(--ui-panel)}
+.game-viewport .tt24-spell-shortage{text-align:center;color:var(--ui-muted);font-size:10px}
+.game-viewport .tt24-spell-goal:focus-visible{outline:2px solid var(--ui-accent)!important;outline-offset:1px!important}
+.game-viewport .tt2-root .tt8-goal-spot.tt8-goal-chosen{position:relative;outline:3px solid var(--table-gold)!important;outline-offset:1px!important;filter:none!important;background:transparent!important;box-shadow:none!important}
+.game-viewport .tt2-root .tt8-goal-spot .tt24-door-picked{position:absolute;top:-4px;right:-3px;z-index:4;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--table-gold);color:#231c16;font-weight:900;font-size:10px;pointer-events:none}
