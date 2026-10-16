@@ -43,7 +43,7 @@ export function targetState(g, cardId, seat=0){
   return {play:legal.includes('play'),discard:legal.includes('discard')};
 }
 const DRAG_THRESHOLD=8;
-export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onSwap=()=>{}, onInspect=()=>{}}){
+export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onDrop=()=>{}, onSwap=()=>{}, onInspect=()=>{}}){
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
   const board=()=>$('.tt2-root[data-tabletop-solo="true"],.tt6-root[data-tabletop-coop="true"]');
@@ -108,9 +108,10 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
       // drag cannot accidentally select a different card or run an action twice.
       suppressClick=true;setTimeout(()=>{suppressClick=false;},0);
     }
+    const released=dragging&&ghost?.getBoundingClientRect?.();
     clearDrag();
     if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
-    if(drop){dispatch(drop.dataset.ttDrop,cardId);return;}
+    if(drop){onDrop(cardId,released);dispatch(drop.dataset.ttDrop,cardId);return;}
     if(dragging)onSelect(cardId);
   }
   function onPointerDown(e){

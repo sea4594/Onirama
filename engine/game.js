@@ -219,10 +219,13 @@ function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromati
  if(has(s,'dreamcatchers'))for(const i of catcherIds(s))targets.push(...stacks(s)['catch'+i].filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'catch'+i,color:c.color})));
  return targets;
 }
-function claimSearch(s,color,id,freeId){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(o.source!=='deck'&&freeId!==undefined&&freeId!==null){
+function claimSearch(s,color,id,freeId,searchBeforeClaim=false){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(searchBeforeClaim)need(o.source!=='deck','Deck Door searches already shuffle');
+ if(o.source!=='deck'&&freeId!==undefined&&freeId!==null){
   need(o.source!=='catch'+freeId,'Cannot free the Dreamcatcher holding the selected Door');
-  freeCatcher(s,freeId);
+  // Preserve pre-existing commands that combined taking a caught Door with freeing.
+  if(!searchBeforeClaim)freeCatcher(s,freeId);
  }
+ if(o.source!=='deck'&&searchBeforeClaim)shuffleAfterSearch(s,freeId);
  if(d.color!==color&&d.color!=='wild')spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');if(s.status==='active'&&o.source==='deck')shuffleAfterSearch(s,freeId);}
 // Phase 6: promo and appendix effects share the base draw, Door and Nightmare transitions.
 const MIRROR_NAMES=['red','blue','green','brown','sun','moon','key','glyph','rainbow'];
@@ -411,7 +414,7 @@ export function act(previous,command){
    if(command.option==='claim'){
      // Legacy commands may omit doorId; select a physical matching Door.
      const targets=doorSearchTargets(s,p.color),chosen=command.doorId||targets[0]?.id;need(chosen,'No matching Door exists');
-     claimSearch(s,p.color,chosen,command.freeId);
+     claimSearch(s,p.color,chosen,command.freeId,command.searchBeforeClaim===true);
    }else if(command.option==='search'){shuffleAfterSearch(s,command.freeId);note(s,`Searched the deck but took no ${p.color} Door.`);}
    if(s.status==='active'){s.pending=null;if(command.option==='claim')finishAcquisition(s);else refill(s);}return s;
  }

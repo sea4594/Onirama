@@ -114,6 +114,6 @@ test('Earlier v0.21 saves keep in-progress Mirror decisions and gain the current
  const n=normalizeSave(s);assert.equal(n.rulesVersion,RULESET_VERSION);assert.equal(n.moduleState.mirrors.resolving,null);assertConserved(n);
 });
 test('UI exposes the no-target search option and both caught Door sources',()=>{
- const ui=readFileSync('public/app.js','utf8');assert.match(ui,/choices\.map\(t=>btn/);
+ const ui=readFileSync('public/app.js','utf8');assert.match(ui,/caught\.flatMap\(t=>/);assert.match(ui,/doorSearch:direct/);assert.match(ui,/doorSearch:shuffle/);
  assert.match(ui,/doorSearch:search/);assert.doesNotMatch(ui,/!deck\?catchers\.map/);
 });

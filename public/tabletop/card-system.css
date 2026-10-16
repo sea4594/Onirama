@@ -20,3 +20,38 @@
 .game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="2"]{font-size:clamp(7px,calc(var(--tt15-mini,36px)*.36),19px)!important;font-size:clamp(7px,38cqw,19px)!important}
 .game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="3"]{font-size:clamp(6px,calc(var(--tt15-mini,36px)*.27),16px)!important;font-size:clamp(6px,28cqw,16px)!important}
 .game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="4"]{font-size:clamp(5px,calc(var(--tt15-mini,36px)*.21),14px)!important;font-size:clamp(5px,22cqw,14px)!important}
+
+/* Fixed inventory structure across every viewport: base = color rows × symbol columns. */
+.tt6-pile-inspector .tt6-inventory-rows[data-inventory-section="base"]{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.tt6-pile-inspector .tt6-inventory-rows[data-inventory-section="towers"]{grid-template-columns:repeat(3,minmax(0,1fr))!important;width:75%}
+.tt6-pile-inspector .tt6-inventory-rows[data-inventory-section="glyphs"]{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.tt6-pile-inspector .tt6-inventory-rows{gap:5px!important}
+.tt6-pile-inspector .tt6-inventory-line{max-width:none!important;padding:5px 2px!important}
+/* Make the special Door read as rainbow even at miniature board sizes. */
+.game-viewport .tt8-door-slot.wild{background:conic-gradient(from 30deg,var(--red),var(--blue),var(--green),var(--brown),var(--red));padding:2px;box-shadow:0 0 0 1px #f4deab,0 0 10px #edda9c80}
+.game-viewport .tt8-door-slot.wild .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
+/* A held card can be long-pressed to inspect its rules, independently of the catcher button. */
+.game-viewport .tt5-catcher .tt14-held-card .card{pointer-events:auto;touch-action:manipulation}
+.game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px solid var(--table-gold)!important;outline-offset:2px;box-shadow:0 0 0 4px var(--ui-accent),0 0 15px var(--ui-accent)!important;animation:tt-free-pulse 1.2s ease-in-out infinite alternate}
+.game-viewport .tt5-catcher.tt-search-free-chosen{outline:3px solid #fff4bd!important;box-shadow:0 0 0 4px var(--table-gold)!important}
+@keyframes tt-free-pulse{from{filter:brightness(1)}to{filter:brightness(1.3)}}
+@media(prefers-reduced-motion:reduce){.game-viewport .tt5-catcher.tt-search-free-eligible{animation:none}}
+/* The dock heading must never overlap a decision card, including in landscape. */
+.game-viewport .tt6-dock-decision .tt20-door-choice{width:clamp(40px,12vw,61px)!important}
+.game-viewport .tt6-dock-decision .tt20-incantation-choice,.game-viewport .tt6-dock-decision .tt20-incantation-reveal,.game-viewport .tt6-dock-decision .tt20-incantation-cards .tt3-order-item{width:clamp(35px,10vw,62px)!important}
+.game-viewport .tt6-dock-decision .tt3-order-handle .card{width:clamp(22px,7vw,35px)!important;max-width:35px!important}
+.game-viewport .tt6-dock-decision .tt4-card-option .card{width:clamp(21px,7vw,34px)!important;max-width:34px!important}
+/* Door search: compact card-topped actions, no text or artwork spilling into the status bar. */
+.game-viewport .tt21-door-search,.game-viewport .tt21-free-step{display:flex!important;flex-direction:column!important;gap:4px!important;align-items:center!important;justify-content:center!important;min-height:0}
+.game-viewport .tt21-search-options{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;max-width:100%}
+.game-viewport .tt21-search-choice{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 5px!important;max-width:98px;min-width:0;min-height:0!important;font-size:10px!important;line-height:1.05;text-align:center}
+.game-viewport .tt21-search-choice .card{width:clamp(25px,7vw,40px);height:auto;aspect-ratio:.705;pointer-events:none}
+.game-viewport .tt21-search-choice .tt21-source{font-size:9px;opacity:.85}
+.game-viewport .tt21-free-step p{margin:0;font-size:12px;line-height:1.15;text-align:center}
+.game-viewport .tt21-free-detail{display:flex;align-items:center;justify-content:center;gap:7px;max-width:100%;min-width:0}
+.game-viewport .tt21-free-cards{display:flex;gap:3px;max-width:min(70vw,230px);overflow-x:auto;align-items:center}
+.game-viewport .tt21-free-cards .card{width:clamp(25px,7vw,37px);height:auto;aspect-ratio:.705;flex:0 0 auto}
+.game-viewport .tt21-free-buttons{display:flex;flex-direction:column;gap:4px}
+.game-viewport .tt21-free-buttons button{min-height:27px!important;padding:4px 9px!important}
+.game-viewport .tt21-free-buttons .tt21-muted{opacity:.65}
+@media(orientation:landscape) and (min-width:600px){.game-viewport .tt21-search-options{align-content:center}.game-viewport .tt21-search-choice{width:83px}.game-viewport .tt21-free-detail{flex-wrap:wrap}.game-viewport .tt21-free-cards{max-width:100%}.game-viewport .tt21-free-buttons{flex-direction:row}}

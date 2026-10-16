@@ -111,8 +111,37 @@ test('UI and engine use matching multi-symbol Tower removal restrictions',()=>{
 });
 
 test('The server blocks an illegal catcher free and the UI gives a matching explanation',()=>{
- const source=readFileSync('public/app.js','utf8');assert.match(source,/You cannot free the same Dreamcatcher holding the selected Door/);
+ const source=readFileSync('public/app.js','utf8');assert.match(source,/source!==`catch\$\{i\}`/);
  const s=make(['dreamcatchers']);const d=move(s,s.deck,c=>c.kind==='door',s.moduleState.dreamcatchers.zones.catch0);
  s.pending={type:'doorSearch',color:d.color};s.phase='decision';assertConserved(s);
  assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:d.id,freeId:0}),/Cannot free/);
+});
+
+
+test('Door retrieval displays one card-topped button per available deck Door and Pass',()=>{
+ const {ctx}=mockUI();
+ const g=viewFor(make([]),0);g.phase='decision';g.pending={type:'doorSearch',color:'blue',targets:[{id:'blue-door',source:'deck',color:'blue'}]};
+ ctx.fixture=g;let html=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
+ assert.equal((html.match(/data-action="doorSearch:/g)||[]).length,2);
+ assert.match(html,/doorSearch:choose:blue-door/);assert.match(html,/doorSearch:skip/);
+ assert.match(html,/card-kind-door/);assert.doesNotMatch(html,/doorSearch:direct:/);
+ g.expansion.oniverse={};g.pending.targets.push({id:'wild-door',source:'deck',color:'wild'});
+ html=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
+ assert.equal((html.match(/doorSearch:choose:/g)||[]).length,2);
+ assert.match(html,/card-oniverse/);
+});
+
+test('Door search then freeing is a separate selector, and the selected catcher shows cards, Free and Pass',()=>{
+ const {ctx}=mockUI(),g=viewFor(make(['dreamcatchers']),0);
+ const captured={kind:'location',color:'red',symbol:'sun',id:'demo'};
+ g.expansion.dreamcatchers.stacks[1]=[captured];
+ g.phase='decision';g.pending={type:'doorSearch',color:'blue',targets:[{id:'blue-door',source:'deck',color:'blue'}]};
+ ctx.fixture=g;
+ vm.runInContext("doorSearchIntent={option:'claim',doorId:'blue-door',selected:null}",ctx);
+ const prompt=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
+ assert.match(prompt,/Trigger a freeing\?/);assert.doesNotMatch(prompt,/doorSearch:free:/);
+ vm.runInContext('doorSearchIntent.selected=1',ctx);
+ const chosen=vm.runInContext('doorSearchDecision(fixture,fixture.pending)',ctx);
+ assert.match(chosen,/doorSearch:free:1/);assert.match(chosen,/doorSearch:passFree/);
+ assert.match(chosen,/card-kind-location/);
 });

@@ -57,6 +57,7 @@ export function planGameTransitions(previous,next){
     phase:previous.phase!==next.phase||previous.pending?.type!==next.pending?.type,
     finished:previous.status==='active'&&next.status!=='active',
     catcherCaptured:catcherTransferCounts(previous,next),
+    catcherFreed:(previous.expansion?.dreamcatchers?.stacks||[]).map((stack,index)=>({index,removed:(stack||[]).filter(c=>!(next.expansion?.dreamcatchers?.stacks?.[index]||[]).some(d=>d.id===c.id)&&!after.has(c.id))})).filter(x=>x.removed.length&&(next.shuffleSerial||0)>(previous.shuffleSerial||0)),
     draft:previous.phase==='draft'||next.phase==='draft'
   };
 }
@@ -137,15 +138,16 @@ function shuffleOverlay(back,cleanups,delay=0){
 }
 
 export function createTabletopAnimator({root}){
-  let last=null,key=null,pending=null,cleanups=[];
+  let last=null,key=null,pending=null,cleanups=[],drop=null;
   const stop=()=>{for(const fn of cleanups.splice(0))fn();};
   const enabled=()=>typeof document!=='undefined' && !document.hidden &&
     document.documentElement.dataset.motion!=='reduced' &&
     !(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
   return {
+    dragRelease(id,from){if(id&&rectOK(from))drop={id,from};},
     before(game,roomKey,page){
       pending=null;
-      if(page!=='#/game'||!game){last=null;key=null;stop();return;}
+      if(page!=='#/game'||!game){last=null;key=null;drop=null;stop();return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const changed=last&&key===nextKey&&signature(last)!==signature(game);
       if(!changed){if(key!==nextKey)stop();return;}
@@ -156,9 +158,9 @@ export function createTabletopAnimator({root}){
     after(game,roomKey,page){
       if(page!=='#/game'||!game){last=null;key=null;pending=null;return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
-      const event=pending;pending=null;last=game;key=nextKey;
+      const event=pending,previous=last;pending=null;last=game;key=nextKey;
       if(!event||!enabled())return;
-      const {plan,old}=event,now=capture(root);
+      const {plan,old}=event,now=capture(root),released=drop;drop=null;
       const deck=rect(pile(root,'deck')),discard=rect(pile(root,'discard')),limbo=rect(pile(root,'limbo'));
       const flies=[];
       // Shared visible cards: the same card moves between hand, draft,
@@ -167,11 +169,12 @@ export function createTabletopAnimator({root}){
         const a=old.get(id),b=now.get(id);
         if(!a||!b||plan.drawn.includes(id))continue;
         const ca=center(a.r),cb=center(b.r);
-        if(Math.hypot(ca.x-cb.x,ca.y-cb.y)>14)flies.push([b.template,a.r,b.r,b.el]);
+        const origin=released?.id===id?released.from:a.r;
+        if(Math.hypot(center(origin).x-cb.x,center(origin).y-cb.y)>14)flies.push([b.template,origin,b.r,b.el]);
       }
       // Flip each newly public card in the screen center, then send it to its
       // actual zone (hand, Limbo, Discard or the fixed decision dock).
-      if((plan.draw||plan.drawn?.some(id=>now.has(id)&&((game.players||[]).some(p=>cards(p.hand).some(c=>c.id===id))||(game.shared||[]).some(c=>c.id===id))))&&rectOK(deck)){
+      if(!released&&(plan.draw||plan.drawn?.some(id=>now.has(id)&&((game.players||[]).some(p=>cards(p.hand).some(c=>c.id===id))||(game.shared||[]).some(c=>c.id===id))))&&rectOK(deck)){
         const known=publicCardMap(game);
         plan.drawn.slice(0,8).forEach((id,i)=>{
           const c=known.get(id);if(!c)return;
@@ -200,7 +203,7 @@ export function createTabletopAnimator({root}){
       }
       for(const [list,dest] of [[plan.toDiscard,discard],[plan.toLimbo,limbo]]){
         if(!rectOK(dest))continue;
-        for(const id of list){const a=old.get(id);if(a)flies.push([a.template,a.r,dest,null]);}
+        for(const id of list){const a=old.get(id);if(a)flies.push([a.template,released?.id===id?released.from:a.r,dest,null]);}
       }
       // Some Limbo cards are not individually rendered in the compact fan.
       // Still show their capture using a generic, face-down card: no hidden
@@ -222,24 +225,29 @@ export function createTabletopAnimator({root}){
       }
       // A single accepted engine action can change many zones. Bound the
       // animation workload so dense expansion combinations stay responsive.
-      flies.slice(0,9).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups));
+      (released?flies.filter(([template])=>template?.dataset?.ttMotionId===released.id).slice(0,1):flies.slice(0,9)).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups));
       const flash=(el,cls,ms=CARD_MOTION.highlight)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
-      if(plan.draw)flash(pile(root,'deck'),'tt8-draw-cue');
+      if(plan.draw&&!released)flash(pile(root,'deck'),'tt8-draw-cue');
       if(plan.shuffle){
-        const back=pile(root,'deck'),origin=rect(pile(root,'limbo'));
-        if(back&&rectOK(origin)&&rectOK(deck)){
+        const back=pile(root,'deck'),origin=(old?.size||0)>0?rect(pile(root,'limbo')):null;
+        for(const transfer of plan.catcherFreed||[]){
+          const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
+          const from=rect(catcher);if(back&&rectOK(from)&&rectOK(deck))
+            for(let i=0;i<Math.min(3,transfer.removed.length);i++)animateFlight(back,from,deck,null,i*85,cleanups);
+        }
+        if(back&&rectOK(origin)&&rectOK(deck)&&(game.limbo||[]).length<(previous?.limbo||[]).length){
           // Two generic card backs visualize the return from Limbo.
           // No hidden card identity, order, or new game step is disclosed.
           animateFlight(back,origin,deck,null,25,cleanups);
           animateFlight(back,origin,deck,null,110,cleanups);
         }
-        shuffleOverlay(pile(root,'deck'),cleanups,plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
+        shuffleOverlay(pile(root,'deck'),cleanups,plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0);
         flash(pile(root,'deck'),'tt8-shuffle-cue',CARD_MOTION.shuffle);
       }
-      if(plan.turn||plan.phase||plan.finished)flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');
-      if(plan.turn)flash(root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top'),'tt8-turn-cue');
-      if(plan.phase&&game.phase==='decision')flash(root.querySelector?.('.tt6-workspace'),'tt8-decision-cue');
+      if(!released&&(plan.turn||plan.phase||plan.finished))flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');
+      if(!released&&plan.turn)flash(root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top'),'tt8-turn-cue');
+      if(!released&&plan.phase&&game.phase==='decision')flash(root.querySelector?.('.tt6-workspace'),'tt8-decision-cue');
     },
-    reset(){last=null;key=null;pending=null;stop();}
+    reset(){last=null;key=null;pending=null;drop=null;stop();}
   };
 }

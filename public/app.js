@@ -36,7 +36,7 @@ const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
-let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null;
+let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'forest',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'forest',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
@@ -100,7 +100,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -230,6 +230,26 @@ function catcherSearchChoice(g,searchesDeck){
  return `<select id="freeOnSearch" class="inline-input tt7-search-free" aria-label="Free Dreamcatcher"><option value="" ${freeSearchId===''?'selected':''}>No free</option>${d.stacks.map((stack,i)=>stack.length&&d.active[i]?`<option value="${i}" ${freeSearchId===String(i)?'selected':''}>Free ${i+1}</option>`:'').join('')}</select>`;
 }
 function searchFreeId(){const selected=document.querySelector('#freeOnSearch')?.value??freeSearchId;return selected===undefined||selected===''?undefined:Number(selected);}
+// Search is an engine action; choosing an optional Dreamcatcher is a UI-only step.
+// This does not expose deck identities or change state until the player confirms.
+function searchableCatchers(g,intent){
+ const d=g.expansion?.dreamcatchers,source=(g.pending?.targets||[]).find(t=>t.id===intent?.doorId)?.source;
+ return d?d.stacks.map((cards,i)=>({cards,i})).filter(({cards,i})=>cards.length&&d.active[i]&&source!==`catch${i}`):[];
+}
+function doorSearchDecision(g,p){
+ const choices=(p.targets||[]).filter((t,i,all)=>all.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
+ const intent=doorSearchIntent,valid=intent&&(!intent.doorId||(p.targets||[]).some(t=>t.id===intent.doorId));
+ if(valid&&g.expansion?.dreamcatchers){
+  const available=searchableCatchers(g,intent),chosen=available.find(x=>x.i===intent.selected);
+  return `<section class="decision stack tt21-free-step"><p>Trigger a freeing? ${available.length?'Tap a highlighted Dreamcatcher above.':'No occupied Dreamcatchers are available.'}</p>${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
+ }
+ const preview=(color)=>card({kind:'door',color,expansion:color==='wild'?'oniverse':undefined},{tiny:true});
+ const option=(t,label,action,description='')=>`<button type="button" class="tt21-search-choice" data-action="${escape(action)}" aria-label="${escape(label)}${description?' from '+description:''}">${preview(t.color||p.color)}<strong>${escape(label)}</strong>${description?`<span class="tt21-source">${escape(description)}</span>`:''}</button>`;
+ const deck=choices.filter(t=>t.source==='deck'),caught=choices.filter(t=>t.source.startsWith('catch'));
+ const cards=[...deck.map(t=>option(t,'Search & shuffle',`doorSearch:choose:${t.id}`,t.color==='wild'?'Oniverse Door':`${t.color} Door`)),...caught.flatMap(t=>[option(t,'Retrieve',`doorSearch:direct:${t.id}`,`Dreamcatcher ${Number(t.source.slice(5))+1} · no shuffle`),option(t,'Search & shuffle',`doorSearch:shuffle:${t.id}`,`then take from catcher ${Number(t.source.slice(5))+1}`)])];
+ if(!cards.length)cards.push(option({color:p.color},'Search & shuffle','doorSearch:search','No Door available'));
+ return `<section class="decision stack tt21-door-search"><div class="tt21-search-options">${cards.join('')}${btn('Pass','doorSearch:skip','tt21-muted')}</div></section>`;
+}
 function decision(g,canAct){
   if(g.phase!=='decision')return '';
   if(!canAct)return `<div class="notice">Your partner is resolving a card effect.</div>`;
@@ -239,10 +259,8 @@ function decision(g,canAct){
   if(p.type==='drawReady'||p.type==='drawn')return '';
   if(p.type==='confusion'){const cards=[...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[])];const ids=cards.map(c=>c.id);if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];return `<section class="decision stack"><h2>Confusion — reorder your hand</h2><div class="cards tt3-order-list" data-tt-order-group="effect">${orderSlice(effectOrder).visible.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="stack tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" title="Drag or tap to reorder" role="button" tabindex="0" aria-label="Reorder card: drag, or select then choose insertion point">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end" title="Insert at end"></button></div>${btn('Redraw','confusionResolve','primary')}</section>`;}
   if(p.type==='mirrorReward')return `<section class="decision stack"><h2>${escape(p.mirror)} Mirror reward</h2>${p.mirror==='key'?`<label>Door color <select id="mirrorColor" class="inline-input">${COLOR.map(c=>`<option>${c}</option>`).join('')}</select></label>`:''}${pagedCards(p.options,c=>`<label class="tt4-card-option"><input type="checkbox" data-mirror-choice="${escape(c.id)}" ${mirrorSelection.has(c.id)?'checked':''}>${card(c,{tiny:true})}</label>`)}${catcherSearchChoice(g,p.mirror!=='blue')}${btn('Confirm','mirrorRewardConfirm','primary')}</section>`;
-  if(p.type==='doorSearch'){
-    const targets=p.targets||[],choices=targets.filter((t,i)=>targets.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
-    return `<section class="decision stack"><div class="actions tt7-search-actions">${choices.map(t=>btn((t.source==='deck'?'Deck':'Catcher '+(Number(t.source.slice(5))+1))+' · '+(t.color||p.color),'doorSearch:claim:'+t.id,'primary')).join('')}${g.expansion?.dreamcatchers?catcherSearchChoice(g,true):''}${btn('Search without taking','doorSearch:search')}${btn('Skip search','doorSearch:skip')}</div></section>`;
-  }
+  if(p.type==='doorSearch')return doorSearchDecision(g,p);
+
   if(p.type==='door')return `<section class="decision stack tt20-door-decision"><h2>Gain door</h2><button type="button" class="tt20-door-choice" data-action="useKey:gain" aria-label="Gain ${escape(p.card.color==='wild'?'Door to the Oniverse':p.card.color+' Door')}">${card(p.card)}</button>${btn('Pass','useKey:limbo')}</section>`;
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
@@ -359,6 +377,15 @@ function render(){tabletopAnimator?.before?.(state?.game,session?.id,page);cardI
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
+    const pending=state.game.pending;
+    if(pending?.type==='doorSearch'&&doorSearchIntent&&state.game.expansion?.dreamcatchers){
+      const available=new Set(searchableCatchers(state.game,doorSearchIntent).map(x=>x.i));
+      for(const catcher of app.querySelectorAll('.tt5-catcher[data-action^="inspectCatcher:"]')){
+        const i=Number(catcher.dataset.action.slice(15));
+        catcher.classList.toggle('tt-search-free-eligible',available.has(i));
+        catcher.classList.toggle('tt-search-free-chosen',available.has(i)&&doorSearchIntent.selected===i);
+      }
+    }
     // Preserve deliberate horizontal inspection; newly played cards remain visible.
     for(const lane of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){const old=previousLabyrinths.get(lane.dataset.tabletopScroll);if(old&&old.count===lane.querySelectorAll('.card.tiny').length)lane.scrollLeft=old.left;}
   }
@@ -466,7 +493,11 @@ async function handle(actionName){
   if(actionName==='ready')return doRoom('ready',{ready:!state.room.ready[session.seat]});
   if(actionName==='start')return doRoom('start');
   if(actionName==='copyCode'||actionName==='copyInvite'){try{if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');await navigator.clipboard.writeText(actionName==='copyCode'?state.room.code:inviteLink(state.room.code));error=actionName==='copyCode'?'Room code copied.':'Invite link copied.';render();}catch{return setError('Clipboard permission unavailable. Select and copy the displayed code or invite link field instead.');}return;}
-  if(actionName.startsWith('inspectCatcher:')){const index=Number(actionName.slice(15));if(Number.isInteger(index)&&index>=0&&index<4&&state?.game?.expansion?.dreamcatchers){const id=`catcher:${index}`;pileOpen=pileOpen===id?null:id;return render();}return;}
+  if(actionName.startsWith('inspectCatcher:')){const index=Number(actionName.slice(15));if(Number.isInteger(index)&&index>=0&&index<4&&state?.game?.expansion?.dreamcatchers){
+    if(state.game.pending?.type==='doorSearch'&&doorSearchIntent){
+      if(searchableCatchers(state.game,doorSearchIntent).some(x=>x.i===index)){doorSearchIntent.selected=index;pileOpen=null;render();}return;
+    }
+    const id=`catcher:${index}`;pileOpen=pileOpen===id?null:id;return render();}return;}
   if(actionName.startsWith('inspectPile:')){const pile=actionName.slice(12);if(['deck','discard','limbo','reserve'].includes(pile)){pileOpen=pileOpen===pile?null:pile;return render();}return;}
   if(actionName==='closePile'){pileOpen=null;return render();}
   if(actionName==='choicePrev'){choicePage=Math.max(0,choicePage-1);return render();}
@@ -548,7 +579,32 @@ async function handle(actionName){
     return action(command);
   }
   if(actionName==='draw'||actionName==='confirmDraw')return action({type:actionName});
-  if(actionName.startsWith('doorSearch:')){const value=document.querySelector('#freeOnSearch')?.value,parts=actionName.split(':'),freeId=value===''||value===undefined?undefined:Number(value);if(parts[1]==='claim'&&freeId!==undefined){const target=g.pending?.targets?.find(t=>t.id===parts[2]);if(target?.source===`catch${freeId}`)return setError('You cannot free the same Dreamcatcher holding the selected Door. Choose a different catcher or no freeing.');}return action({type:'doorSearch',option:parts[1],doorId:parts[2],freeId});}
+  if(actionName.startsWith('doorSearch:')){
+    const [,mode,id]=actionName.split(':');if(g.pending?.type!=='doorSearch')return;
+    if(mode==='skip'){doorSearchIntent=null;return action({type:'doorSearch',option:'skip'});}
+    if(mode==='free'||mode==='passFree'){
+      if(!doorSearchIntent)return;
+      const freeId=mode==='free'?Number(id):undefined;
+      if(mode==='free'&&!searchableCatchers(g,doorSearchIntent).some(x=>x.i===freeId))return;
+      const cmd={type:'doorSearch',...doorSearchIntent,freeId};delete cmd.selected;
+      doorSearchIntent=null;return action(cmd);
+    }
+    if(mode==='direct'){
+      if(!g.pending.targets?.some(t=>t.id===id&&t.source.startsWith('catch')))return;
+      doorSearchIntent=null;return action({type:'doorSearch',option:'claim',doorId:id});
+    }
+    if(mode==='choose'||mode==='shuffle'||mode==='search'){
+      const target=g.pending.targets?.find(t=>t.id===id);
+      if(mode!=='search'&&!target)return;
+      if(mode==='shuffle'&&target.source==='deck')return;
+      doorSearchIntent={option:mode==='search'?'search':'claim',...(target?{doorId:id}:{}),...(mode==='shuffle'?{searchBeforeClaim:true}:{}),selected:null};
+      pileOpen=null;
+      if(!g.expansion?.dreamcatchers||!searchableCatchers(g,doorSearchIntent).length){const cmd={type:'doorSearch',...doorSearchIntent};delete cmd.selected;doorSearchIntent=null;return action(cmd);}
+      return render();
+    }
+    // Backward-compatible action names from a saved or older rendered decision.
+    if(mode==='claim')return action({type:'doorSearch',option:'claim',doorId:id});
+  }
   if(actionName==='useKey:gain'){const pending=g.pending,hand=[...g.players[g.active].hand,...(g.shared||[])];const best=pending?.keys?.map(k=>hand.find(c=>c.id===k.id)).filter(Boolean).sort((a,b)=>{const rank=c=>pending.card.color==='wild'?(c.color==='wild'?1:0):(c.color===pending.card.color?0:c.color==='wild'?1:2);return rank(a)-rank(b);})[0];if(!best)return setError('No eligible Key to claim this Door.');return action({type:'chooseDoor',keyId:best.id});}
   if(actionName.startsWith('useKey:'))return action({type:'chooseDoor',keyId:actionName.slice(7)});
   if(actionName.startsWith('nightKey:'))return action({type:'nightmare',option:'key',cardId:actionName.slice(9)});
@@ -579,6 +635,7 @@ function installTabletopController(){
   tabletopController=createTabletopInteractions({
     root:app,getGame:()=>state?.game,getSeat:()=>state?.room?.seat??-1,
     isBusy:()=>busy||!state?.room?.started,
+    onDrop:(id,rect)=>tabletopAnimator?.dragRelease?.(id,rect),
     onSwap:(personal,shared)=>{if(state?.game?.phase==='decision'&&state.game.pending?.type==='coopSwap')return action({type:'coopSwap',option:'swap',personal,shared});},
     onSelect:id=>{if(page==='#/game'&&state?.game&&['solo','coop'].includes(state.game.mode))pick(id);},
     onCommand:(type,id)=>{
