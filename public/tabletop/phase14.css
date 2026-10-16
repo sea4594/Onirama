@@ -1,7 +1,7 @@
 /* Phase 14 — responsive tabletop and stable setup actions. These adjustments
    intentionally change presentation only, apart from the separately tested
    host/guest ready rule and reserve inspection projection. */
-#app>.page:not(.game-viewport)>.shell-pinned-action{flex:0 0 auto;width:100%;box-sizing:border-box;background:var(--ui-bg);padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left));border-top:1px solid var(--ui-border);z-index:2;box-shadow:0 -6px 20px #0002}
+#app>.page:not(.game-viewport)>.shell-pinned-action{flex:0 0 auto;width:100%;box-sizing:border-box;background:var(--ui-bg);padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));border-top:1px solid var(--ui-border);z-index:2;box-shadow:0 -6px 20px #0002}
 .shell-pinned-action>button{display:block;width:min(880px,100%);margin:auto;min-height:49px;font-size:1rem}
 .shell-setup .shell-presets{margin:0 0 12px}.shell-setup .shell-expansion-setup{margin-bottom:14px}
 .shell-multiplayer .shell-online-rooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px;align-items:stretch}

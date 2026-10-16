@@ -398,3 +398,9 @@
  .game-viewport .tt2-root[data-tabletop-solo] .tt5-zone.tt5-premonitions{grid-area:premonitions!important}
  .game-viewport .tt2-root[data-tabletop-solo] .tt5-zone.tt5-catchers{grid-area:catchers!important}
 }
+/* Moving and flipped Towers use proportions of their own card width, not the
+   tabletop's compact-card pixel font clamps. That keeps the sun/moon marks
+   and Tower number anchored to the art while the *whole card* scales. */
+.tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower){container-type:inline-size}
+.tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower) .tt8-tower-mark{font-size:clamp(8px,25cqw,35px)!important}
+.tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower) .tt11-tower-number{font-size:clamp(9px,29cqw,40px)!important;bottom:2%!important;line-height:1!important}

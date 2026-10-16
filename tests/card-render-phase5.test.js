@@ -23,5 +23,5 @@ test('Phase 5: flight/reveal clones retain the same card icon geometry as their 
  assert.match(faces,/:is\(\.game-viewport \.card,\.tt8-flying-card\.card,\.tt10-reveal-front>\.card\):not\(\.card-kind-tower\)>\.symbol/);
  assert.match(faces,/\.tt8-flying-card:is\(\.tt2-empty-pile,\.tt14-empty-pile,\.tt6-card-back\) \.ui-icon/);
  assert.match(faces,/\.card-kind-denizen>\.symbol\{top:45%!important;width:64%!important\}/);
- assert.match(readFileSync(new URL('../public/tabletop/animation.js',import.meta.url),'utf8'),/template:motionTemplate\(el\)/,'Tower motion clones keep their measured icon geometry');
+ assert.match(readFileSync(new URL('../public/tabletop/animation.js',import.meta.url),'utf8'),/scope\.appendChild\(ghost\)/,'Tower flight clones inherit their source tabletop styling');
 });

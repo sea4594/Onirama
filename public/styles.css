@@ -120,7 +120,7 @@ button.primary,.primary{background:var(--ui-accent);border-color:var(--ui-accent
 .decision{background:var(--ui-soft);border-color:var(--ui-border);color:var(--ui-text)}
 .decision h2{color:var(--ui-text)}
 .route>section p{line-height:1.6}
-.bottom-nav{position:fixed;bottom:0;left:0;width:100%;z-index:60;background:var(--ui-panel);border-top:1px solid var(--ui-border);display:flex;align-items:stretch;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #0000000a}
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;z-index:60;background:var(--ui-panel);border-top:1px solid var(--ui-border);display:flex;align-items:stretch;justify-content:center;padding-bottom:0;box-shadow:0 -4px 16px #0000000a}
 .bottom-nav-item{display:flex;gap:4px;flex-direction:column;align-items:center;justify-content:center;min-height:65px;flex:1;max-width:260px;text-decoration:none;color:var(--ui-muted);font-size:.78rem;font-weight:600;border-top:3px solid transparent}
 .bottom-nav-item.active{color:var(--ui-accent);border-top-color:var(--ui-accent);background:var(--ui-soft)}
 .bottom-icon{font-size:1.3rem;line-height:1.1}
