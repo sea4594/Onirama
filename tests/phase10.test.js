@@ -28,9 +28,10 @@ test('Phase 9 pending effects and stored resources migrate without losing cards'
 test('Search a caught Door while using the different-catcher freeing option; same catcher rejected',()=>{
  let s=make(['dreamcatchers']);const c0=s.moduleState.dreamcatchers.zones.catch0,c1=s.moduleState.dreamcatchers.zones.catch1;
  const stored=move(s,s.deck,c=>c.kind==='nightmare',c0),door=move(s,s.deck,c=>c.kind==='door'&&c.color==='blue',c1);
+ for(const c of [...s.deck].filter(c=>c.kind==='door'&&c.color==='blue'))move(s,s.deck,x=>x.id===c.id,s.discard);
  s.phase='decision';s.pending={type:'doorSearch',color:'blue'};assertConserved(s);
- assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:door.id,freeId:1}),/Cannot free/);assertConserved(s);
- s=act(s,{type:'doorSearch',option:'claim',doorId:door.id,freeId:0});assertConserved(s);
+ assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:door.id,searchBeforeClaim:true,freeId:1}),/Cannot free/);assertConserved(s);
+ s=act(s,{type:'doorSearch',option:'claim',doorId:door.id,searchBeforeClaim:true,freeId:0});assertConserved(s);
  assert.equal(c0.length,1,'Original input remains unchanged');assert.equal(s.moduleState.dreamcatchers.zones.catch0.length,0);assert.equal(s.moduleState.dreamcatchers.zones.catch1.length,0);
  assert.ok(s.players[0].doors.some(c=>c.id===door.id));assert.ok(s.deck.some(c=>c.id===stored.id)||s.limbo.some(c=>c.id===stored.id)||s.players[0].hand.some(c=>c.id===stored.id));
 });
@@ -114,7 +115,7 @@ test('The server blocks an illegal catcher free and the UI gives a matching expl
  const source=readFileSync('public/app.js','utf8');assert.match(source,/source!==`catch\$\{i\}`/);
  const s=make(['dreamcatchers']);const d=move(s,s.deck,c=>c.kind==='door',s.moduleState.dreamcatchers.zones.catch0);
  s.pending={type:'doorSearch',color:d.color};s.phase='decision';assertConserved(s);
- assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:d.id,freeId:0}),/Cannot free/);
+ assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:d.id,searchBeforeClaim:true,freeId:0}),/still in the deck|Cannot free/);
 });
 
 

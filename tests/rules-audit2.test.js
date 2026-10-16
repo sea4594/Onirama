@@ -98,9 +98,8 @@ test('Caught Door remains selectable alongside deck copy and can be claimed dire
  assert.ok(view.pending.targets.some(t=>t.source==='catch0'));
  let claimed=act(s,{type:'doorSearch',option:'claim',doorId:caught.id});assertConserved(claimed);
  assert.ok(claimed.players[0].doors.some(c=>c.id===caught.id));assert.equal(claimed.moduleState.dreamcatchers.zones.catch1.length,1);
- claimed=act(s,{type:'doorSearch',option:'claim',doorId:caught.id,freeId:1});assertConserved(claimed);
- assert.equal(claimed.moduleState.dreamcatchers.zones.catch1.length,0);
- assert.ok(claimed.players[0].doors.some(c=>c.id===caught.id));
+ assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:caught.id,freeId:1}),/cannot trigger a freeing/);
+ assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:caught.id,searchBeforeClaim:true,freeId:1}),/still in the deck/);
 });
 test('Glyph Doors are mechanically and visually indistinguishable from base Doors of the same color',()=>{
  const s=game(['glyphs']);const d=s.deck.filter(c=>c.kind==='door'&&c.color==='red');assert.equal(d.length,3);
@@ -114,6 +113,6 @@ test('Earlier v0.21 saves keep in-progress Mirror decisions and gain the current
  const n=normalizeSave(s);assert.equal(n.rulesVersion,RULESET_VERSION);assert.equal(n.moduleState.mirrors.resolving,null);assertConserved(n);
 });
 test('UI exposes the no-target search option and both caught Door sources',()=>{
- const ui=readFileSync('public/app.js','utf8');assert.match(ui,/caught\.flatMap\(t=>/);assert.match(ui,/doorSearch:direct/);assert.match(ui,/doorSearch:shuffle/);
+ const ui=readFileSync('public/app.js','utf8');assert.match(ui,/for\(const t of caught\)/);assert.match(ui,/doorSearch:direct/);assert.match(ui,/doorSearch:shuffle/);
  assert.match(ui,/doorSearch:search/);assert.doesNotMatch(ui,/!deck\?catchers\.map/);
 });

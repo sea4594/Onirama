@@ -136,7 +136,7 @@ test('Each actively used Denizen has a legal, conserved transition',()=>{
    const d=s.deck.find(x=>x.kind==='location');s.deck.splice(s.deck.indexOf(d),1);p.labyrinth.push(d);const out=act(s,{type:'useDenizen',id:c.id});assert.ok(out.discard.some(x=>x.id===d.id));assertConserved(out);
   }else if(ability==='chromatic'){
    const d=s.deck.find(x=>x.kind==='door'&&x.color==='blue');s.pending={type:'doorSearch',color:'red'};s.phase='decision';
-   const out=act(s,{type:'doorSearch',option:'claim',doorId:d.id});assert.ok(out.discard.some(x=>x.id===c.id));assert.ok(out.players[0].doors.some(x=>x.id===d.id));assertConserved(out);
+   const out=act(s,{type:'doorSearch',option:'claim',doorId:d.id,chromatic:true});assert.ok(out.discard.some(x=>x.id===c.id));assert.ok(out.players[0].doors.some(x=>x.id===d.id));assertConserved(out);
   }else if(ability==='keeper'){
    const l=p.hand.find(x=>x.kind==='location');const out=act(s,{type:'useDenizen',id:c.id,cardId:l.id});assert.ok(out.moduleState.oniverse.zones.treasure.some(x=>x.id===l.id));assertConserved(out);
    if(out.phase==='action'&&out.players[0].labyrinth.at(-1)?.symbol!==l.symbol){const used=act(out,{type:'play',id:l.id});assert.ok(used.discard.some(x=>x.id===c.id));assertConserved(used);}

@@ -230,14 +230,22 @@ function doorSearchTargets(s,color){const chromatic=availableRallied(s,'chromati
  if(has(s,'dreamcatchers'))for(const i of catcherIds(s))targets.push(...stacks(s)['catch'+i].filter(c=>c.kind==='door'&&(c.color===color||c.color==='wild'||chromatic)).map(c=>({id:c.id,source:'catch'+i,color:c.color})));
  return targets;
 }
-function claimSearch(s,color,id,freeId,searchBeforeClaim=false){const options=doorSearchTargets(s,color);need(options.some(x=>x.id===id),'This Door is not available for the search');const o=options.find(x=>x.id===id);const from=o.source==='deck'?s.deck:stacks(s)[o.source];const d=from.splice(from.findIndex(c=>c.id===id),1)[0];if(searchBeforeClaim)need(o.source!=='deck','Deck Door searches already shuffle');
- if(o.source!=='deck'&&freeId!==undefined&&freeId!==null){
-  need(o.source!=='catch'+freeId,'Cannot free the Dreamcatcher holding the selected Door');
-  // Preserve pre-existing commands that combined taking a caught Door with freeing.
-  if(!searchBeforeClaim)freeCatcher(s,freeId);
- }
- if(o.source!=='deck'&&searchBeforeClaim)shuffleAfterSearch(s,freeId);
- if(d.color!==color&&d.color!=='wild')spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');if(s.status==='active'&&o.source==='deck')shuffleAfterSearch(s,freeId);}
+function claimSearch(s,color,id,freeId,searchBeforeClaim=false,chromatic=false){
+ const options=doorSearchTargets(s,color),o=options.find(x=>x.id===id);
+ need(o,'This Door is not available for the search');
+ const different=o.color!==color&&o.color!=='wild';
+ need(!different||chromatic,'Use Chromatic Chaos to search for a different-color Door');
+ need(!chromatic||different,'Chromatic Chaos is only for a different-color Door');
+ if(searchBeforeClaim){
+  need(o.source!=='deck','Deck Door searches already shuffle');
+  need(!s.deck.some(c=>c.kind==='door'&&c.color===o.color),'A Door of this color is still in the deck; search the deck instead');
+ }else if(o.source!=='deck')need(freeId===undefined||freeId===null,'Taking a Door directly cannot trigger a freeing');
+ if(o.source!=='deck'&&freeId!==undefined&&freeId!==null)need(o.source!=='catch'+freeId,'Cannot free the Dreamcatcher holding the selected Door');
+ const from=o.source==='deck'?s.deck:stacks(s)[o.source],d=from.splice(from.findIndex(c=>c.id===id),1)[0];
+ if(o.source==='deck'||searchBeforeClaim)shuffleAfterSearch(s,freeId);
+ if(different)spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');
+ acquireDoor(s,d,o.source==='deck'?'Labyrinth':'Dreamcatcher');
+}
 // Phase 6: promo and appendix effects share the base draw, Door and Nightmare transitions.
 const MIRROR_NAMES=['red','blue','green','brown','sun','moon','key','glyph','rainbow'];
 function mirrorEnabled(s,name){return MIRROR_NAMES.includes(name)&&(name!=='glyph'||has(s,'glyphs'))&&(name!=='rainbow'||s.config.difficulties.mirrors==='hard');}
@@ -426,10 +434,18 @@ export function act(previous,command){
  if(p.type==='doorSearch'){
    need(command.type==='doorSearch','Resolve Door search');need(['skip','claim','search'].includes(command.option),'Invalid Door search choice');
    if(command.option==='claim'){
-     // Legacy commands may omit doorId; select a physical matching Door.
-     const targets=doorSearchTargets(s,p.color),chosen=command.doorId||targets[0]?.id;need(chosen,'No matching Door exists');
-     claimSearch(s,p.color,chosen,command.freeId,command.searchBeforeClaim===true);
-   }else if(command.option==='search'){shuffleAfterSearch(s,command.freeId);note(s,`Searched the deck but took no ${p.color} Door.`);}
+     const targets=doorSearchTargets(s,p.color),chosen=command.doorId||targets.find(t=>t.color===p.color||t.color==='wild')?.id;
+     need(chosen,'No matching Door exists');
+     claimSearch(s,p.color,chosen,command.freeId,command.searchBeforeClaim===true,command.chromatic===true);
+   }else if(command.option==='search'){
+     const requested=command.doorColor||p.color,different=requested!==p.color&&requested!=='wild';
+     need(requested===p.color||(requested==='wild'&&has(s,'oniverse'))||(different&&has(s,'oniverse')&&availableRallied(s,'chromatic').length),'Invalid Door search color');
+     need(!different||command.chromatic===true,'Use Chromatic Chaos to search for a different-color Door');
+     need(!command.chromatic||different,'Chromatic Chaos is only for a different-color Door');
+     need(!s.deck.some(c=>c.kind==='door'&&c.color===requested),'This Door is in the deck; take it when searching');
+     if(different)spendDenizen(s,availableRallied(s,'chromatic')[0]?.id,'chromatic');
+     shuffleAfterSearch(s,command.freeId);note(s,`Searched the deck but took no ${requested} Door.`);
+   }
    if(s.status==='active'){s.pending=null;if(command.option==='claim')finishAcquisition(s);else refill(s);}return s;
  }
  if(p.type==='door'){

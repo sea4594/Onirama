@@ -36,7 +36,7 @@ const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
-let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null;
+let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'forest',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'forest',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
@@ -111,7 +111,7 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -255,18 +255,32 @@ function searchableCatchers(g,intent){
  return d?d.stacks.map((cards,i)=>({cards,i})).filter(({cards,i})=>cards.length&&d.active[i]&&source!==`catch${i}`):[];
 }
 function doorSearchDecision(g,p){
- const choices=(p.targets||[]).filter((t,i,all)=>all.findIndex(x=>x.source===t.source&&x.color===t.color)===i);
- const intent=doorSearchIntent,valid=intent&&(!intent.doorId||(p.targets||[]).some(t=>t.id===intent.doorId));
+ const all=p.targets||[],intent=doorSearchIntent;
+ const valid=intent&&(!intent.doorId||all.some(t=>t.id===intent.doorId));
  if(valid&&g.expansion?.dreamcatchers){
   const available=searchableCatchers(g,intent),chosen=available.find(x=>x.i===intent.selected);
-  return `<section class="decision stack tt21-free-step"><p>Trigger a freeing? ${available.length?'Tap a highlighted Dreamcatcher above.':'No occupied Dreamcatchers are available.'}</p>${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
+  return `<section class="decision stack tt21-free-step"><p>Trigger a freeing?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
  }
- const preview=(color)=>card({kind:'door',color,expansion:color==='wild'?'oniverse':undefined},{tiny:true});
- const option=(t,label,action,description='')=>`<button type="button" class="tt21-search-choice" data-action="${escape(action)}" aria-label="${escape(label)}${description?' from '+description:''}">${preview(t.color||p.color)}<strong>${escape(label)}</strong>${description?`<span class="tt21-source">${escape(description)}</span>`:''}</button>`;
- const deck=choices.filter(t=>t.source==='deck'),caught=choices.filter(t=>t.source.startsWith('catch'));
- const cards=[...deck.map(t=>option(t,'Search & shuffle',`doorSearch:choose:${t.id}`,t.color==='wild'?'Oniverse Door':`${t.color} Door`)),...caught.flatMap(t=>[option(t,'Retrieve',`doorSearch:direct:${t.id}`,`Dreamcatcher ${Number(t.source.slice(5))+1} · no shuffle`),option(t,'Search & shuffle',`doorSearch:shuffle:${t.id}`,`then take from catcher ${Number(t.source.slice(5))+1}`)])];
- if(!cards.length)cards.push(option({color:p.color},'Search & shuffle','doorSearch:search','No Door available'));
- return `<section class="decision stack tt21-door-search"><div class="tt21-search-options">${cards.join('')}${btn('Pass','doorSearch:skip','tt21-muted')}</div></section>`;
+ const chromatic=!!(g.expansion?.oniverse?.rallied||[]).find(d=>d.owner===g.active&&d.ability==='chromatic');
+ const more=doorSearchChromatic&&chromatic;
+ const preview=color=>card({kind:'door',color,expansion:color==='wild'?'oniverse':undefined},{tiny:true});
+ const option=(color,label,action,source='')=>`<button type="button" class="tt21-search-choice" data-action="${escape(action)}" aria-label="${escape(color==='wild'?'Oniverse':color)} Door: ${escape(label)}${source?' — '+escape(source):''}">${preview(color)}<strong>${escape(label)}</strong>${source?`<span class="tt21-source">${escape(source)}</span>`:''}</button>`;
+ const colors=more?COLOR.filter(c=>c!==p.color):[p.color,...(g.expansion?.oniverse?['wild']:[])];
+ const actions=[];
+ for(const color of colors){
+  const deck=all.find(t=>t.source==='deck'&&t.color===color);
+  const caught=all.filter(t=>t.source.startsWith('catch')&&t.color===color).filter((t,i,items)=>items.findIndex(x=>x.source===t.source)===i);
+  const suffix=more?':chromatic':'';
+  if(deck)actions.push(option(color,'Search & shuffle',`doorSearch:choose:${deck.id}${suffix}`,'Deck'));
+  else if(!caught.length)actions.push(option(color,'Search & shuffle',`doorSearch:search:${color}${suffix}`,'Deck'));
+  for(const t of caught){
+   const index=Number(t.source.slice(5))+1;
+   actions.push(option(color,'Take',`doorSearch:direct:${t.id}${suffix}`,`Catcher ${index} · no shuffle`));
+   if(!deck)actions.push(option(color,'Search & shuffle',`doorSearch:shuffle:${t.id}${suffix}`,`then take · Catcher ${index}`));
+  }
+ }
+ const switcher=more?btn('Back','doorSearch:normal','tt21-muted'):chromatic?btn('Chromatic Chaos','doorSearch:chromatic','tt21-chromatic'):'';
+ return `<section class="decision stack tt21-door-search"><div class="tt21-search-options">${actions.join('')}${switcher}${btn('Pass','doorSearch:skip','tt21-muted')}</div></section>`;
 }
 function decision(g,canAct){
   if(g.phase!=='decision')return '';
@@ -331,7 +345,7 @@ function denizenWorkspace(g){
  const eligible=a==='keeper'?movable.filter(c=>c.kind!=='deadEnd'):a==='architect'?movable.filter(c=>c.kind==='location'&&g.players[g.active].labyrinth.at(-1)?.symbol===c.symbol):movable.filter(c=>c.kind==='location');
  const chromaticKeys=g.pending?.type==='door'?(g.pending.keys||[]).map(x=>[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)].find(c=>c.id===x.id)).filter(c=>c&&c.color!==g.pending.card.color&&c.color!=='wild'):[];
  const chromaticDoors=g.pending?.type==='doorSearch'?(g.pending.targets||[]).filter(c=>c.color!==g.pending.color&&c.color!=='wild'):[];
- const available=a==='mirror'?g.pending?.type==='nightmare'&&!g.pending?.incubus:a==='chromatic'?Boolean(chromaticKeys.length||chromaticDoors.length):a==='keeper'?!g.expansion.oniverse.treasure.some(c=>c.holderId===d.id)&&eligible.length>0:a==='hammer'?g.players[g.active].labyrinth.length>0:a==='architect'?eligible.length>0:a==='cyclobot'?eligible.length>0&&g.discard.some(c=>c.kind==='location'):['squirrel','harpoon'].includes(a)?g.deckCount>0:false;
+ const available=a==='mirror'?g.pending?.type==='nightmare'&&!g.pending?.incubus:a==='chromatic'?Boolean(chromaticKeys.length||g.pending?.type==='doorSearch'):a==='keeper'?!g.expansion.oniverse.treasure.some(c=>c.holderId===d.id)&&eligible.length>0:a==='hammer'?g.players[g.active].labyrinth.length>0:a==='architect'?eligible.length>0:a==='cyclobot'?eligible.length>0&&g.discard.some(c=>c.kind==='location'):['squirrel','harpoon'].includes(a)?g.deckCount>0:false;
  let content='';
  if(stage==='confirm')content=`<div class="tt22-denizen-card">${card(d,{tiny:true})}</div><p><strong>${escape(info.title)}.</strong> ${escape(info.detail)}</p><div class="tt22-denizen-actions"><button class="primary" data-action="denizenUse" ${available?'':'disabled'}>Use</button>${btn('Cancel','denizenCancel')}</div>`;
  else if(stage==='pick')content=`<p>Select a ${a==='keeper'?'card to store':a==='architect'?'Location to play':'Location to exchange'}.</p><div class="tt22-denizen-choices">${eligible.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenCard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
@@ -602,7 +616,7 @@ async function handle(actionName){
   if(actionName==='denizenUse'&&denizenIntent){const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent.id&&x.owner===g.active);if(!d)return;const a=d.ability;
     if(a==='mirror'&&g.pending?.type==='nightmare')return action({type:'nightmare',option:'mirror',denizenId:d.id});
     if(a==='chromatic'&&g.pending?.type==='door'){denizenIntent.step='chromaticKey';return render();}
-    if(a==='chromatic'&&g.pending?.type==='doorSearch'){denizenIntent=null;return render();}
+    if(a==='chromatic'&&g.pending?.type==='doorSearch'){denizenIntent=null;doorSearchChromatic=true;doorSearchIntent=null;return render();}
     if(['squirrel','harpoon','hammer'].includes(a))return action({type:'useDenizen',id:d.id});
     if(['architect','keeper','cyclobot'].includes(a)){denizenIntent.step='pick';return render();}return;
   }
@@ -641,29 +655,37 @@ async function handle(actionName){
   }
   if(actionName==='draw'||actionName==='confirmDraw')return action({type:actionName});
   if(actionName.startsWith('doorSearch:')){
-    const [,mode,id]=actionName.split(':');if(g.pending?.type!=='doorSearch')return;
-    if(mode==='skip'){doorSearchIntent=null;return action({type:'doorSearch',option:'skip'});}
+    const [,mode,id,flag]=actionName.split(':');if(g.pending?.type!=='doorSearch')return;
+    const chromatic=flag==='chromatic';
+    if(mode==='chromatic'){
+      const denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.owner===g.active&&d.ability==='chromatic');
+      if(denizen){denizenIntent={id:denizen.id,step:'confirm'};return render();}return;
+    }
+    if(mode==='normal'){doorSearchChromatic=false;doorSearchIntent=null;return render();}
+    if(mode==='skip'){doorSearchIntent=null;doorSearchChromatic=false;return action({type:'doorSearch',option:'skip'});}
     if(mode==='free'||mode==='passFree'){
       if(!doorSearchIntent)return;
       const freeId=mode==='free'?Number(id):undefined;
       if(mode==='free'&&!searchableCatchers(g,doorSearchIntent).some(x=>x.i===freeId))return;
       const cmd={type:'doorSearch',...doorSearchIntent,freeId};delete cmd.selected;
-      doorSearchIntent=null;return action(cmd);
+      doorSearchIntent=null;doorSearchChromatic=false;return action(cmd);
     }
     if(mode==='direct'){
-      if(!g.pending.targets?.some(t=>t.id===id&&t.source.startsWith('catch')))return;
-      doorSearchIntent=null;return action({type:'doorSearch',option:'claim',doorId:id});
+      const target=g.pending.targets?.find(t=>t.id===id&&t.source.startsWith('catch'));
+      if(!target||chromatic!==(target.color!==g.pending.color&&target.color!=='wild'))return;
+      doorSearchIntent=null;doorSearchChromatic=false;
+      return action({type:'doorSearch',option:'claim',doorId:id,...(chromatic?{chromatic:true}:{})});
     }
-    if(mode==='choose'||mode==='shuffle'||mode==='search'){
-      const target=g.pending.targets?.find(t=>t.id===id);
+    if(['choose','shuffle','search'].includes(mode)){
+      const target=g.pending.targets?.find(t=>t.id===id),color=mode==='search'?id:target?.color;
       if(mode!=='search'&&!target)return;
       if(mode==='shuffle'&&target.source==='deck')return;
-      doorSearchIntent={option:mode==='search'?'search':'claim',...(target?{doorId:id}:{}),...(mode==='shuffle'?{searchBeforeClaim:true}:{}),selected:null};
+      if(chromatic!==(color!==g.pending.color&&color!=='wild'))return;
+      doorSearchIntent={option:mode==='search'?'search':'claim',...(target?{doorId:id}:{doorColor:color}),...(mode==='shuffle'?{searchBeforeClaim:true}:{}),...(chromatic?{chromatic:true}:{}),selected:null};
       pileOpen=null;
-      if(!g.expansion?.dreamcatchers||!searchableCatchers(g,doorSearchIntent).length){const cmd={type:'doorSearch',...doorSearchIntent};delete cmd.selected;doorSearchIntent=null;return action(cmd);}
+      if(!g.expansion?.dreamcatchers||!searchableCatchers(g,doorSearchIntent).length){const cmd={type:'doorSearch',...doorSearchIntent};delete cmd.selected;doorSearchIntent=null;doorSearchChromatic=false;return action(cmd);}
       return render();
     }
-    // Backward-compatible action names from a saved or older rendered decision.
     if(mode==='claim')return action({type:'doorSearch',option:'claim',doorId:id});
   }
   if(actionName==='useKey:gain'){const pending=g.pending,hand=[...g.players[g.active].hand,...(g.shared||[])];const best=pending?.keys?.map(k=>hand.find(c=>c.id===k.id)).filter(Boolean).sort((a,b)=>{const rank=c=>pending.card.color==='wild'?(c.color==='wild'?1:0):(c.color===pending.card.color?0:c.color==='wild'?1:2);return rank(a)-rank(b);})[0];if(!best)return setError('No eligible Key to claim this Door.');return action({type:'chooseDoor',keyId:best.id});}
