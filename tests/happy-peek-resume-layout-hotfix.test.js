@@ -31,8 +31,8 @@ test('peek UI displays seven cards and horizontally expanding discard area',()=>
 });
 test('solo and hot-seat saves are independently recoverable after restart',()=>{
  const app=read('public/app.js');
- assert.match(app,/const soloSave=session\?\.id!=='local'&&localStorage\.getItem\('onirama\.solo\.v1'\)/);
- assert.match(app,/const hotSave=session\?\.id!=='hotseat'&&localStorage\.getItem\('onirama\.hotseat\.v1'\)/);
+ assert.match(app,/resumableLocalGame\(localStorage,'solo'\)/);
+ assert.match(app,/resumableLocalGame\(localStorage,'coop'\)/);
  assert.match(app,/Cannot open this saved game/);
  assert.match(app,/await refresh\(\);if\(session\)return setRoute\('#\/game'\)/);
  const solo=newGame({mode:'solo',seed:12,interactiveDraw:true}),coop=newGame({mode:'coop',seed:23,interactiveDraw:true,manualTurnEnd:true,names:['One','Two']});
