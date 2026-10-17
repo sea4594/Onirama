@@ -816,7 +816,7 @@ app.addEventListener('keydown',e=>{if(['Tab','Enter',' ','ArrowUp','ArrowDown','
 app.addEventListener('click',e=>{
   if(e.target.closest?.('[data-notice-backdrop]')&&!e.target.closest?.('.shell-notice-dialog')){handle('clearError');return;}
   if(e.target?.dataset?.codeIndex!==undefined){const boxes=[...app.querySelectorAll('[data-code-index]')];const first=boxes.findIndex(x=>!x.value);if(first>=0&&first<Number(e.target.dataset.codeIndex))codeFocus(first);return;}
-  if(IS_HOTSEAT()&&passDevice&&!e.target.closest?.('[data-action="passReady"]'))return;
+  if(page==='#/game'&&IS_HOTSEAT()&&passDevice&&!e.target.closest?.('[data-action="passReady"]'))return;
   if(e.target.closest?.('[data-replay-stage]')){e.preventDefault();return;}
   if(replayFrames.length&&!e.target.closest?.('[data-replay-layer]')){e.preventDefault();return;}
   if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
@@ -830,7 +830,7 @@ app.addEventListener('click',e=>{
 app.addEventListener('keydown',e=>{
   if(e.target?.dataset?.codeIndex!==undefined){const i=Number(e.target.dataset.codeIndex),boxes=[...app.querySelectorAll('[data-code-index]')];if(e.key==='Backspace'){e.preventDefault();const pos=boxes[i]?.value?i:Math.max(0,i-1);if(boxes[pos])boxes[pos].value='';syncCodeBoxes();codeFocus(pos);return;}if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();codeFocus(i+(e.key==='ArrowRight'?1:-1));return;}if(e.key.length===1&&/^[a-z]$/i.test(e.key)){e.preventDefault();boxes[i].value=e.key.toUpperCase();syncCodeBoxes();codeFocus(i+1);return;}}
   if(error&&e.key==='Escape'){e.preventDefault();handle('clearError');return;}
-  if(IS_HOTSEAT()&&passDevice&&e.key==='Escape'){e.preventDefault();return;}
+  if(page==='#/game'&&IS_HOTSEAT()&&passDevice&&e.key==='Escape'){e.preventDefault();return;}
   if(replayFrames.length){
     if(e.key==='Escape'){e.preventDefault();handle('replayClose');return;}
     if(e.key==='Tab'){
