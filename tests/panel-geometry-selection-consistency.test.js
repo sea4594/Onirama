@@ -38,12 +38,12 @@ test('Dock height never depends on the device safe-area inset or the current gam
  assert.match(css,/overflow-y:auto!important;overflow-x:hidden!important/);
 });
 
-test('Freeing and Failsafe use identical outlined eligible-target styles with no flashing or color wash',()=>{
+test('Freeing and Failsafe use matching solid eligible-target styles with no flashing or color wash',()=>{
  const search=css.match(/\.game-viewport \.tt5-catcher\.tt-search-free-eligible\{([^}]+)\}/)?.[1];
  const failsafe=css.match(/\.game-viewport \.tt5-catcher\.tt23-failsafe-target\{([^}]+)\}/)?.[1];
  assert(search&&failsafe);
  for(const body of [search,failsafe]){
-  assert.match(body,/outline:3px dashed var\(--table-gold\)!important/);
+  assert.match(body,/outline:3px solid #f9d986!important/);
   assert.match(body,/box-shadow:none!important/);
   assert.match(body,/filter:none!important/);
  }
@@ -53,9 +53,9 @@ test('Freeing and Failsafe use identical outlined eligible-target styles with no
 });
 
 test('Buttons and selections share clear, non-recoloring styles',()=>{
- assert.match(css,/Shared game selection language/);
+ assert.match(css,/Unified selection/);
  assert.match(css,/outline:3px solid var\(--table-gold\)!important/);
- assert.match(css,/\.card\.tt7-eligible:not\(\.selected\)\{outline-style:dashed!important\}/);
+ assert.match(css,/\.card\.tt7-eligible:not\(\.selected\)\{\s*outline:3px solid #f9d986!important/);
  assert.match(css,/\.tt6-workspace button:focus-visible,/);
  assert.match(css,/\.tt6-workspace :is\(\.tt6-dock-button,\.tt21-search-choice,\.tt21-chromatic,\.tt21-muted,\.tt7-option,\.tt16-spell-choice\)\{min-height:36px\}/);
  assert.match(css,/\.tt6-workspace button:disabled\{opacity:\.46!important/);

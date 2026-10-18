@@ -29,7 +29,7 @@
 /* No placeholder artwork behind the draw count or in an empty Dreamcatcher. */
 .game-viewport .tt2-deck-back{position:relative;font-size:0}
 .game-viewport .tt2-deck-back .tt10-draw-count{font-size:clamp(13px,calc(var(--tt15-mini)*.48),21px)}
-.game-viewport .tt5-catcher .tt14-catcher-back{background:repeating-linear-gradient(135deg,#233d35,#233d35 5px,#35534b 5px,#35534b 10px);border:1px dashed #b6ad8b80;border-radius:5px}
+.game-viewport .tt5-catcher .tt14-catcher-back{background:repeating-linear-gradient(135deg,#233d35,#233d35 5px,#35534b 5px,#35534b 10px);border:1px solid #b6ad8b80;border-radius:5px}
 /* Portrait: solo Doors are a whole-width shelf, independent of Piles. */
 @media (orientation:portrait) and (max-width:674px){
  .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'doors doors' 'towers piles' 'primary primary' 'secondary secondary' 'labyrinth labyrinth' 'hand hand'!important;grid-template-rows:auto auto auto auto auto auto!important;align-content:stretch}

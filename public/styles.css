@@ -49,7 +49,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .door-spots{display:flex;flex-wrap:wrap;gap:16px}
 .door-group{min-width:100px;display:flex;flex-direction:column;gap:8px}
 .door-group .cards{gap:3px}
-.door-slot{width:32px;height:47px;border:1px dashed #65718a;border-radius:6px;color:#7a859b;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.door-slot{width:32px;height:47px;border:1px solid #65718a;border-radius:6px;color:#7a859b;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
 .section-label{font-size:.72rem;color:#c8b18b;text-transform:uppercase;letter-spacing:.14em;margin:0 0 12px}
 .log{max-height:280px;overflow:auto;font-size:.8rem;line-height:1.6}
 .log div{border-bottom:1px solid #ffffff13;padding:7px 0}

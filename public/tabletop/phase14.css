@@ -31,8 +31,8 @@
 .game-viewport .tt14-fan-card .card.tiny{display:block;width:100%!important;height:100%!important;max-width:none!important;box-shadow:1px 1px 2px #0008}
 .game-viewport :is(.tt2-pile-face,.tt6-pile-face){width:clamp(var(--tt4-mini),9vw,120px)!important;max-width:100%;height:calc(var(--tt4-mini)*1.42)!important;border:0;overflow:visible}
 .game-viewport .tt2-pile-row .tt2-pile-face{width:clamp(calc(var(--tt4-mini)*1.6),10vw,125px)!important}
-.game-viewport :is(.tt2-pile-row,.tt6-piles) .tt14-empty-pile{display:block;opacity:.4;border:1px dashed var(--table-gold-line);width:var(--tt4-mini);height:100%;border-radius:5px;margin:auto}
-.game-viewport .tt14-empty-labyrinth{display:block;width:100%;height:100%;min-height:calc(var(--tt4-mini)*1.42);border:1px dashed var(--table-gold-line);border-radius:5px;opacity:.4}
+.game-viewport :is(.tt2-pile-row,.tt6-piles) .tt14-empty-pile{display:block;opacity:.4;border:1px solid var(--table-gold-line);width:var(--tt4-mini);height:100%;border-radius:5px;margin:auto}
+.game-viewport .tt14-empty-labyrinth{display:block;width:100%;height:100%;min-height:calc(var(--tt4-mini)*1.42);border:1px solid var(--table-gold-line);border-radius:5px;opacity:.4}
 /* Keep Towers physically larger than door-slot cardlets without distorting their faces. */
 .game-viewport .tt8-towers-slot{--tt14-tower-card:clamp(43px,calc(var(--tt4-mini) + 10px),73px)}
 .game-viewport .tt8-towers-slot .tt5-alignment{height:calc(var(--tt14-tower-card)*1.42 + 27px)!important;min-height:calc(var(--tt14-tower-card)*1.42 + 27px)!important}

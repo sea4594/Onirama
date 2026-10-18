@@ -9,7 +9,7 @@
 .game-viewport .tt2-root .tt6-pile[data-tt-drop].tt3-target-ready,
 .game-viewport .tt2-root .tt6-pile[data-tt-drop].tt3-drop-hover{padding:3px!important;border:1px solid transparent!important;outline-offset:-1px!important}
 .game-viewport .tt2-root .tt5-tower-target.tt3-target-ready,
-.game-viewport .tt2-root .tt5-tower-target.tt3-drop-hover{padding:0 3px!important;border:1px dashed var(--table-line)!important}
+.game-viewport .tt2-root .tt5-tower-target.tt3-drop-hover{padding:0 3px!important;border:1px solid var(--table-line)!important}
 .game-viewport .tt2-root :is(.card.selected,.card.tt7-eligible,.tt7-premonition-selected,.tt8-goal-chosen){filter:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important;transform:none!important}
 /* Highlight is an outline; never touch a card's own background or border dimensions. */
 .game-viewport .tt2-root .tt3-drag-source{opacity:.45;transform:none!important;filter:none!important}

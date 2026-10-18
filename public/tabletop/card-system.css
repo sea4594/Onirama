@@ -43,14 +43,14 @@
 .game-viewport .tt8-door-slot.wild:not(.tt8-door-complete){background:none;padding:0;box-shadow:none}
 .game-viewport .tt8-door-slot.wild:not(.tt8-door-complete) .tt8-door-empty{
  background:linear-gradient(120deg,color-mix(in srgb,var(--red) 14%,transparent),color-mix(in srgb,var(--blue) 14%,transparent) 34%,color-mix(in srgb,var(--green) 14%,transparent) 68%,color-mix(in srgb,var(--brown) 14%,transparent));
- border:1px dashed #d3bc817e;opacity:.85
+ border:1px solid #d3bc817e;opacity:.85
 }
 .game-viewport .tt8-door-slot.wild.tt8-door-complete{background:conic-gradient(from 30deg,var(--red),var(--blue),var(--green),var(--brown),var(--red));padding:2px;box-shadow:0 0 0 1px #f4deab,0 0 10px #edda9c80}
 .game-viewport .tt8-door-slot.wild.tt8-door-complete .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
 /* A held card can be long-pressed to inspect its rules, independently of the catcher button. */
 .game-viewport .tt5-catcher .tt14-held-card .card{pointer-events:auto;touch-action:manipulation}
-.game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px dashed var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;filter:none!important;animation:none!important}
-.game-viewport .tt5-catcher.tt-search-free-chosen{outline:3px solid #fff4bd!important;outline-offset:-3px!important;box-shadow:inset 0 0 0 2px var(--table-gold)!important;filter:none!important;animation:none!important}
+.game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px solid #f9d986!important;outline-offset:-2px!important;box-shadow:none!important;filter:none!important;animation:none!important}
+.game-viewport .tt5-catcher.tt-search-free-chosen{outline:3px solid #fff5c5!important;outline-offset:-2px!important;box-shadow:inset 0 0 0 1px #986628!important;filter:none!important;animation:none!important}
 /* The dock heading must never overlap a decision card, including in landscape. */
 .game-viewport .tt6-dock-decision .tt20-door-choice{width:clamp(40px,12vw,61px)!important}
 .game-viewport .tt6-dock-decision .tt20-incantation-choice,.game-viewport .tt6-dock-decision .tt20-incantation-reveal,.game-viewport .tt6-dock-decision .tt20-incantation-cards .tt3-order-item{width:clamp(35px,10vw,62px)!important}
@@ -74,14 +74,15 @@
 @media(orientation:landscape) and (min-width:600px){.game-viewport .tt21-search-options{align-content:center}.game-viewport .tt21-search-choice{width:83px}.game-viewport .tt21-free-detail{flex-wrap:wrap}.game-viewport .tt21-free-cards{max-width:100%}.game-viewport .tt21-free-buttons{flex-direction:row}}
 
 /* Keep intrinsic card colors on selection: selection is an outline, not a recolor. */
-.game-viewport .tt2-root .card:is(.selected,.tt7-eligible){filter:none!important;opacity:1!important;transform:none!important;box-shadow:none!important;outline:2px solid var(--table-gold)!important;outline-offset:-2px!important}
+/* Selected and eligible card faces are marked by paint only: no color wash, scaling, or padding. */
+.game-viewport .tt2-root .card:is(.selected,.tt7-eligible){filter:none!important;opacity:1!important;transform:none!important;box-shadow:none!important;outline:3px solid #fff0b8!important;outline-offset:1px!important}
 /* Keep intrinsic border colors as well as the face colors; the new gold outline
    alone indicates the selection. */
 .game-viewport .tt2-root .card:active{filter:none!important}
 
 /* One outline card at the end of every Labyrinth; a vertical stroke marks the
    last three-Location Door group, even when there are no newer Locations. */
-.game-viewport :is(.tt2-labyrinth-row,.tt6-labyrinth-cards)>.tt22-next-slot{display:block!important;flex:0 0 var(--tt15-mini,var(--tt2-mini,35px))!important;width:var(--tt15-mini,var(--tt2-mini,35px))!important;height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.42)!important;max-width:none!important;aspect-ratio:1/1.42!important;border:2px dashed var(--table-gold-line)!important;border-radius:5px;opacity:.8;margin:0 4px;box-shadow:none!important;background:transparent!important}
+.game-viewport :is(.tt2-labyrinth-row,.tt6-labyrinth-cards)>.tt22-next-slot{display:block!important;flex:0 0 var(--tt15-mini,var(--tt2-mini,35px))!important;width:var(--tt15-mini,var(--tt2-mini,35px))!important;height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.42)!important;max-width:none!important;aspect-ratio:1/1.42!important;border:2px solid var(--table-gold-line)!important;border-radius:5px;opacity:.8;margin:0 4px;box-shadow:none!important;background:transparent!important}
 .game-viewport :is(.tt2-labyrinth-row,.tt6-labyrinth-cards)>.tt22-door-boundary{display:block!important;flex:0 0 3px!important;align-self:stretch;min-height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.3);max-height:calc(var(--tt15-mini,var(--tt2-mini,35px))*1.42);margin:0 5px!important;border-radius:3px;background:var(--table-gold)!important;opacity:.9;z-index:3}
 .game-viewport .tt2-labyrinth-row>.tt22-door-boundary{position:relative}
 
@@ -142,7 +143,7 @@
   content:'';position:absolute;inset:7%;border-radius:5px;pointer-events:none;
   background:radial-gradient(ellipse,#fff0c915,transparent 70%);z-index:0;
 }
-:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front>.card).wild.card-kind-location:is(.selected,.tt7-eligible){outline:2px solid #fff0bc!important;outline-offset:2px!important}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front>.card).wild.card-kind-location:is(.selected,.tt7-eligible){outline:3px solid #fff0b8!important;outline-offset:1px!important}
 
 /* Every card face uses identical relative icon geometry on the tabletop AND
    on fixed-position flight/reveal clones appended outside the game viewport.
@@ -244,7 +245,7 @@
 .game-viewport .tt23-peek-cards .tt3-order-item{flex:0 0 var(--tt23-card-width)!important;width:var(--tt23-card-width)!important;max-width:none!important;min-width:var(--tt23-card-width)!important;padding:0!important}
 .game-viewport .tt23-peek-cards .tt3-order-handle{width:100%!important}
 .game-viewport .tt23-peek-cards .card{width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
-.game-viewport .tt23-happy-discard{box-sizing:border-box;flex:0 0 auto!important;width:max-content!important;max-width:calc(100% - 34px)!important;min-width:0!important;min-height:66px!important;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:2px;overflow-x:auto!important;overflow-y:hidden!important;border:2px dashed var(--table-gold)!important;border-radius:6px;padding:2px!important;background:var(--ui-soft)!important;scrollbar-width:thin}
+.game-viewport .tt23-happy-discard{box-sizing:border-box;flex:0 0 auto!important;width:max-content!important;max-width:calc(100% - 34px)!important;min-width:0!important;min-height:66px!important;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:2px;overflow-x:auto!important;overflow-y:hidden!important;border:2px solid var(--table-gold)!important;border-radius:6px;padding:2px!important;background:var(--ui-soft)!important;scrollbar-width:thin}
 .game-viewport .tt23-discard-label{font-size:9px;line-height:1.1;white-space:nowrap;text-align:center;align-self:stretch;pointer-events:none}
 .game-viewport .tt23-discard-stack{position:relative;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:2px;width:max-content;min-width:100%;max-width:none;min-height:calc(var(--tt23-card-width)*1.42);overflow:visible}
 .game-viewport .tt23-discard-card{box-sizing:border-box;flex:0 0 var(--tt23-card-width)!important;position:static!important;display:block;width:var(--tt23-card-width)!important;height:calc(var(--tt23-card-width)*1.42)!important;min-width:var(--tt23-card-width)!important;min-height:0!important;max-width:none!important;overflow:visible!important;filter:none;padding:0!important;border:0!important;background:none!important;cursor:pointer}
@@ -276,7 +277,7 @@
 .game-viewport .tt23-failsafe-button{font-weight:700;letter-spacing:.01em}
 .game-viewport .tt23-failsafe-urgent{background:#a62e3d!important;color:#fff!important;border:2px solid #e87780!important;box-shadow:0 0 0 2px #bc405444}
 .game-viewport .tt23-failsafe-hint{color:var(--ui-text);font-weight:600;font-size:clamp(.72rem,2.4vw,.9rem)}
-.game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px dashed var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;filter:none!important;cursor:pointer}
+.game-viewport .tt5-catcher.tt23-failsafe-target{outline:3px solid #f9d986!important;outline-offset:-2px!important;box-shadow:none!important;filter:none!important;cursor:pointer}
 .game-viewport .tt23-overload{justify-content:center;align-items:center;min-width:0}
 .game-viewport .tt23-overload button{font-weight:750}
 
@@ -350,16 +351,28 @@
 .game-viewport .tt6-dock-decision .tt22-denizen-choice .card{width:var(--tt26-panel-card)!important;max-width:none!important;height:auto!important;aspect-ratio:1/1.42!important}
 .game-viewport .tt21-free-cards .card{width:var(--tt26-panel-card)!important;max-width:none!important;flex:0 0 var(--tt26-panel-card)!important;height:auto!important;aspect-ratio:1/1.42!important}
 
-/* Shared game selection language: available targets are dashed, selected items
-   are solid. No hover/selection wash or color change to the card face. */
+/* Unified selection: solid high-contrast outlines, no face tint or geometry changes.
+   Ordinary cards get an outer ring; crowded Door, Tower and Labyrinth stacks
+   draw the same ring inward so it cannot obscure adjoining cards. */
 .game-viewport .tt2-root :is(.card.selected,.card.tt7-eligible,.tt7-premonition-selected,.tt8-goal-chosen),
 .game-viewport .tt2-root :is(.tt7-selected,.tt7-premonition-selected,.tt8-goal-chosen),
 .game-viewport .tt6-workspace :is(.tt7-option-active,.tt16-selected,.tt24-goal-chosen,.tt22-picked,.tt26-fetch-selected),
 .game-viewport .tt5-premonition.tt7-premonition-selected{
- outline:3px solid var(--table-gold)!important;outline-offset:-2px!important;
+ outline:3px solid #fff0b8!important;outline-offset:1px!important;
  filter:none!important;transform:none!important;
 }
-.game-viewport .tt2-root .card.tt7-eligible:not(.selected){outline-style:dashed!important}
+.game-viewport .tt2-root .card.tt7-eligible:not(.selected){
+ outline:3px solid #f9d986!important;outline-offset:1px!important;
+}
+.game-viewport .tt2-root :is(.tt2-door-stack,.tt6-door-cards,.tt2-labyrinth-row,.tt6-labyrinth-cards,.tt8-towers-slot,.tt5-tower-cards) .card:is(.selected,.tt7-eligible),
+.game-viewport .tt2-root .tt8-goal-spot.tt8-goal-chosen{
+ outline-offset:-2px!important;
+}
+/* Keep the Crossroads rainbow face and identical outer selection ring. */
+.game-viewport .tt2-root .card.wild.card-kind-location:is(.selected,.tt7-eligible){
+ outline:3px solid #fff0b8!important;outline-offset:1px!important;
+}
+.game-viewport .tt2-root :is(.tt2-labyrinth-row,.tt6-labyrinth-cards) .card.wild.card-kind-location:is(.selected,.tt7-eligible){outline-offset:-2px!important}
 .game-viewport .tt6-workspace .tt24-spell-goal.tt24-goal-chosen{border-color:var(--table-gold)!important;background:transparent!important}
 .game-viewport .tt6-workspace .tt16-spell-choice.tt16-selected{background:var(--ui-panel)!important}
 .game-viewport .tt6-workspace button:focus-visible,

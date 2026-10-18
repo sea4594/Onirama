@@ -107,7 +107,7 @@
 .tt6-dock-decision .tt4-card-option{flex:0 1 auto;min-width:0;max-width:48px;overflow:hidden}
 .tt6-dock-decision .tt4-card-option .card{width:clamp(20px,7vw,39px);max-width:100%}
 .tt6-dock-decision .tt7-compact-row{display:flex;justify-content:center;align-items:center;gap:4px;min-width:0;max-width:100%;width:100%}
-.tt6-dock-decision .tt7-prophecy-slot{flex:0 0 52px;width:52px;height:65px;display:grid;place-items:center;border:2px dashed var(--ui-accent);border-radius:7px;background:var(--ui-soft);padding:2px;color:var(--ui-text);font-size:.67rem}
+.tt6-dock-decision .tt7-prophecy-slot{flex:0 0 52px;width:52px;height:65px;display:grid;place-items:center;border:2px solid var(--ui-accent);border-radius:7px;background:var(--ui-soft);padding:2px;color:var(--ui-text);font-size:.67rem}
 .tt7-prophecy-slot .card{width:36px;height:auto;aspect-ratio:.71;pointer-events:none}
 .tt6-dock-decision .tt7-prophecy-slot:focus-visible{outline:2px solid var(--ui-accent)}
 .tt6-dock-decision .tt7-page-actions{display:flex;align-items:center;justify-content:center;gap:3px}
