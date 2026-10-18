@@ -67,12 +67,32 @@ function assign(table,plan,{mode,width,height,zoneCount,tier,cardFactor=1}={}){
  table.style.setProperty('--tt4-card',`${card}px`);table.style.setProperty('--tt4-mini',`${mini}px`);
  return {layout,card,mini,columns};
 }
+// Build only occupied rows in portrait solo. Grid templates that name absent
+// expansions otherwise reserve empty tracks and spread the board apart.
+export function fitPortraitSoloRows(table,portrait){
+ const grid=table?.querySelector?.(':scope > .tt2-grid');if(!grid)return [];
+ if(!portrait){for(const key of ['grid-template-areas','grid-template-rows','align-content'])grid.style.removeProperty(key);return [];}
+ const has=selector=>Boolean(grid.querySelector(selector));
+ const rows=[['doors','doors']];
+ if(has('.tt5-premonitions'))rows.push(['premonitions','premonitions']);
+ if(has('.tt8-towers-slot'))rows.push(['towers','towers']);
+ if(has('.tt5-catchers'))rows.push(['catchers','catchers']);
+ if(has('.tt9-exp-secondary'))rows.push(['secondary','secondary']);
+ rows.push(has('.tt9-exp-denizens')?['piles','denizens']:['piles','piles']);
+ rows.push(['labyrinth','labyrinth'],['hand','hand']);
+ grid.style.setProperty('grid-template-areas',rows.map(row=>`'${row.join(' ')}'`).join(' '),'important');
+ grid.style.setProperty('grid-template-rows',`repeat(${rows.length},auto)`,'important');
+ grid.style.setProperty('align-content','stretch','important');
+ return rows;
+}
 export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
  if(!viewport||!table)return null;
  const width=viewport.clientWidth,height=viewport.clientHeight;
  if(!width||!height)return null;
  const zones=table.querySelectorAll('.tt5-expansions>.tt5-zone').length;
  const plan=tabletopDimensions(width,height,mode,zones);
+ const portraitSolo=mode==='solo'&&plan.shape==='portrait';
+ fitPortraitSoloRows(table,portraitSolo);
  table.style.width=`${width}px`;table.style.height='auto';table.style.minHeight='0';table.style.transform='';table.style.zoom='1';table.style.left='0';table.style.transformOrigin='top left';
  let choice,selected;
  // Preserve usable card widths by changing composition and per-zone pressure
@@ -86,12 +106,18 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
  }
  // If the compact arrangement fits comfortably, reinvest free room in cards
  // rather than enormous empty panels. Never grow beyond legible practical sizes.
- if(choice.actual<height-85){
-  for(const factor of [1.08,1.16,1.24]){
+ if(choice.actual<height-(portraitSolo?24:85)){
+  let acceptedFactor=1;
+  for(const factor of portraitSolo?[1.08,1.16,1.24,1.32,1.40,1.48,1.56]:[1.08,1.16,1.24]){
    const metrics=assign(table,plan,{mode,width,height,zoneCount:zones,tier:choice.tier,cardFactor:factor});
    overlapRows(table);fitTiles(table);
-   if(table.scrollHeight>height-20){assign(table,plan,{mode,width,height,zoneCount:zones,tier:choice.tier,cardFactor:factor-0.08});break;}
-   choice={...metrics,tier:choice.tier,actual:table.scrollHeight};
+   const actual=table.scrollHeight;
+   if(actual>height-(portraitSolo?6:20)){
+    assign(table,plan,{mode,width,height,zoneCount:zones,tier:choice.tier,cardFactor:acceptedFactor});
+    overlapRows(table);fitTiles(table);break;
+   }
+   acceptedFactor=factor;
+   choice={...metrics,tier:choice.tier,actual};
   }
  }
  let zoom=1;

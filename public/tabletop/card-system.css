@@ -38,8 +38,15 @@
 .tt6-pile-inspector .tt6-inventory-rows{gap:5px!important}
 .tt6-pile-inspector .tt6-inventory-line{max-width:none!important;padding:5px 2px!important}
 /* Make the special Door read as rainbow even at miniature board sizes. */
-.game-viewport .tt8-door-slot.wild{background:conic-gradient(from 30deg,var(--red),var(--blue),var(--green),var(--brown),var(--red));padding:2px;box-shadow:0 0 0 1px #f4deab,0 0 10px #edda9c80}
-.game-viewport .tt8-door-slot.wild .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
+/* A goal is a muted empty outline, not the full-colored collected Door.
+   Keep the four-color cue without making the unclaimed Oniverse goal look won. */
+.game-viewport .tt8-door-slot.wild:not(.tt8-door-complete){background:none;padding:0;box-shadow:none}
+.game-viewport .tt8-door-slot.wild:not(.tt8-door-complete) .tt8-door-empty{
+ background:linear-gradient(120deg,color-mix(in srgb,var(--red) 14%,transparent),color-mix(in srgb,var(--blue) 14%,transparent) 34%,color-mix(in srgb,var(--green) 14%,transparent) 68%,color-mix(in srgb,var(--brown) 14%,transparent));
+ border:1px dashed #d3bc817e;opacity:.85
+}
+.game-viewport .tt8-door-slot.wild.tt8-door-complete{background:conic-gradient(from 30deg,var(--red),var(--blue),var(--green),var(--brown),var(--red));padding:2px;box-shadow:0 0 0 1px #f4deab,0 0 10px #edda9c80}
+.game-viewport .tt8-door-slot.wild.tt8-door-complete .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
 /* A held card can be long-pressed to inspect its rules, independently of the catcher button. */
 .game-viewport .tt5-catcher .tt14-held-card .card{pointer-events:auto;touch-action:manipulation}
 .game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px dashed var(--table-gold)!important;outline-offset:-3px!important;box-shadow:none!important;filter:none!important;animation:none!important}
@@ -404,3 +411,9 @@
 .tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower){container-type:inline-size}
 .tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower) .tt8-tower-mark{font-size:clamp(8px,25cqw,35px)!important}
 .tt8-motion-stage :is(.tt8-flying-card.card-kind-tower,.tt10-reveal-front>.card-kind-tower) .tt11-tower-number{font-size:clamp(9px,29cqw,40px)!important;bottom:2%!important;line-height:1!important}
+
+/* Portrait solo: the Labyrinth must occupy its entire allocated row, not use
+   margin-top:auto to leave a bare band between it and the previous section. */
+.game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-labyrinth{
+ margin-top:0!important;align-self:stretch!important;height:100%!important
+}
