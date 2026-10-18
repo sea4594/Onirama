@@ -245,9 +245,6 @@
 .game-viewport .tt6-dock-decision :is(.tt3-order-handle,.tt4-card-option,.tt20-door-choice){overflow:visible!important}
 .game-viewport .tt6-dock-decision :is(.tt3-order-handle,.tt4-card-option,.tt20-door-choice) .card{max-height:100%!important}
 /* Incantation previews can use the width and height already reserved by the dock. */
-.game-viewport .tt6-workspace .tt20-incantation-cards :is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item){width:clamp(50px,14vw,77px)!important}
-.game-viewport .tt6-workspace .tt20-incantation-cards .card{width:100%!important;height:auto!important;max-width:none!important}
-.game-viewport .tt6-workspace .tt20-incantation-cards{max-height:calc(var(--tt6-dock-height,188px) - 45px)!important;overflow-x:auto!important;overflow-y:hidden!important}
 
 /* All inspected cards remain in the same reorderable strip, including the fifth
    Squirrel Spies/Harpoon Hunter card and longer Diver reveals. No four-card page. */
@@ -533,11 +530,6 @@
 .game-viewport .tt6-dock-decision :is(.tt4-card-choices,.tt20-incantation-cards,.tt22-prem-options){overflow-x:hidden!important;overflow-y:hidden!important}
 
 /* Fit additional reordering/selection effects by their actual card count. */
-.game-viewport .tt6-dock-decision .tt20-incantation-cards{container-type:inline-size;justify-content:center!important;overflow:hidden!important}
-.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards>:is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item){
- box-sizing:border-box;flex:0 0 min(var(--tt26-panel-card),calc(var(--tt20-per-card) - 7px))!important;
- width:min(var(--tt26-panel-card),calc(var(--tt20-per-card) - 7px))!important;min-width:0!important;max-width:none!important;
-}
 .game-viewport .tt6-dock-decision .tt22-prem-options{container-type:inline-size;justify-content:center!important;overflow:hidden!important}
 .game-viewport .tt6-dock-decision .tt22-prem-options>.tt22-prem-key{
  box-sizing:border-box;flex:0 0 min(var(--tt26-panel-card),calc(var(--tt22-per-card) - 7px))!important;
@@ -556,3 +548,53 @@
  min-width:0!important;max-width:100%!important;
 }
 .game-viewport .tt28-draft-cards{padding:2px 0!important}
+
+
+/* Incantation has exactly five inspected cards (then four if a Door is claimed).
+   Fit all cards and the Confirm control within the fixed dock, without scrolling. */
+.game-viewport .tt6-workspace .tt6-dock-decision .decision.tt20-incantation{
+ display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;
+ align-items:center!important;justify-content:center!important;width:100%;height:100%;
+ min-height:0!important;max-height:100%!important;overflow:hidden!important;gap:3px!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards{
+ --tt31-reserve:44px;
+ --tt31-card-width:min(76px,calc(var(--tt20-per-card) - 8px),calc((var(--tt6-dock-height,188px) - var(--tt31-reserve))/1.42));
+ container-type:inline-size;display:flex!important;flex:0 1 auto!important;
+ flex-wrap:nowrap!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;
+ gap:4px!important;padding:2px 3px!important;box-sizing:border-box!important;
+ max-height:100%!important;overflow:hidden!important;touch-action:manipulation;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation[data-tt-incantation-step="order"] .tt20-incantation-cards{
+ --tt31-reserve:100px;max-height:calc(100% - 38px)!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards>:is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item){
+ box-sizing:border-box!important;flex:0 0 var(--tt31-card-width)!important;
+ width:var(--tt31-card-width)!important;min-width:0!important;max-width:none!important;
+ height:auto!important;min-height:0!important;aspect-ratio:1/1.42!important;
+ padding:0!important;margin:0!important;border:0;display:grid!important;place-items:center!important;
+ background:transparent!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards :is(.card,.tt3-order-handle,.tt3-order-handle .card){
+ box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ height:100%!important;min-height:0!important;max-height:100%!important;aspect-ratio:1/1.42!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards .tt20-incantation-choice{
+ outline:3px solid #ffdf88!important;outline-offset:1px!important;border-radius:5px!important;
+ cursor:pointer!important;box-shadow:0 0 0 1px #39210f!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards .tt20-incantation-choice:focus-visible{
+ outline:3px solid #fff4c0!important;outline-offset:2px!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards .tt5-order-end{
+ flex:0 0 8px!important;width:8px!important;min-width:8px!important;min-height:20px!important;height:20px!important;
+ padding:0!important;margin:0!important;
+}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation[data-tt-incantation-step="order"]>button[data-action="effectConfirm"]{
+ flex:0 0 auto!important;min-height:32px!important;padding:4px 12px!important;margin:0!important;
+}
+
+@media(max-height:430px){
+ .game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation[data-tt-incantation-step="order"] .tt20-incantation-cards{--tt31-reserve:75px}
+}

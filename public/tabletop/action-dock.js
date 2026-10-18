@@ -19,6 +19,8 @@ export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDis
   if(type==='coopSwap')return {title:'Swap cards',hint:''};
   if(type==='drawReady')return {title:'Draw',hint:''};
   if(type==='drawn')return {title:'Drawn',hint:''};
+  if(type==='incantation')return {title:game.pending.cards?.some(c=>c.kind==='door')?'Incantation: choose a Door':'Incantation: arrange cards',hint:''};
+  if(type==='incantationOrder')return {title:'Incantation: arrange remaining cards',hint:''};
   return {title:type==='prophecy'&&prophecyDiscard?'Prophecy · order':'Prophecy'===step[type]?'Prophecy · discard':step[type]||'Resolve',hint:''};
  }
  if(seat!==game.active)return {title:`${game.players[game.active]?.name||'Partner'}’s turn`,hint:''};

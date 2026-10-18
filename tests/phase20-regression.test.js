@@ -58,7 +58,7 @@ test('Incantation claims immediately, then orders four remaining cards without r
 test('card and decision UI maintains scale, long-hold inspect metadata, cost order and simple Door controls',()=>{
  const app=src('public/app.js'),css=src('public/tabletop/phase20.css'),interactions=src('public/tabletop/interactions.js'),inspection=src('public/tabletop/card-inspection.js');
  assert.match(src('public/tabletop/spellbook.js'),/\.sort\(\(\[a\],\[b\]\)=>book\.costs\[a\]-book\.costs\[b\]\)/);
- assert.doesNotMatch(app,/discardConfirm|discardCancel|coopDiscard/);assert.match(app,/Incantation: Take a door/);assert.match(app,/Incantation: Rearrange and put on bottom/);
+ assert.doesNotMatch(app,/discardConfirm|discardCancel|coopDiscard/);assert.match(app,/Incantation: choose a Door/);assert.match(app,/Incantation: arrange remaining cards/);
  assert.match(app,/tt25-drawn-door-preview/);assert.match(app,/tt25-drawn-door-actions/);assert.match(app,/useKey:gain/);assert.match(app,/useKey:limbo/);assert.match(app,/swapPass/);
  assert.match(interactions,/onSwap\(/);assert.match(interactions,/swapZone\(/);assert.match(inspection,/setTimeout\(\(\)=>/);
  assert.match(css,/\.tt20-incantation-cards \.card/);assert.match(css,/aspect-ratio:1\/1\.42/);

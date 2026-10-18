@@ -24,8 +24,8 @@ test('draw pile has no icon and spell count tracks available discards in both mo
 });
 test('Incantation has explicit choice and bottom-order phases, spellbook has descriptive choices',()=>{
  const source=read('public/app.js');
- assert.match(source,/Incantation: Take a door/);
- assert.match(source,/Incantation: Rearrange and put on bottom/);
+ assert.match(source,/Incantation: choose a Door/);
+ assert.match(source,/Incantation: arrange remaining cards/);
  assert.match(source,/spellSelect:/);
  assert.match(read('public/tabletop/spellbook.js'),/Look at up to five cards from the bottom of the deck/);
  assert.doesNotMatch(source,/<select id="spellChoice"/);
