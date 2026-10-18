@@ -37,7 +37,6 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
   const swapping=g.phase==='decision'&&g.pending?.type==='coopSwap'&&canAct&&g.active===seat;
   const handFor=i=>handArea(g.players[i].hand,`${g.players[i].name}'s hand`,{active:(active||swapping)&&i===seat,privateBacks:i!==seat,selectedId,decisionTargets:i===seat?decisionTargets:new Set(),decisionSelected:i===seat?decisionSelected:new Set()});
   const shared=handArea(m.shared,'Shared',{active:active||swapping,selectedId,shared:true,decisionTargets,decisionSelected});
-  const draft=`<section class="tt6-draft" aria-label="Public card draft"><div class="tt6-region-heading">Draft <b>${g.draft?.length||0}</b><small>${esc(g.players[g.active]?.name||'Player')}'s pick</small></div><div class="tt6-draft-cards">${m.draft.map(c=>renderCard(c,{select:m.canDraft,interactive:false})).join('')}</div></section>`;
   const selected=m.selected;
   const expansion=renderExpansionTabletop(g,{canAct:active||m.canDraft,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,excludeDenizens:true});
   const doorsAll=g.players.reduce((n,p)=>n+p.doors.length,0);
@@ -47,7 +46,6 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
     <div class="tt6-grid tt17-coop-grid">
       <div class="tt17-coop-doors">${doors(g,playerOptions)}</div>
       <div class="tt17-coop-equipment">${piles(g,m)}${renderTowerTabletop(g,{canAct:active,decisionTargets})}${expansion}</div>
-      ${m.isDraft?draft:''}
       <div class="tt17-coop-labyrinths">${g.players.map((p,i)=>labyrinth(g,p,i,active)).join('')}</div>
       ${g.expansion?.oniverse?`<div class="tt17-coop-denizens" aria-label="Players’ Denizens">${g.players.map((p,i)=>renderDenizenTabletop(g,{owner:i,canAct,decisionTargets})).join('')}</div>`:''}
       <div class="tt17-coop-hands"><div class="${seat===0?'tt6-self':'tt6-opponent'} tt17-${seat===0?'your':'partner'}-hand">${handFor(0)}</div>${shared}<div class="${seat===1?'tt6-self':'tt6-opponent'} tt17-${seat===1?'your':'partner'}-hand">${handFor(1)}</div></div>

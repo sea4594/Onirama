@@ -46,7 +46,8 @@ test('pause menu contains resume, rules, settings and safe return to home withou
  const pause=renderOverlay('pause',[],false,{motion:'reduced'});
  for(const action of ['closeGameOverlay','gameMenuTab:rules','gameGoHome'])assert.match(pause,new RegExp(`data-action="${action}"`));
  assert.match(pause,/option value="reduced" selected/);
- for(const key of ['motion','cardSize','contrast','textSize'])assert.match(pause,new RegExp(`data-setting="${key}"`));
+ for(const key of ['theme','motion'])assert.match(pause,new RegExp(`data-setting="${key}"`));
+ for(const key of ['cardSize','contrast','textSize'])assert.doesNotMatch(pause,new RegExp(`data-setting="${key}"`));
  assert.doesNotMatch(pause,/data-action="(play|discard|start|ready|endGame)"/);
  assert.match(app,/fitGameTabletop\(\)/);
  assert.match(app,/const overlayScroll=/);

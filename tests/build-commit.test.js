@@ -37,6 +37,6 @@ test('Settings shows the exact commit and an official GitHub link; local fallbac
   const ctx=vm.createContext({window:{ONIRAMA_BUILD_COMMIT:commit},document:{documentElement:{dataset:{}},querySelector:id=>id==='#app'?app:null},localStorage:{getItem:key=>storage.get(key)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},location:{origin:'https://sea4594.github.io',hostname:'sea4594.github.io',hash:'#/settings'},addEventListener(){},navigator:{},console,icon,renderCard,renderDoors,applyTabletopMetrics,...guest,firebase:{firebaseConfigured:()=>false}});
   vm.runInContext(source,ctx);return app.innerHTML;
  };
- const deployed=ui(sha);assert.match(deployed,/Current commit:/);assert.ok(deployed.includes(sha));assert.ok(deployed.includes(`https://github.com/sea4594/Onirama/commit/${sha}`));
- const local=ui(null);assert.match(local,/Unavailable \(local development\)/);assert.ok(!local.includes('github.com/sea4594/Onirama/commit/'));
+ const deployed=ui(sha);assert.match(deployed,/commit:/);assert.ok(deployed.includes(sha));assert.ok(deployed.includes(`https://github.com/sea4594/Onirama/commit/${sha}`));
+ const local=ui(null);assert.match(local,/commit: local/);assert.ok(!local.includes('github.com/sea4594/Onirama/commit/'));
 });

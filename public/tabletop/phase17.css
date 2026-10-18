@@ -50,3 +50,23 @@
  .game-viewport .tt17-coop-grid{gap:2px!important}
  .game-viewport .tt17-coop-hands .tt6-hand-cards{min-height:calc(var(--tt15-card)*1.10 + 1px)!important}
 }
+
+/* Cooperative portrait: distribute height to actual zones, not gutters. In
+   this orientation flatten only the equipment wrappers so Premonitions can
+   sit immediately below Doors, as on the solo tabletop. */
+@media (orientation:portrait) and (max-width:674px){
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-grid.tt6-grid{justify-content:flex-start!important;align-content:stretch!important;gap:var(--tt15-gap,4px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-equipment,
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-equipment>.tt5-expansions{display:contents!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-doors{order:1}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-premonitions{order:2;flex:0 0 var(--tt15-prem-h)!important;width:100%!important;height:var(--tt15-prem-h)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt8-towers-slot{order:3;flex:1 1 calc(var(--tt15-tower)*1.42 + 25px)!important;width:100%;min-height:calc(var(--tt15-tower)*1.42 + 25px)}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt8-towers-slot .tt5-alignment{height:100%!important;min-height:calc(var(--tt15-tower)*1.42 + 22px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-catchers{order:4;flex:0 0 var(--tt15-catcher-h)!important;width:100%!important;height:var(--tt15-catcher-h)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-mirrors,
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-incubus{order:5;flex:0 0 var(--tt15-zone-h)!important;width:100%!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-piles{order:6;flex:0 0 auto!important;width:100%;min-width:0!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-denizens{order:7}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-labyrinths{order:8;flex:1 1 auto;min-height:0}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-hands{order:9;flex:0 0 auto}
+}

@@ -202,3 +202,7 @@
  .tt6-dock-decision .tt3-order-handle .card{width:50px}
  .tt6-dock-decision .tt4-card-option .card{width:43px}
 }
+
+/* Draft is a decision in the fixed dock; scroll eight selectable cards there. */
+.game-viewport .tt28-draft-cards{display:flex;gap:clamp(3px,1vw,8px);align-items:center;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x;max-width:100%;width:100%;padding:2px 4px;box-sizing:border-box;min-height:0;scrollbar-width:thin}
+.game-viewport .tt28-draft-cards>.card{flex:0 0 auto!important;width:clamp(48px,12vw,72px)!important;height:auto!important;aspect-ratio:1/1.42!important;min-width:0!important}

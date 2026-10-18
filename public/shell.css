@@ -49,3 +49,13 @@
 /* Rules are available on demand; the default view shows only section names. */
 .shell-rules{max-width:630px}.shell-rules .shell-title{margin-bottom:11px}.shell-rules-intro{font-size:.89rem;color:var(--ui-muted);margin:0 0 19px}.shell-rule{margin:8px 0;padding:0;overflow:hidden}.shell-rule summary{cursor:pointer;list-style:none;font-weight:650;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;min-height:50px}.shell-rule summary::-webkit-details-marker{display:none}.shell-rule summary::after{content:'+';color:var(--ui-muted);font-size:1.3rem}.shell-rule[open] summary::after{content:'−'}.shell-rule p,.shell-rule ol{font-size:.86rem;line-height:1.55;color:var(--ui-muted);margin:0 18px 16px}.shell-rule li+li{margin-top:7px}.shell-rules-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-size:.73rem;color:var(--ui-muted);margin-top:15px;padding:0 4px}.shell-rules-footer a{color:var(--ui-accent)}
 .shell-roadmap{display:grid;gap:0}.shell-roadmap>div{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--shell-edge);font-size:.87rem}.shell-roadmap>div:last-child{border:0}.shell-roadmap>div>span{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--ui-soft);color:var(--ui-accent);font-weight:650}.shell-roadmap strong{font-weight:550;flex:1}.shell-roadmap small{font-size:.75rem;color:var(--ui-muted)}
+
+/* Settings and Rules share a single, compact two-tab main-menu surface. */
+.shell-settings-page .shell-settings-tabs{margin-bottom:12px}
+.shell-settings-tabs>a{flex:1;display:grid;place-items:center;min-height:38px;padding:7px 10px;border-radius:9px;color:var(--ui-muted);font-size:.87rem;font-weight:650;text-decoration:none}
+.shell-settings-tabs>a.active{background:var(--ui-panel);color:var(--ui-text);box-shadow:0 2px 6px #00000010}
+.shell-settings-meta{display:flex;justify-content:flex-end;margin:-3px 1px 10px;font-size:.74rem;color:var(--ui-muted)}
+.shell-settings-meta a{color:var(--ui-accent);text-decoration:none}
+.shell-settings-footer{padding:8px 3px}.shell-settings-footer .shell-link{width:100%;text-align:left}
+.shell-guided-tutorial{display:block;width:100%;min-height:44px;margin:4px 0 13px;text-align:left}
+@media (orientation:portrait) and (max-width:610px){.shell-multiplayer:has(.shell-primary-actions) .shell-primary-actions{width:100%;max-width:none}.shell-multiplayer:has(.shell-primary-actions) .shell-primary-actions button{width:100%}}

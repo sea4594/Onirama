@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {newGame,viewFor,act,assertConserved} from '../engine/game.js';
 import {EXPANSIONS} from '../engine/cards.js';
 import {renderCooperativeTabletop,cooperativeTabletopModel} from '../public/tabletop/coop-board.js';
+import {renderActionDock} from '../public/tabletop/action-dock.js';
 import {cooperativeLegalTargets,tabletopLegalTargets} from '../public/tabletop/interactions.js';
 const expansions=EXPANSIONS.filter(e=>e.id!=='incubus').map(e=>e.id);
 function drafted(config={expansions:[]},seed=11){let g=newGame({mode:'coop',seed,config});for(let n=0;g.phase==='draft'&&n<10;n++){g=act(g,{type:'draft',id:g.draft[0].id});assertConserved(g);}assert.notEqual(g.phase,'draft');return g;}
@@ -12,7 +13,8 @@ test('draft renders eight public cards, shows the two separate player areas and 
   const game=newGame({mode:'coop',seed:9,config:{expansions:[]}});
   for(const seat of [0,1]){const g=viewFor(game,seat),html=renderCooperativeTabletop(g,{seat});
     assert.match(html,/data-tabletop-coop="true"/);assert.match(html,/data-tt6-player="0"/);assert.match(html,/data-tt6-player="1"/);
-    assert.match(html,/tt6-draft-cards/);assert.equal((html.match(/data-pick=/g)||[]).length,seat===0?8:0);
+    assert.doesNotMatch(html,/tt6-draft-cards|tt6-draft"/);assert.equal((html.match(/data-pick=/g)||[]).length,0);
+    const dock=renderActionDock(g,seat);assert.match(dock,/tt28-draft-cards/);assert.equal((dock.match(/data-pick=/g)||[]).length,seat===0?8:0);
     assert.equal(g.draft.length,8);assert.match(html,/aria-label="Card piles"/);
   }
 });
@@ -53,7 +55,7 @@ test('all 512 expansion combinations show essential areas and matching shared ex
   for(let mask=0;mask<1<<expansions.length;mask++){
     const enabled=expansions.filter((_,i)=>mask&(1<<i));const g=viewFor(newGame({mode:'coop',seed:mask+7,config:{expansions:enabled}}),0);
     const html=renderCooperativeTabletop(g,{seat:0});
-    for(const component of ['tt6-opponent','tt6-self','tt17-coop-equipment','tt6-piles','tt6-shared-block','tt6-player-labyrinth','tt8-door-slot','tt6-draft'])assert.ok(html.includes(component),`${mask}: ${component}`);
+    for(const component of ['tt6-opponent','tt6-self','tt17-coop-equipment','tt6-piles','tt6-shared-block','tt6-player-labyrinth','tt8-door-slot'])assert.ok(html.includes(component),`${mask}: ${component}`);
     if(enabled.includes('book')){assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);}
     for(const [id,zone] of [['dreamcatchers','catchers'],['towers','alignment'],['premonitions','premonitions'],['oniverse','denizens'],['mirrors','mirrors']])if(enabled.includes(id))assert.match(html,new RegExp(`data-tt-zone="${zone}"`));
   }

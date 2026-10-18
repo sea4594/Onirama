@@ -5,6 +5,7 @@ import {tabletopShape,tabletopDimensions,fitTabletop} from '../public/tabletop/f
 import {newGame,viewFor} from '../engine/game.js';
 import {renderSoloTabletop} from '../public/tabletop/solo-board.js';
 import {renderCooperativeTabletop} from '../public/tabletop/coop-board.js';
+import {renderActionDock} from '../public/tabletop/action-dock.js';
 const css=readFileSync('public/tabletop/responsive.css','utf8');
 test('Phase 4 selects four distinct physical arrangements based on usable shape',()=>{
  assert.equal(tabletopShape(320,568),'portrait');
@@ -52,12 +53,13 @@ test('GitHub Pages includes responsive CSS and visual viewport reflow',()=>{
  assert.ok(readFileSync('public/app.js','utf8').includes("fitTabletop(viewport,table"));
  assert.ok(readFileSync('public/app.js','utf8').includes("window.visualViewport?.addEventListener?.('resize',resizeGameplay)"));
 });
-test('Cooperative drafting is a shared full-width zone, while private hands remain obscured',()=>{
+test('Cooperative drafting uses the fixed bottom dock and does not duplicate cards on the board',()=>{
  const g=viewFor(newGame({mode:'coop',seed:18,config:{expansions:['book','mirrors']}}),0);
  const html=renderCooperativeTabletop(g,{seat:0});
  assert.match(html,/data-phase="draft"/);
- assert.match(html,/<section class="tt6-draft"/);
- assert.ok(html.indexOf('<div class="tt17-coop-equipment">')<html.indexOf('<section class="tt6-draft"'));
- assert.ok(html.indexOf('<section class="tt6-draft"')<html.indexOf('tt17-coop-hands'));
+ assert.doesNotMatch(html,/<section class="tt6-draft/);
  assert.match(html,/Partner&#39;s hand/);
+ const dock=renderActionDock(g,0);
+ assert.match(dock,/tt28-draft-cards/);
+ assert.equal((dock.match(/data-pick=/g)||[]).length,8);
 });

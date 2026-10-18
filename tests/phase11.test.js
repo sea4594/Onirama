@@ -35,10 +35,10 @@ test('Invalid invite code is rejected; server refuses room hijacking and start w
   const cors=await fetch(base+'/api/health',{headers:{Origin:'https://untrusted.example'}});assert.equal(cors.status,403);
  }finally{await stop(instance);}
 });
-test('Browser invitation routes contain only code, no bearer; UI has connection diagnostic and accessible mobile controls',()=>{
+test('Browser invitation routes contain only code, no bearer; UI retains connection recovery and accessible mobile controls',()=>{
  const js=readFileSync('public/app.js','utf8'),html=readFileSync('public/index.html','utf8'),css=readFileSync('public/styles.css','utf8');
  assert.match(js,/join\\\?code=/);assert.match(js,/const inviteLink=code/);assert.match(js,/Copy code/);assert.match(js,/roomCodeFromHash\(\)/);
- assert.match(js,/cancelStream/);assert.match(js,/Test multiplayer connection/);assert.match(readFileSync('public/tabletop/coop-board.js','utf8'),/Connection interrupted/);
+ assert.match(js,/cancelStream/);assert.match(readFileSync('public/tabletop/coop-board.js','utf8'),/Connection interrupted/);
  assert.ok(!/inviteLink.*token/.test(js));assert.match(html,/viewport/);assert.match(css,/@media\(max-width:600px\)/);
 });
 test('Live event stream is authenticated, seat-filtered, and emits room updates',async()=>{
