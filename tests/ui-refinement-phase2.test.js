@@ -13,8 +13,7 @@ test('game navigation is fullscreen and cannot follow Rules link away from activ
  for(const [mode,board] of [['solo',renderSoloTabletop],['coop',renderCooperativeTabletop]]){
   const view=viewFor(newGame({mode,seed:24}),0);
   const output=mode==='solo'?board(view):board(view,{seat:0});
-  assert.match(output,/data-action="openGamePause"/);
-  assert.match(output,/data-action="openGameRules"/);
+  assert.doesNotMatch(output,/data-action="openGamePause"|data-action="openGameRules"/);
   assert.doesNotMatch(output,/href="#\/rules"/);
  }
  assert.match(app,/\(inGame\?'':nav\(\)\)/);
@@ -40,12 +39,12 @@ test('in-game rules show all base sections and active expansions only',()=>{
  assert.match(output,/data-rule-index="/);
  assert.match(output,/data-game-menu-dismiss/);
  assert.match(output,/data-action="closeGameOverlay"/);
- assert.match(renderOverlay('rules',[],false,{fromPause:true}),/Back to pause/);
+ assert.match(renderOverlay('rules',[],false,{fromPause:true}),/role="tablist"/);
  assert.equal(renderOverlay(null,[]),'');
 });
 test('pause menu contains resume, rules, settings and safe return to home without gameplay commands',()=>{
  const pause=renderOverlay('pause',[],false,{motion:'reduced'});
- for(const action of ['closeGameOverlay','openGameRules','gameGoHome'])assert.match(pause,new RegExp(`data-action="${action}"`));
+ for(const action of ['closeGameOverlay','gameMenuTab:rules','gameGoHome'])assert.match(pause,new RegExp(`data-action="${action}"`));
  assert.match(pause,/option value="reduced" selected/);
  for(const key of ['motion','cardSize','contrast','textSize'])assert.match(pause,new RegExp(`data-setting="${key}"`));
  assert.doesNotMatch(pause,/data-action="(play|discard|start|ready|endGame)"/);
@@ -58,8 +57,7 @@ test('pause menu contains resume, rules, settings and safe return to home withou
 test('mandatory and optional decisions retain available in-game navigation',()=>{
  for(const mandatory of [false,true]){
   const popup=renderGameDialog({type:'nightmare',html:'<p>Decision</p>',mandatory});
-  assert.match(popup,/data-action="openGamePause"/);
-  assert.match(popup,/data-action="openGameRules"/);
+  assert.doesNotMatch(popup,/data-action="openGamePause"|data-action="openGameRules"/);
   assert.equal(popup.includes('data-action="dialogClose"'),!mandatory);
  }
 });

@@ -44,7 +44,7 @@ test('Solo and cooperative tabletops retain controls, deck counts, and SVG game 
  for(const mode of ['solo','coop']){
   const g=viewFor(newGame({mode,seed:23,config:{expansions:['book','glyphs','towers','premonitions']}}),0);
   const html=mode==='solo'?renderSoloTabletop(g):renderCooperativeTabletop(g,{seat:0});
-  for(const action of ['openGamePause','openGameRules'])assert.ok(html.includes(`data-action="${action}"`),action);
+  assert.doesNotMatch(html,/data-action="openGamePause"|data-action="openGameRules"/);
   assert.match(html,/class="ui-icon"/);assert.match(html,/>Draw</);assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);
  }
 });

@@ -1,6 +1,7 @@
 import {PENDING_DECISIONS} from './dialogs.js';
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 import {renderCard} from './cards.js';
+import {icon} from '../icons.js';
 import {premonitionFace} from './expansions.js';
 const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Overload!',towerPenalty:'Choose a Tower',moduleDecision:'Effect'};
 export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
@@ -48,9 +49,10 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  }
  if(game.status!=='active')controls=button('Exit','exitFinished')+button('Play again','playAgain');
  const content=dialog?.html||controls||'';
+ const menu=`<button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button>`;
  const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card&&game.pending.type!=='door'?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
- return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong></div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
+ return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong>${menu}</div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }
 export function renderInventoryTrack(count,total){
  const totalCards=Math.max(0,Number(total)||0),remaining=Math.max(0,Math.min(totalCards,Number(count)||0));

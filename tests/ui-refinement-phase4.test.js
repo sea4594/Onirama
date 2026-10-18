@@ -33,16 +33,15 @@ test('The tabletop remains a pure visual projection, with every enabled expansio
   const html=mode==='solo'?renderSoloTabletop(g):renderCooperativeTabletop(g,{seat:0});
   for(const zone of ['alignment','catchers','premonitions','denizens','mirrors'])assert.ok(html.includes(`data-tt-zone="${zone}"`),`${mode}: ${zone}`);
   assert.match(html,/data-action="openSpells"/);assert.doesNotMatch(html,/data-tt-zone="goals"/);
-  for(const action of ['openGamePause','openGameRules'])assert.ok(html.includes(`data-action="${action}"`),action);
+  assert.doesNotMatch(html,/data-action="openGamePause"|data-action="openGameRules"/);
   assert.match(html,/data-tabletop-scroll=/);
  }
 });
-test('Cooperative Door count is placed alongside turn status instead of over expansion tiles',()=>{
+test('Cooperative Door count stays in the Doors section, without a gameplay header',()=>{
  const g=viewFor(newGame({mode:'coop',seed:11,config:{expansions:['book']}}),0);
  const html=renderCooperativeTabletop(g,{seat:0});
- const head=html.slice(html.indexOf('<div class="tt6-top">'),html.indexOf('</div>'));
- assert.match(head,/class="tt6-doors-total"/);
- assert.equal((html.match(/class="tt6-doors-total"/g)||[]).length,1);
+ assert.doesNotMatch(html,/class="tt6-top"|class="tt2-game-name"|class="tt6-turn"/);
+ assert.match(html,/class="tt6-region-heading"><strong>Doors<\/strong>/);
 });
 test('Fit handles missing or unmeasurable viewports without touching the game state',()=>{
  assert.equal(fitTabletop(null,null),null);

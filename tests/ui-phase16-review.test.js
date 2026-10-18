@@ -35,7 +35,7 @@ test('labyrinth scrolls horizontally without fitter overlap, dock is fixed and i
  const css=read('public/tabletop/phase16.css'),fit=read('public/tabletop/fit.js');
  assert.match(css,/overflow-x:auto!important;overflow-y:hidden!important/);
  assert.match(fit,/row\.matches\('\.tt2-labyrinth-row,\.tt6-labyrinth-cards'\)/);
- assert.match(css,/--tt6-dock-height:188px!important/);
+ assert.match(css,/--tt6-dock-height:169px!important/);
  assert.match(css,/overflow-y:auto!important/);
  assert.match(css,/\.tt8-towers-slot \.tt5-tower-target/);
  const index=read('public/index.html');assert.ok(index.indexOf('adaptive.css')<index.indexOf('phase16.css'));

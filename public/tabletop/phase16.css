@@ -41,7 +41,7 @@
  .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-self .tt6-player-labyrinth{width:100%!important}
 }
 /* The dock has a consistent footprint; overflow scrolls INSIDE the dock, never beyond it. */
-#app>.page.game-viewport{--tt6-dock-height:188px!important}
+#app>.page.game-viewport{--tt6-dock-height:169px!important}
 .game-viewport>.tt6-workspace{height:var(--tt6-dock-height)!important;box-sizing:border-box!important;min-height:0!important;overflow:hidden!important;padding:7px max(9px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left))!important}
 .game-viewport .tt6-workspace .tt6-dock-scroll{display:flex;align-items:flex-start!important;justify-content:center!important;min-width:0!important;min-height:0!important;max-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin}
 .game-viewport .tt6-workspace :is(.tt6-dock-decision,.tt6-dock-buttons){min-width:0;max-width:100%;height:auto!important;max-height:none!important;overflow:visible!important;flex:1 1 auto}
@@ -66,11 +66,11 @@
 .game-viewport .tt16-spell-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.game-viewport .tt16-spell-actions button{padding:5px 12px!important;min-height:29px!important}
 @media (max-width:450px){.game-viewport .tt16-spell-choices{grid-template-columns:repeat(3,minmax(0,1fr))!important}.game-viewport .tt16-spell-choice{min-height:0!important}.game-viewport .tt16-spell-dialog{padding:0 2px}.game-viewport .tt16-spell-choice small{font-size:11px}}
 @media (orientation:landscape) and (max-width:1000px) and (max-height:540px){
- #app>.page.game-viewport{--tt6-dock-height:116px!important}
- .game-viewport>.tt6-table-slot{bottom:116px!important}
- .game-viewport>.tt6-workspace{height:116px!important;max-height:116px!important}
+ #app>.page.game-viewport{--tt6-dock-height:104px!important}
+ .game-viewport>.tt6-table-slot{bottom:104px!important}
+ .game-viewport>.tt6-workspace{height:104px!important;max-height:104px!important}
  .game-viewport .tt16-spell-choices{grid-template-columns:repeat(3,minmax(0,1fr))!important}
- .game-viewport .tt6-pile-inspector{bottom:120px!important}
+ .game-viewport .tt6-pile-inspector{bottom:108px!important}
 }
 /* Phase 4: availability is clear without changing spell or Goal card colors. */
 .game-viewport .tt16-spell-choice.tt24-spell-ready{border-color:var(--table-gold);background:var(--ui-panel);opacity:1;color:var(--ui-text)}

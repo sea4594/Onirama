@@ -42,7 +42,7 @@ export function renderCooperativeTabletop(g,{seat=0,selectedId=null,canAct=true,
   const expansion=renderExpansionTabletop(g,{canAct:active||m.canDraft,decisionTargets,spellGoalMode,spellGoals,selectedPremonition,premonitionChoiceMode,excludeDenizens:true});
   const doorsAll=g.players.reduce((n,p)=>n+p.doors.length,0);
   return `<div class="tt6-root tt2-root tt17-coop ${g.config?.expansions?.length?'tt5-has-expansions':''}" data-tabletop-coop="true" data-phase="${esc(g.phase)}" data-selected-card="${esc(selected?.id||'')}" data-tt6-seat="${seat}">
-    <div class="tt6-top"><span class="tt2-game-name">CO-OP</span><span class="tt6-turn" aria-live="polite">${g.status!=='active'?(g.status==='won'?'Victory':'Defeat'):m.isDraft?'Draft':`Turn ${g.turn} · ${esc(g.players[g.active].name)}`}</span><span class="tt6-doors-total" aria-label="${doorsAll} Doors acquired">${doorsAll} Doors</span><span class="tt6-connection ${connected?'':'tt6-offline'}" title="${connected?'Connected':'Reconnecting'}">●</span><span class="game-top-actions"><button type="button" class="game-menu-trigger" data-action="openGamePause" aria-label="Pause menu" title="Pause">${icon('pause')}</button><button type="button" class="tt2-rule-link" data-action="openGameRules" aria-label="Game rules" title="Rules">${icon('help')}</button></span></div>
+
     ${!connected?`<div class="tt6-disconnected" role="status">Connection interrupted ${button('Retry','retryConnection')}</div>`:''}
     <div class="tt6-grid tt17-coop-grid">
       <div class="tt17-coop-doors">${doors(g,playerOptions)}</div>

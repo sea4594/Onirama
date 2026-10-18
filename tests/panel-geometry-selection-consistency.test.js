@@ -29,8 +29,8 @@ test('Door options use consistent bold source and nonbold shuffle text, includin
 
 test('Dock height never depends on the device safe-area inset or the current game decision',()=>{
  const phase16=file('public/tabletop/phase16.css');
- assert.match(phase16,/--tt6-dock-height:188px!important/);
- assert.match(phase16,/--tt6-dock-height:116px!important/);
+ assert.match(phase16,/--tt6-dock-height:169px!important/);
+ assert.match(phase16,/--tt6-dock-height:104px!important/);
  assert.match(css,/\.game-viewport>\.tt6-table-slot\{bottom:var\(--tt6-dock-height\)!important\}/);
  assert.match(css,/\.game-viewport>\.tt6-workspace\{height:var\(--tt6-dock-height\)!important;max-height:var\(--tt6-dock-height\)!important;padding-bottom:5px!important\}/);
  assert.doesNotMatch(css,/--tt6-dock-height:calc\([^}]*safe-area-inset-bottom/);

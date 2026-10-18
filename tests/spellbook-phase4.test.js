@@ -8,21 +8,17 @@ import {renderCooperativeTabletop} from '../public/tabletop/coop-board.js';
 
 const game=(mode='solo',hard=false)=>newGame({mode,seed:82,config:{expansions:['book'],difficulties:hard?{book:'hard'}:{}}});
 const addPayment=(state,n)=>{state.discard.push(...state.deck.splice(0,n));return viewFor(state,0);};
-test('Spellbook renders exactly one in-panel goal selector per position with clear selected markers',()=>{
-  const state=game(),v=addPayment(state,7),before=state.moduleState.book.goals.map(g=>g.color);
-  let html=renderSpellbook(v,{choice:'parallel',selectedGoals:[1,4]});
-  assert.equal((html.match(/data-action="goalPick:/g)||[]).length,8);
-  assert.match(html,/aria-label="Goal 2:.*selected 1"/);
-  assert.match(html,/aria-label="Goal 5:.*selected 2"/);
-  assert.equal((html.match(/class="tt24-spell-goal tt24-goal-chosen"/g)||[]).length,2);
-  assert.match(html,/<button type="button" class="primary" data-action="castSpell" >Cast spell<\/button>/);
-  assert.ok(!html.includes('unavailable'));
-  assert.deepEqual(state.moduleState.book.goals.map(g=>g.color),before);
-  html=renderSpellbook(v,{choice:'parallel',selectedGoals:[1]});
-  assert.match(html,/data-action="castSpell" disabled/);
-  assert.equal(spellEligibility(v,'parallel',[1,4]).ready,true);
-  assert.equal(spellEligibility(v,'parallel',[1,1]).ready,false);
-  assert.equal(spellEligibility(v,'parallel',[1,30]).ready,false);
+test('Parallel Planning selects Goals only on tabletop, with cast enabled after two valid choices',()=>{
+ const state=game(),v=addPayment(state,7);
+ const html=renderSpellbook(v,{choice:'parallel',selectedGoals:[1,4]});
+ assert.doesNotMatch(html,/tt24-spell-goals|data-action="goalPick:/);
+ assert.match(html,/Tap the two Doors in the Doors area/);
+ assert.match(html,/<button type="button" class="primary" data-action="castSpell" >Cast spell<\/button>/);
+ assert.doesNotMatch(html,/more discarded cards needed/);
+ assert.match(renderSpellbook(v,{choice:'parallel',selectedGoals:[1]}),/data-action="castSpell" disabled/);
+ assert.equal(spellEligibility(v,'parallel',[1,4]).ready,true);
+ assert.equal(spellEligibility(v,'parallel',[1,1]).ready,false);
+ assert.equal(spellEligibility(v,'parallel',[1,30]).ready,false);
 });
 test('Spellbook availability reacts to payment, deck, and Nightmare conditions',()=>{
   const state=game(),v=viewFor(state,0);

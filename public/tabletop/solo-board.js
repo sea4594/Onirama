@@ -33,7 +33,7 @@ export function renderSoloTabletop(g,{selectedId=null,canAct=true,decisionHtml='
   const chosen=m.selected&&m.active,hasExpansions=Boolean(g.config?.expansions?.length);
   const doorGoal=8+(g.config?.expansions?.includes('glyphs')?4:0)+(g.config?.expansions?.includes('oniverse')?1:0);
   return `<div class="tt2-root ${hasExpansions?'tt5-has-expansions':''}" data-tabletop-solo="true" data-phase="${htmlEscape(g.phase)}" data-selected-card="${htmlEscape(m.selected?.id||'')}">
-    <div class="tt2-top"><span class="tt2-game-name">SOLO</span><span class="tt2-status" aria-live="polite">${g.status==='won'?'Victory':g.status==='lost'?'Defeat':`Turn ${m.turn}${isDecision?' · resolve effect':''}`}</span><span class="game-top-actions"><button type="button" class="game-menu-trigger" data-action="openGamePause" aria-label="Pause menu" title="Pause">${icon('pause')}</button><button type="button" class="tt2-rule-link" data-action="openGameRules" aria-label="Game rules" title="Rules">${icon('help')}</button></span></div>
+
     <div class="tt2-grid">
       <section class="tt2-zone tt2-doors ${incantationClaim?'tt12-claim-zone':''}" ${incantationClaim?'data-action="incantationClaim" data-tt-incantation-drop="doors" role="button" tabindex="0" aria-label="Place revealed Door here"':''} aria-label="Collected Doors"><header><span>Doors</span><b>${m.doors.length}/${doorGoal}</b></header><div class="tt2-doors-row tt8-doors-row">${doorsRow(m,g,decisionTargets,{spellGoalMode,spellGoals,incantationPreview})}</div></section>
       ${renderTowerTabletop(g,{canAct,decisionTargets})}

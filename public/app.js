@@ -47,7 +47,7 @@ const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
-let gameOverlay=null,gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false,failsafeChoosing=false;
+let gameOverlay=null,gameMenuTab='log',gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false,failsafeChoosing=false;
 let searchFreeIntent=null,happyFetchSelection=null,lastInputWasKeyboard=false;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
@@ -438,12 +438,12 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const errorMessage=error?`<div class="shell-notice-layer" data-notice-backdrop><section class="shell-notice-dialog" role="alertdialog" aria-modal="true" aria-label="Information" tabindex="-1"><p>${escape(error)}</p>${btn('OK','clearError','primary')}</section></div>`:'';
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
-  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button><button type="button" data-action="openGamePause">Game menu</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing}):''):'';
+  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing}):''):'';
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
-  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
   if(markup!==lastRenderedMarkup){app.innerHTML=markup;lastRenderedMarkup=markup;}
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
@@ -527,9 +527,10 @@ async function handle(actionName){
   if(replayFrames.length)return;
   if(actionName==='openGamePause'||actionName==='openGameRules'){
     if(page!=='#/game'||!state?.room?.started)return;
-    gameRulesFromPause=actionName==='openGameRules'&&gameOverlay==='pause';
-    gameOverlay=actionName==='openGamePause'?'pause':'rules';return render();
+    gameMenuTab=actionName==='openGamePause'?'log':'rules';
+    gameRulesFromPause=false;gameOverlay='pause';return render();
   }
+  if(actionName.startsWith('gameMenuTab:')){const tab=actionName.slice(12);if(!gameOverlay||!['log','settings','rules'].includes(tab))return;gameMenuTab=tab;return render();}
   if(actionName==='closeGameOverlay'){
     if(!gameOverlay)return;
     overlayReturnAction=gameOverlay==='pause'?'openGamePause':'openGameRules';
