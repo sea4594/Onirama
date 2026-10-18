@@ -598,3 +598,28 @@
 @media(max-height:430px){
  .game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation[data-tt-incantation-step="order"] .tt20-incantation-cards{--tt31-reserve:75px}
 }
+
+/* Shared material for every tabletop zone, including all expansion shelves. */
+.game-viewport .tt2-root :is(.tt5-zone,.tt2-zone,.tt6-player,.tt6-hand-block,.tt6-piles){background:var(--table-zone)!important}
+/* Center the opponent's face-down emblem relative to the full card, not its inline line box. */
+.game-viewport .tt2-root .tt6-card-back{display:grid!important;place-items:center!important;padding:0!important;position:relative}
+.game-viewport .tt2-root .tt6-card-back>span{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:grid!important;place-items:center!important;line-height:0!important;transform:none!important}
+.game-viewport .tt2-root .tt6-card-back>span>.ui-icon{display:block!important;width:50%!important;height:50%!important;margin:0!important;place-self:center!important;vertical-align:middle!important;transform:none!important}
+/* An unclaimed Oniverse Door should read as four colors within the face,
+   while remaining visibly less saturated than a Door that has been won. */
+.game-viewport .tt8-door-slot.wild:not(.tt8-door-complete) .tt8-door-empty{
+ background:linear-gradient(135deg,#a64b5a88 0 24%,#386eaa88 26% 49%,#37916a88 51% 74%,#ad7b4288 76% 100%)!important;
+ border-color:#e3cfb5a6!important;opacity:1!important;
+}
+.game-viewport .tt8-door-slot.wild:not(.tt8-door-complete) .tt8-door-empty>.ui-icon{
+ width:66%!important;height:66%!important;min-width:0!important;min-height:0!important;
+ color:#ebd8b6!important;filter:drop-shadow(0 1px 2px #0008)
+}
+/* The outer ring and enabled state are both restored by the central controller. */
+.game-viewport .tt2-root .tt8-towers-slot .tt5-tower-target.tt3-target-ready{
+ outline:3px solid var(--table-gold)!important;outline-offset:-2px!important;opacity:1!important;
+ color:var(--table-gold)!important;cursor:pointer!important;
+}
+.game-viewport .tt2-root .tt8-towers-slot .tt5-tower-target.tt3-drop-hover{
+ outline:3px solid #fff4c4!important;outline-offset:-2px!important;opacity:1!important;
+}

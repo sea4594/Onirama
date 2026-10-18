@@ -9,8 +9,8 @@ import {renderOverlay} from '../public/game-overlay.js';
 import {newGame,viewFor} from '../engine/game.js';
 const src=readFileSync('public/app.js','utf8'),palette=readFileSync('public/theme.css','utf8');
 const names=['forest','moonlit','copper','lagoon','heather','sandstone'];
-test('Forest is the default; all legacy presets removed; formerly saved legacy palette falls back safely',()=>{
- assert.match(src,/theme:'forest'/);assert.match(src,/raw\.theme:'forest'/);
+test('Moonlit is the default; all legacy presets removed; formerly saved legacy palette falls back safely',()=>{
+ assert.match(src,/theme:'moonlit'/);assert.match(src,/raw\.theme:'moonlit'/);
  for(const name of names)assert.ok(src.includes(`id:'${name}'`),name);
  for(const old of ["id:'ocean-light'","id:'ocean-dark'","id:'bw'","id:'forest-dark'","id:'clay'","id:'berry'"])assert.ok(!src.includes(old),old);
  assert.match(src,/localStorage\.setItem\(SETTINGS_KEY,JSON\.stringify\(uiSettings\)\)/);

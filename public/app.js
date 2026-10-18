@@ -51,7 +51,7 @@ let gameOverlay=null,gameMenuTab='log',gameRulesFromPause=false,overlayReturnAct
 let searchFreeIntent=null,happyFetchSelection=null,lastInputWasKeyboard=false;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
 let reconnectAttempts=0;
-function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'forest',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'forest',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
+function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'moonlit',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'moonlit',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
 let uiSettings=readSettings();
 let playerDisplayName='',partnerDisplayName='',hotseatName1='',hotseatName2='',multiplayerTab='online',hotseatNewGame=false,joinCode='',passDevice=session?.id==='hotseat';
 function applySettings(){const preset=THEME_PRESETS.find(p=>p.id===uiSettings.theme)||THEME_PRESETS[0];Object.assign(document.documentElement.dataset,{theme:preset.id,motion:uiSettings.motion,cardSize:uiSettings.cardSize,contrast:uiSettings.contrast,textSize:uiSettings.textSize});const meta=document.querySelector('meta[name="theme-color"]');if(meta&&typeof getComputedStyle==='function')meta.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--ui-bg').trim());}
@@ -434,7 +434,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const overlayFocused=focused?.closest?.('[data-game-menu-dialog]')?focused?.dataset?.action||focused?.dataset?.setting:null;
   const replayFocused=focused?.closest?.('[data-replay-layer]')?focused?.dataset?.action:null;
   page=location.hash||'#/';if(page!=='#/game'){gameOverlay=null;gameRulesFromPause=false;}let content;
-  if(page==='#/setup')content=setup();else if(page==='#/join'||roomCodeFromHash()){joinCode=joinCode||roomCodeFromHash();content=multiplayer();}else if(page==='#/rules')content=rules();else if(page==='#/roadmap')content=roadmap();else if(page==='#/multiplayer')content=multiplayer();else if(page==='#/settings')content=settings();else if(page==='#/history')content=historyPage();else if(page==='#/tutorial')content=tutorial();else if(page==='#/game')content=!state?'<div class="loading">Loading the dream…</div>':!state.room.started?multiplayer():IS_HOTSEAT()&&passDevice?`<section class="shell-pass-card" role="dialog" aria-modal="true"><h1>Pass the device</h1><p>Hand the device to ${escape(state.game.players[state.game.active]?.name||'the next player')}. Their cards are hidden until they are ready.</p>${btn('I’m ready','passReady','primary shell-big')}</section>`:board(state.game,state.room);else content=home();
+  if(page==='#/setup')content=setup();else if(page==='#/join'||roomCodeFromHash()){joinCode=joinCode||roomCodeFromHash();content=multiplayer();}else if(page==='#/rules')content=rules();else if(page==='#/roadmap')content=roadmap();else if(page==='#/multiplayer')content=multiplayer();else if(page==='#/settings')content=settings();else if(page==='#/history')content=historyPage();else if(page==='#/tutorial')content=tutorial();else if(page==='#/game')content=!state?'<div class="loading">Loading the dream…</div>':!state.room.started?multiplayer():IS_HOTSEAT()&&passDevice?`<section class="shell-pass-card" role="dialog" aria-modal="true"><h1>Pass Device</h1>${btn(`I’m ${escape(state.game.players[state.game.active]?.name||'Ready')}`,'passReady','primary shell-big')}</section>`:board(state.game,state.room);else content=home();
   const passScreen=IS_HOTSEAT()&&passDevice&&page==='#/game';
   const inGame=page==='#/game'&&!!state?.room?.started&&!passScreen;
   const errorMessage=error?`<div class="shell-notice-layer" data-notice-backdrop><section class="shell-notice-dialog" role="alertdialog" aria-modal="true" aria-label="Information" tabindex="-1"><p>${escape(error)}</p>${btn('OK','clearError','primary')}</section></div>`:'';
@@ -450,6 +450,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
+    tabletopController?.syncTargets?.(selected||'');
     const pending=state.game.pending;
     if(failsafeChoosing&&state.game.phase==='action'&&state.room?.seat===state.game.active&&state.game.expansion?.dreamcatchers){
       const d=state.game.expansion.dreamcatchers;
@@ -782,6 +783,7 @@ function installTabletopController(){
     onDrop:(id,rect)=>tabletopAnimator?.dragRelease?.(id,rect),
     onSwap:(personal,shared)=>{if(state?.game?.phase==='decision'&&state.game.pending?.type==='coopSwap')return action({type:'coopSwap',option:'swap',personal,shared});},
     onSelect:id=>{if(page==='#/game'&&state?.game&&['solo','coop'].includes(state.game.mode))pick(id);},
+    onClearSelection:()=>{if(selected!==null){selected=null;render();}},
     onCommand:(type,id)=>{
       if(page!=='#/game'||busy||!state?.game)return;
       const targets=state.game.mode==='coop'?cooperativeLegalTargets(state.game,id,state.room?.seat):soloLegalTargets(state.game,id,state.room?.seat);
@@ -868,25 +870,31 @@ addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startS
 document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()){if(streamAbort===null)startStream();else if(session.transport==='firebase')startStream();else refresh();}});
 render();if(typeof createCardInspector==='function')cardInspector=createCardInspector({root:app});installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE||IS_HOTSEAT()){import('./engine/game.js').then(async m=>{localEngine=m;if(IS_LOCAL_GAME()){if(IS_HOTSEAT())passDevice=true;return refresh();}if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game'||page==='#/multiplayer')startStream();});}
 
-// Phase 1: attach layout metrics after orientation changes without changing game commands.
-function resizeGameplay(){if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);if(page==='#/game'&&state?.room.started){applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});fitGameTabletop();}}
-// iOS applies the new visual viewport in multiple passes during rotation.
-// Never rescale on card selection; refit only on actual viewport changes.
-let lastViewport='',orientationRefits=[];
-function settleViewport(){
- const next=`${window.innerWidth}x${window.innerHeight}:${window.visualViewport?.width||0}x${window.visualViewport?.height||0}`;
- if(next!==lastViewport){lastViewport=next;resizeGameplay();}
- for(const timer of orientationRefits)clearTimeout(timer);
- orientationRefits=[80,220,480].map(ms=>setTimeout(()=>{lastViewport='';settleViewportOnce();},ms));
+// iOS updates layout/visual viewports over several frames after rotation.
+// Every fit starts from untransformed tabletop geometry in fitTabletop().
+function resizeGameplay(){
+ if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);
+ if(page==='#/game'&&state?.room?.started){
+  applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
+  fitGameTabletop();
+ }
 }
-function settleViewportOnce(){lastViewport=`${window.innerWidth}x${window.innerHeight}:${window.visualViewport?.width||0}x${window.visualViewport?.height||0}`;resizeGameplay();}
-addEventListener('resize',()=>{settleViewportOnce();});
+let viewportRefits=[];
+function fitAfterViewportSettles(){
+ for(const id of viewportRefits)clearTimeout(id);
+ viewportRefits=[];
+ const fit=()=>{if(typeof requestAnimationFrame==='function')requestAnimationFrame(resizeGameplay);else resizeGameplay();};
+ fit();
+ for(const ms of [80,200,400,750,1200])viewportRefits.push(setTimeout(fit,ms));
+}
+addEventListener('resize',fitAfterViewportSettles);
 if(typeof window!=='undefined'){
- window.visualViewport?.addEventListener?.('resize',resizeGameplay);
- window.addEventListener?.('orientationchange',settleViewport);
- window.addEventListener?.('pageshow',settleViewportOnce);
+ window.visualViewport?.addEventListener?.('resize',fitAfterViewportSettles);
+ window.addEventListener?.('orientationchange',fitAfterViewportSettles);
+ window.addEventListener?.('pageshow',fitAfterViewportSettles);
 }
-
+// Suppress iOS double-tap text magnification on game controls; preserve pinch zoom.
+app.addEventListener('dblclick',e=>{if(e.target.closest?.('.tt2-root,.tt6-workspace,.shell-primary-actions'))e.preventDefault();});
 
 // Only the built static/PWA site installs the offline shell; local development
 // continues to use the Node server without registering a missing worker.

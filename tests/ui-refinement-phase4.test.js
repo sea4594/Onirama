@@ -51,7 +51,7 @@ test('Fit handles missing or unmeasurable viewports without touching the game st
 test('GitHub Pages includes responsive CSS and visual viewport reflow',()=>{
  assert.ok(readFileSync('public/index.html','utf8').includes('tabletop/responsive.css'));
  assert.ok(readFileSync('public/app.js','utf8').includes("fitTabletop(viewport,table"));
- assert.ok(readFileSync('public/app.js','utf8').includes("window.visualViewport?.addEventListener?.('resize',resizeGameplay)"));
+ assert.ok(readFileSync('public/app.js','utf8').includes("window.visualViewport?.addEventListener?.('resize',fitAfterViewportSettles)"));
 });
 test('Cooperative drafting uses the fixed bottom dock and does not duplicate cards on the board',()=>{
  const g=viewFor(newGame({mode:'coop',seed:18,config:{expansions:['book','mirrors']}}),0);

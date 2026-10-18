@@ -43,7 +43,7 @@ export function targetState(g, cardId, seat=0){
   return {play:legal.includes('play'),discard:legal.includes('discard')};
 }
 const DRAG_THRESHOLD=8;
-export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onCommand, onDrop=()=>{}, onSwap=()=>{}, onInspect=()=>{}}){
+export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onClearSelection=()=>{}, onCommand, onDrop=()=>{}, onSwap=()=>{}, onInspect=()=>{}}){
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
   const board=()=>$('.tt2-root[data-tabletop-solo="true"],.tt6-root[data-tabletop-coop="true"]');
@@ -112,7 +112,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     clearDrag();
     if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
     if(drop){onDrop(cardId,released);dispatch(drop.dataset.ttDrop,cardId);return;}
-    if(dragging)onSelect(cardId);
+    if(dragging)onClearSelection();
   }
   function onPointerDown(e){
     if(e.button!==0&&e.pointerType==='mouse')return;
@@ -155,7 +155,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
       if(dispatch(e.key.toLowerCase()==='p'?'play':'discard',selected()))e.preventDefault();
     }
   }
-  function onCancel(){if(pointer)clearDrag();}
+  function onCancel(){if(pointer){const wasDragging=pointer.dragging;clearDrag();if(wasDragging)onClearSelection();}}
   root.addEventListener('pointerdown',onPointerDown);
   window.addEventListener('pointermove',move,{passive:false});
   window.addEventListener('pointerup',release);

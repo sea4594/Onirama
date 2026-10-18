@@ -71,3 +71,11 @@ body{position:fixed;inset:0;min-height:0}
 .game-menu-footer .game-room-actions{display:flex;flex-wrap:wrap;gap:6px}
 .game-menu-tutorial{width:100%;margin:2px 0 12px;text-align:left;padding:10px 13px;font-weight:650}
 @media(orientation:portrait) and (max-width:600px){.game-menu-footer{flex-direction:column;align-items:stretch}.game-menu-footer>[data-action="gameGoHome"]{width:100%}.game-menu-footer .game-room-actions{width:100%}.game-menu-footer .game-room-actions button{flex:1}}
+
+/* Mobile game controls cannot be double-tap zoomed or text-selected. */
+#app .game-viewport :is(button,[data-tt-card],[data-tt-drop]),
+#app :is(.shell-primary-actions button,.bottom-nav button){touch-action:manipulation;-webkit-touch-callout:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+/* Drag sources retain pointer capture; other controls suppress double-tap zoom. */
+#app .game-viewport [data-tt-card]{touch-action:none!important}
