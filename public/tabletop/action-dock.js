@@ -30,7 +30,7 @@ const button=(label,action)=>`<button type="button" data-action="${escape(action
 export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false}={}){
  const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing});
  let controls='';
- if(game.phase==='draft'&&game.status==='active'){controls=`<div class="tt28-draft-cards" aria-label="Draft cards">${(game.draft||[]).map(c=>renderCard(c,{select:seat===game.active})).join('')}</div>`;}
+ if(game.phase==='draft'&&game.status==='active'){controls=`<div class="tt28-draft-cards" style="--tt28-per-card:${(100/Math.max(1,game.draft?.length||0)).toFixed(5)}cqw" aria-label="Draft cards">${(game.draft||[]).map(c=>renderCard(c,{select:seat===game.active})).join('')}</div>`;}
  if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');
  if(game.phase==='decision'&&game.pending?.type==='coopSwap'&&seat===game.active)controls=button('Pass','swapPass');
  if(!dialog&&game.status==='active'&&seat===game.active&&game.phase==='decision'&&game.pending?.type==='drawReady')controls=button('Draw','draw');

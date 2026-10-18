@@ -302,8 +302,7 @@
 .game-viewport .tt25-drawn-door-actions button{min-height:38px!important;padding:6px 10px!important}
 @media (max-height:480px){.game-viewport .tt6-workspace .tt25-drawn-door-decision{grid-template-columns:56px minmax(0,1fr)!important}.game-viewport .tt25-drawn-door-actions button{min-height:30px!important}}
 
-/* Consistent legible card previews for every action-panel decision. A card can
-   scroll horizontally instead of being squeezed to an unreadable 25–35px. */
+/* Shared preview scale: fit ordinary choices without scrolling; only full-deck searching scrolls. */
 .game-viewport .tt6-workspace{--tt26-panel-card:clamp(46px, min(17vw, calc((var(--tt6-dock-height,188px) - 48px)/1.42)), 72px)}
 .game-viewport .tt6-dock-decision :is(.tt24-reveal-list,.tt3-order-list,.tt4-card-choices,.tt20-incantation-cards,.tt22-prem-options){scrollbar-width:thin}
 .game-viewport .tt6-dock-decision .tt24-reveal-list .tt3-order-item,
@@ -425,3 +424,103 @@
 .game-viewport .tt6-workspace .tt6-dock-status{position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important;min-height:31px!important;padding:0 40px!important;box-sizing:border-box}
 .game-viewport .tt6-workspace .tt27-dock-menu{position:absolute!important;right:0;top:0;width:31px;height:31px;min-height:31px;padding:0;display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:7px;background:var(--ui-soft);color:var(--ui-text);cursor:pointer;z-index:2}
 .game-viewport .tt6-workspace .tt27-dock-menu:focus-visible{outline:3px solid var(--ui-accent);outline-offset:1px}
+
+/* Panel no-scroll contract: ordinary effects fit all cards within the dock.
+   The width calculation uses the actual container (including phone safe-area
+   padding), not the full viewport. Only a full-deck search may scroll. */
+.game-viewport .tt6-dock-decision .tt24-reveal-list{
+ container-type:inline-size;box-sizing:border-box;overflow:hidden!important;
+ justify-content:center!important;min-width:0!important;width:100%!important;
+}
+.game-viewport .tt6-dock-decision .tt3-order-list.tt24-reveal-list>.tt3-order-item{
+ flex:0 0 min(var(--tt26-panel-card),calc(var(--tt24-per-card) - 7px))!important;
+ width:min(var(--tt26-panel-card),calc(var(--tt24-per-card) - 7px))!important;
+ min-width:0!important;max-width:none!important;
+}
+/* Happy Dream: both groups remain side-by-side, with the discard region growing
+   when cards move into it. The cards retain their aspect ratio and never spill. */
+.game-viewport .tt6-dock-decision .tt23-happy-peek{container-type:inline-size}
+.game-viewport .tt6-dock-decision .tt23-happy-row{
+ --tt23-card-width:min(var(--tt26-panel-card),calc(var(--tt23-per-card) - 15px));
+ width:100%!important;max-width:100%!important;box-sizing:border-box;
+ display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;
+ align-items:flex-end!important;gap:3px!important;overflow:hidden!important;
+}
+.game-viewport .tt6-dock-decision .tt23-peek-cards{
+ box-sizing:border-box;flex:0 0 auto!important;width:max-content!important;
+ max-width:100%!important;min-width:0!important;overflow:hidden!important;
+ justify-content:flex-start!important;padding:2px!important;gap:2px!important;
+}
+.game-viewport .tt6-dock-decision .tt23-peek-cards>.tt3-order-item{
+ flex:0 0 var(--tt23-card-width)!important;min-width:0!important;
+ width:var(--tt23-card-width)!important;max-width:none!important;
+}
+.game-viewport .tt6-dock-decision .tt23-happy-discard{
+ box-sizing:border-box;flex:0 0 auto!important;width:max-content!important;
+ max-width:100%!important;min-width:59px!important;overflow:hidden!important;
+ padding:2px!important;margin:0!important;
+}
+.game-viewport .tt6-dock-decision .tt23-discard-stack{
+ box-sizing:border-box;min-width:0!important;width:max-content!important;
+ max-width:100%!important;overflow:hidden!important;gap:2px!important;
+}
+.game-viewport .tt6-dock-decision .tt23-discard-card{
+ flex:0 0 var(--tt23-card-width)!important;min-width:0!important;
+ width:var(--tt23-card-width)!important;height:calc(var(--tt23-card-width)*1.42)!important;
+}
+/* Prophecy: five cards split between the reorder row and the discard slot. */
+.game-viewport .tt6-dock-decision .tt7-prophecy{container-type:inline-size}
+.game-viewport .tt6-dock-decision .tt7-prophecy>.tt7-compact-row{
+ --tt7-card-width:min(var(--tt26-panel-card),calc(var(--tt7-per-card) - 7px));
+ width:100%!important;justify-content:center!important;flex-wrap:nowrap!important;overflow:hidden!important;
+}
+.game-viewport .tt6-dock-decision .tt7-prophecy .tt26-prophecy-cards{
+ flex:0 0 auto!important;width:max-content!important;max-width:100%!important;
+ min-width:0!important;overflow:hidden!important;justify-content:flex-start!important;
+}
+.game-viewport .tt6-dock-decision .tt7-prophecy .tt26-prophecy-cards>.tt3-order-item{
+ flex:0 0 var(--tt7-card-width)!important;min-width:0!important;
+ width:var(--tt7-card-width)!important;max-width:none!important;
+}
+.game-viewport .tt6-dock-decision .tt7-prophecy .tt7-prophecy-slot{
+ box-sizing:border-box;flex:0 0 calc(var(--tt7-card-width) + 6px)!important;
+ width:calc(var(--tt7-card-width) + 6px)!important;
+ height:calc(var(--tt7-card-width)*1.42 + 8px)!important;min-width:0!important;
+}
+.game-viewport .tt6-dock-decision .tt7-prophecy-slot .card{
+ width:var(--tt7-card-width)!important;max-width:100%!important;
+}
+/* A normal eight-card draft fits without a horizontal scroll as well. */
+.game-viewport .tt28-draft-cards{container-type:inline-size;justify-content:center!important;overflow:hidden!important;touch-action:manipulation}
+.game-viewport .tt28-draft-cards>.card{
+ flex:0 0 min(72px,calc(var(--tt28-per-card) - 6px),calc((var(--tt6-dock-height) - 54px)/1.42))!important;
+ width:min(72px,calc(var(--tt28-per-card) - 6px),calc((var(--tt6-dock-height) - 54px)/1.42))!important;
+ min-width:0!important;max-width:none!important;
+}
+/* Small card-choice sets and incantations should fit instead of scrolling. */
+.game-viewport .tt6-dock-decision :is(.tt4-card-choices,.tt20-incantation-cards,.tt22-prem-options){overflow-x:hidden!important;overflow-y:hidden!important}
+
+/* Fit additional reordering/selection effects by their actual card count. */
+.game-viewport .tt6-dock-decision .tt20-incantation-cards{container-type:inline-size;justify-content:center!important;overflow:hidden!important}
+.game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards>:is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item){
+ box-sizing:border-box;flex:0 0 min(var(--tt26-panel-card),calc(var(--tt20-per-card) - 7px))!important;
+ width:min(var(--tt26-panel-card),calc(var(--tt20-per-card) - 7px))!important;min-width:0!important;max-width:none!important;
+}
+.game-viewport .tt6-dock-decision .tt22-prem-options{container-type:inline-size;justify-content:center!important;overflow:hidden!important}
+.game-viewport .tt6-dock-decision .tt22-prem-options>.tt22-prem-key{
+ box-sizing:border-box;flex:0 0 min(var(--tt26-panel-card),calc(var(--tt22-per-card) - 7px))!important;
+ width:min(var(--tt26-panel-card),calc(var(--tt22-per-card) - 7px))!important;
+ padding:1px!important;min-width:0!important;
+}
+.game-viewport .tt6-dock-decision .tt22-prem-options>.tt22-prem-key .card{width:100%!important;max-width:100%!important}
+/* Freeing reveals a catcher-sized group, not an infinitely scrolling deck. */
+.game-viewport .tt6-dock-decision .tt21-free-cards{
+ container-type:inline-size;display:flex!important;justify-content:center!important;
+ flex:0 1 auto;min-width:0;max-width:min(70vw,230px)!important;overflow:hidden!important;
+}
+.game-viewport .tt6-dock-decision .tt21-free-cards .card{
+ flex:0 1 min(var(--tt26-panel-card),calc(var(--tt21-per-card) - 4px))!important;
+ width:min(var(--tt26-panel-card),calc(var(--tt21-per-card) - 4px))!important;
+ min-width:0!important;max-width:100%!important;
+}
+.game-viewport .tt28-draft-cards{padding:2px 0!important}

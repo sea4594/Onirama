@@ -39,10 +39,10 @@ test('only the discard pile receives a visible outline, not its nested gesture b
  assert.match(css,/\[data-tt-drop="discard"\] \.tt6-pile-inspect\.tt9-discard-gesture:is\(:hover,:focus,:focus-visible,\.tt3-target-ready,\.tt3-drop-hover\)\{outline:0!important/);
  assert.match(text('public/tabletop/phase7c.css'),/\.tt2-pile\[data-tt-drop\]:has\(\.tt9-discard-gesture\)/);
 });
-test('dock is roughly 10 percent shorter, while height remains independent of active decisions',()=>{
+test('dock has its original full height, independent of active decisions',()=>{
  const css=text('public/tabletop/phase16.css');
- assert.match(css,/--tt6-dock-height:169px!important/);
- assert.match(css,/--tt6-dock-height:104px!important/);
+ assert.match(css,/--tt6-dock-height:188px!important/);
+ assert.match(css,/--tt6-dock-height:116px!important/);
  assert.match(text('public/tabletop/card-system.css'),/height:var\(--tt6-dock-height\)!important;max-height:var\(--tt6-dock-height\)!important/);
 });
 test('Parallel Planning keeps tabletop Goal selection and no longer repeats Door cards or shortage text in the dock',()=>{
