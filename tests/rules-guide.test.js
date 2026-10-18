@@ -6,8 +6,8 @@ import {renderOverlay} from '../public/game-overlay.js';
 const modules=['book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx','incubus'];
 test('all base, cooperative, expansions and promotional chapters use a single reference',()=>{
  assert.deepEqual(GUIDE_CHAPTERS.map(c=>c.id),['base','coop','book','glyphs','dreamcatchers','towers','premonitions','crossroads','oniverse','mirrors','sphinx','combinations','incubus']);
- assert.ok(GUIDE_CHAPTERS.reduce((n,c)=>n+c.entries.length,0)>=50);
- for(const c of GUIDE_CHAPTERS){assert.ok(c.entries.length>=2,c.id);for(const e of c.entries){assert.ok(e.title&&e.paragraphs.length&&e.paragraphs.every(p=>p.length>25),`${c.id}: ${e.title}`);assert.ok(e.cards.length>0,`${c.id}: ${e.title} missing illustration`);}}
+ assert.ok(GUIDE_CHAPTERS.reduce((n,c)=>n+c.entries.length,0)>=28);
+ for(const c of GUIDE_CHAPTERS){assert.ok(c.entries.length>=1,c.id);for(const e of c.entries){assert.ok(e.title&&e.paragraphs.length&&e.paragraphs.every(p=>p.length>25),`${c.id}: ${e.title}`);assert.ok(e.cards.length>0,`${c.id}: ${e.title} missing illustration`);}}
 });
 test('illustrations render real existing tabletop cards without adding new artwork or sensitive state',()=>{
  const result=guideCardStrip([{kind:'door',color:'red'},{kind:'nightmare'},{kind:'location',color:'blue',symbol:'key'}],'Example');

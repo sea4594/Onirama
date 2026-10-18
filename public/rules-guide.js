@@ -8,7 +8,7 @@ const D=color=>({kind:'door',color,expansion:color==='wild'?'oniverse':undefined
 const X=(kind,extra={})=>({kind,...extra});
 const T=(color,number,left,right)=>({kind:'tower',color,number,left,right});
 const entry=(title,paragraphs,bullets=[],cards=[],caption='')=>({title,paragraphs,bullets,cards,caption});
-export const GUIDE_CHAPTERS=[
+const SOURCE_GUIDE_CHAPTERS=[
  {id:'base',title:'Start here · Base game',subtitle:'Goal, components and your first turns',entries:[
   entry('The objective',['Find all eight oneiric Doors before the deck runs out. There are two of each color: red Observatory, blue Aquarium, green Garden and brown Library. The game ends immediately when you meet every active victory condition.'],['An expansion may add extra Doors or other goals.'],[D('red'),D('blue'),D('green'),D('brown')],'Four colors · two Doors each'),
   entry('Your hand & setup',['The basic deck has 76 cards: 58 Locations, 8 Doors and 10 Nightmares. Shuffle the deck, then draw until you have five Location cards. Temporarily set aside any Doors or Dreams you find; shuffle those back in after the opening hand is ready.'],['Locations: red 16, blue 15, green 14, brown 13.','There are three Location symbols: Sun (common), Moon and Key (rare).'],[L('red','sun'),L('blue','moon'),L('green','key'),X('nightmare')],'Location symbols and a Nightmare'),
@@ -95,6 +95,86 @@ export const GUIDE_CHAPTERS=[
   entry('True Dreamwalker',['Identical to Apprentice, except charging the Incubus requires finding and storing TWO Locations before taking the anticipated Nightmare penalty. Both stored Locations are spent to cancel a later Nightmare.'],[],[L('blue','sun'),L('green','moon'),X('nightmare')],'Stronger cost for the same protection')
  ]}
 ];
+
+// One illustrated, searchable topic per related rule set. Keep the original
+// facts as source entries, then combine adjacent fragments for the reader.
+const mergeRuleEntries=(title,parts,extra=[],cards=null,caption='')=>entry(
+ title,
+ parts.flatMap(part=>part.paragraphs),
+ [...parts.flatMap(part=>part.bullets),...extra],
+ cards||parts.flatMap(part=>part.cards).slice(0,5),
+ caption||parts[0].caption
+);
+const RULE_GROUPS={
+ base:[[[0]],[[1]],[[2,3]],[[4]],[[5]],[[6,7]],[[8,9]]],
+ coop:[[[0]],[[1,2]]],
+ book:[[[0]],[[1,2,3,4]]],
+ glyphs:[[[0,1]]],
+ dreamcatchers:[[[0,1]],[[2,3]]],
+ towers:[[[0,1]],[[2,3]]],
+ premonitions:[[[0,1,2]],[[3]]],
+ crossroads:[[[0]],[[1,2]]],
+ oniverse:[[[0,1]],[[2,3,4,5]]],
+ mirrors:[[[0,1]],[[2,3,4,5]]],
+ sphinx:[[[0]],[[1,2,3]]],
+ combinations:[[[0,1]],[[2,3]]],
+ incubus:[[[0]],[[1,2,3]]]
+};
+const GROUP_NAMES={
+ 'base:2':'Turn sequence & symbol restrictions',
+ 'base:5':'Drawing Doors, Nightmares & Limbo',
+ 'base:6':'Refilling, winning & losing',
+ 'coop:1':'Shared cards, turn rules & victory',
+ 'book:1':'The Spell Book: costs and all three spells',
+ 'glyphs:0':'Glyphs, the extra Doors & Incantation',
+ 'dreamcatchers:0':'Setup, Lost Dreams & catching Limbo',
+ 'dreamcatchers:1':'Freeing, Failsafes & overload',
+ 'towers:0':'Tower goals, alignment & placement',
+ 'towers:1':'Tower discards, Nightmares & hard mode',
+ 'premonitions:0':'All eight Dark Premonitions',
+ 'crossroads:1':'Dead Ends & Escape',
+ 'oniverse:0':'Oniverse Door setup & rallying Denizens',
+ 'oniverse:1':'All eight Denizen abilities',
+ 'mirrors:0':'Mirror setup, pairs & victory',
+ 'mirrors:1':'All nine Mirrors & their effects',
+ 'sphinx:1':'Sphinx, Diver & Confusion effects',
+ 'combinations:0':'Combining objectives and wildcards',
+ 'combinations:1':'Cooperative rulings & rare interactions',
+ 'incubus:1':'All three Incubus difficulty modes'
+};
+// Material details of the printed rules often omitted by shorter summaries.
+const RULE_DETAILS={
+ 'base:0':['All eight colored Doors must be on the table at the same time; previously acquired Doors can be lost to Nightmare and Premonition effects.'],
+ 'base:5':['A Nightmare offers four penalties: discard a Key; lose a gained Door; reveal and discard five cards (Dreams/Doors enter Limbo); or replace your whole hand.','A Nightmare’s five-card deck penalty does not activate revealed Dream cards; all revealed Doors and Dreams go to Limbo.'],
+ 'coop:1':['If a player already owns a Door of a color, Onirama returns further Doors of that color to Limbo. This is an app adjudication rather than an explicit additional rule in the printed two-player instructions.'],
+ 'book:1':['The printed rules allow spells at any time their effect is meaningful; Powerful Punishment specifically responds to a just-drawn Nightmare.','The two Goals swapped by Parallel Planning need not be adjacent. Spell costs are removed from the game, not shuffled back into the deck.'],
+ 'dreamcatchers:0':['Opening-hand Doors and Dreams are reshuffled normally; do not catch them in Dreamcatchers during setup.'],
+ 'dreamcatchers:1':['A Door may be taken directly from a Dreamcatcher without shuffling or freeing it, or sought in the deck. A failed deck search can still be followed by taking the matching Door from a catcher. The catcher that supplied the Door cannot itself be freed.','If the deck search succeeds, the Door must come from the deck rather than from a Dreamcatcher. A failed search still shuffles and can enable Freeing.','When overloaded, Onirama returns all stored cards to the deck, shuffles, and removes the rightmost surviving catcher (the printed rules do not prescribe which catcher to remove).'],
+ 'towers:0':['The four different colors must form an uninterrupted run in the Alignment.','An Alignment may include repeated colors, as long as a continuous group of four Towers—one of each color—exists.'],
+ 'premonitions:0':['The red two-Door effect excludes Tower cards. The separate two-identical-Doors warning removes one of those two same-colored Doors.','When additional Premonitions are revealed and are already triggered, resolve them immediately.'],
+ 'crossroads:0':['There are six Crossroads: three Sun, two Moon and one Key.'],
+ 'crossroads:1':['There are ten Dead Ends. A Key discarded as part of a whole-hand Escape does not separately initiate Prophecy.'],
+ 'oniverse:0':['The set contains sixteen Denizens: two of each of eight kinds. Remove eight unseen and shuffle only the remaining eight into the deck.','Denizens without a stated timing restriction need not wait for the usual play/discard step; reactive abilities only apply at their specified trigger.'],
+ 'oniverse:1':['Chromatic Chaos is optional and is spent when allowing an otherwise mismatched Door from a Key, deck search or Dreamcatcher.','The Keeper’s stored card can be played or discarded instead of a hand card even outside the turn on which it was stored.'],
+ 'mirrors:1':['On the Blue Mirror, choose from the discard before the four cards used to explore the Mirror enter the discard pile.'],
+ 'sphinx:1':['Sphinx may choose ANY of the five revealed cards to put on top if at least one card matched its announced condition; that chosen card need not itself match.'],
+ 'incubus:1':['Apprentice Dreamwalker stores one Location to protect against a future Nightmare; True Dreamwalker must store TWO Locations. New Dreamwalker has one immediate cancellation without charging.'],'combinations:1':['For combinations without an explicit publisher ruling, Onirama’s behavior is described as an app ruling, not an official rule.']
+};
+export const GUIDE_CHAPTERS=SOURCE_GUIDE_CHAPTERS.map(chapter=>{
+ const groups=RULE_GROUPS[chapter.id];
+ if(!groups)return chapter;
+ return {...chapter,entries:groups.map(([indices],i)=>{
+  const key=`${chapter.id}:${i}`,parts=indices.map(n=>chapter.entries[n]);
+  const title=GROUP_NAMES[key]||parts[0].title;
+  if(parts.length===1)return entry(title,parts[0].paragraphs,[...parts[0].bullets,...(RULE_DETAILS[key]||[])],parts[0].cards,parts[0].caption);
+  const illustrations=key==='oniverse:1'?['architect','cyclobot','squirrel','harpoon','hammer','chromatic','mirror','keeper'].map(ability=>X('denizen',{ability}))
+   :key==='mirrors:1'?['red','blue','green','brown','key','glyph','sun','moon','rainbow'].map(name=>X('mirror',{name}))
+   :key==='premonitions:0'?['red2','blue2','green2','brown2','pair2','doors5','rainbow4','doors3'].map(name=>X('premonition',{name}))
+   :null;
+  return mergeRuleEntries(title,parts,RULE_DETAILS[key]||[],illustrations,illustrations?title:'');
+ })};
+});
+
 const officialBase='https://cdn.1j1ju.com/medias/c0/ea/a9-onirim-rulebook.pdf';
 const officialExp='https://images.zmangames.com/filer_public/7f/c7/7fc752e5-1a46-408f-b9cc-db5196be46ee/en-onirim-rules_ext-1.pdf';
 const officialPromo='https://funmill.ru/images/rules/02768-2.pdf';
