@@ -25,6 +25,7 @@ test('Premonitions show effect-specific outcomes without reusing the same art',(
  const ids=['red2','green2','blue2','brown2','pair2','doors5','rainbow4','doors3'];
  assert.equal(new Set(ids.map(premonitionFace)).size,8);
  for(const name of ['return-nightmare-art','broken-key-art','broken-door-art','double-door-loss-art','redraw-hand-art','ban-dream-art'])assert.match(icon(name),/<svg[^>]*>[\s\S]*<\/svg>/);
- assert.match(premonitionFace('pair2'),/M3 21V8/);
- assert.match(premonitionFace('doors3'),/M18 7a6/);
+ assert.match(premonitionFace('pair2'),/data-premonition-trigger="pair2"/);
+ assert.match(premonitionFace('pair2'),/data-premonition-effect="lose-door"/);
+ assert.match(premonitionFace('doors3'),/data-premonition-effect="redraw-hand-and-reveal"/);
 });

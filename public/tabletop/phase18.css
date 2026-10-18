@@ -47,6 +47,10 @@
 .tt18-pm-door{opacity:.96}.tt18-pm-effect{opacity:.75;width:58%}
 .tt18-pm-door .ui-icon{stroke-width:2.3}.tt18-pm-effect .ui-icon{stroke-width:1.8}
 .tt18-pm-red2{color:#ffc3c8}.tt18-pm-green2{color:#bff3d2}.tt18-pm-blue2{color:#b8dafa}.tt18-pm-brown2{color:#f9d7a8}
+/* A single full-size, two-part pictogram replaces stacked tiny icons and pips.
+   Upper: trigger Doors. Lower: the consequence; identical red X = removal. */
+.tt18-pm-art .tt28-pm-diagram{display:block;width:100%;height:100%;min-height:0;overflow:visible;flex:none;stroke-linecap:round;stroke-linejoin:round}
+.tt18-pm-art .tt28-pm-diagram :is(.tt28-pm-condition,.tt28-pm-consequence){pointer-events:none}
 .game-viewport .tt5-premonition{background:linear-gradient(165deg,#604b70,#29283f)!important;border:1px solid #ba98d5!important}
 .game-viewport .tt5-premonition .tt5-pm-face{width:100%;height:100%;flex:1;min-height:0;font-size:inherit!important;overflow:hidden}
 .game-viewport .tt5-premonition .tt5-pm-face .tt18-pm-art{width:100%;height:100%;padding:2px 0 1px}

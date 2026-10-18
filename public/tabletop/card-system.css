@@ -47,6 +47,25 @@
 }
 .game-viewport .tt8-door-slot.wild.tt8-door-complete{background:conic-gradient(from 30deg,var(--red),var(--blue),var(--green),var(--brown),var(--red));padding:2px;box-shadow:0 0 0 1px #f4deab,0 0 10px #edda9c80}
 .game-viewport .tt8-door-slot.wild.tt8-door-complete .card.card-oniverse{border:2px solid #fff4ce!important;box-shadow:inset 0 0 0 2px #ffffff66}
+/* Empty Doors are clearly color-coded in their entire body (including the
+   diamond), but remain subdued relative to the full-face obtained Doors. */
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty:is(.red,.blue,.green,.brown){
+ --tt28-door-color:var(--table-gold);
+ color:var(--tt28-door-color)!important;
+ background:linear-gradient(155deg,color-mix(in srgb,var(--tt28-door-color) 38%,#253343),color-mix(in srgb,var(--tt28-door-color) 16%,#192537))!important;
+ border:1px solid color-mix(in srgb,var(--tt28-door-color) 68%,#87919f)!important;
+ opacity:.94!important;
+}
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty.red{--tt28-door-color:var(--red)}
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty.blue{--tt28-door-color:var(--blue)}
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty.green{--tt28-door-color:var(--green)}
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty.brown{--tt28-door-color:var(--brown)}
+.game-viewport .tt8-door-slot:not(.tt8-door-complete) .tt8-door-empty:is(.red,.blue,.green,.brown) .ui-icon{
+ color:var(--tt28-door-color)!important;
+ width:66%;height:66%;
+ fill:currentColor;fill-opacity:.2;
+ stroke:currentColor;stroke-width:2.1;
+}
 /* A held card can be long-pressed to inspect its rules, independently of the catcher button. */
 .game-viewport .tt5-catcher .tt14-held-card .card{pointer-events:auto;touch-action:manipulation}
 .game-viewport .tt5-catcher.tt-search-free-eligible{outline:3px solid #f9d986!important;outline-offset:-2px!important;box-shadow:none!important;filter:none!important;animation:none!important}
