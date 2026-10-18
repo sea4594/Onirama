@@ -36,9 +36,9 @@ test('pile inventories show card pictures plus zero-inclusive counts, never text
 });
 test('compact status strings do not include unnecessary directions',()=>{
  const g=viewFor(newGame({seed:48}),0);g.phase='decision';g.pending={type:'nightmare'};
- assert.equal(actionDockPrompt(g,0).title,'Nightmare!');
+ assert.equal(actionDockPrompt(g,0).title,'Nightmare: choose a penalty');
  const html=renderActionDock(g,0,{dialog:{type:'nightmare',html:'<button>Reveal 5</button>'}});
- assert.match(html,/Nightmare!/);assert.doesNotMatch(html,/Choose from the options|official penalties|unavailable resources/);
+ assert.match(html,/Nightmare: choose a penalty/);assert.doesNotMatch(html,/Choose from the options|official penalties|unavailable resources/);
 });
 test('free Dreamcatcher placement happens automatically; only overload requires choosing',()=>{
  const source=readFileSync('engine/game.js','utf8');assert.match(source,/if\(empty\.length\)\{const i=empty\[0\]/);

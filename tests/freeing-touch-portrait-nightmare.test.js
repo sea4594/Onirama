@@ -17,8 +17,8 @@ test('Every optional Dreamcatcher Freeing step uses the same complete dock title
   assert.match(html,/<strong role="status">Free a dreamcatcher\?<\/strong>/);
   assert.doesNotMatch(html,/<strong role="status">(?:Door|Spellbook)<\/strong>/);
  }
- assert.equal(actionDockPrompt(game(),0,{dialog:{type:'doorSearch',freeing:false}}).title,'Door');
- assert.equal(actionDockPrompt(game(),1,{dialog:{type:'doorSearch',freeing:true}}).title,'Partner resolving');
+ assert.equal(actionDockPrompt(game(),0,{dialog:{type:'doorSearch',freeing:false}}).title,'Retrieve a Door');
+ assert.equal(actionDockPrompt(game(),1,{dialog:{type:'doorSearch',freeing:true}}).title,'Waiting for partner');
  assert.equal((app.match(/<p>Free a dreamcatcher\?<\/p>/g)||[]).length,2);
  assert.doesNotMatch(app,/Trigger a freeing\?/);
  assert.match(app,/freeing:g\.pending\.type==='doorSearch'&&Boolean\(doorSearchIntent\)/);

@@ -68,7 +68,7 @@ test('Failsafe can be selected only with an active occupied catcher and consumes
  d.zones.catch1.push(take(s,c=>c.kind==='lostDream'));
  assert(legalActions(s).some(a=>a.type==='freeCatcher'&&a.choices.includes(1)));
  dock=renderActionDock(viewFor(s,0),0);assert.match(dock,/data-action="failsafeStart"/);assert.doesNotMatch(dock,/tt23-failsafe-urgent/);
- dock=renderActionDock(viewFor(s,0),0,{failsafeChoosing:true});assert.match(dock,/Choose a Dreamcatcher/);assert.match(dock,/Tap an outlined/);assert.match(dock,/failsafeCancel/);
+ dock=renderActionDock(viewFor(s,0),0,{failsafeChoosing:true});assert.match(dock,/Failsafe: choose a Dreamcatcher/);assert.match(dock,/Tap an outlined/);assert.match(dock,/failsafeCancel/);
  assert.throws(()=>act(s,{type:'freeCatcher',index:0}),/occupied/);
  const serial=s.shuffleSerial||0,n=act(s,{type:'freeCatcher',index:1});assertConserved(n);
  assert.equal(n.moduleState.dreamcatchers.failsafes,1);assert.equal(n.moduleState.dreamcatchers.zones.catch1.length,0);assert.equal(n.shuffleSerial,serial+1);

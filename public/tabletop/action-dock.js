@@ -3,34 +3,83 @@ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 import {renderCard} from './cards.js';
 import {icon} from '../icons.js';
 import {premonitionFace} from './expansions.js';
-const step={sphinxName:'Sphinx',sphinxResolve:'Sphinx',diver:'Diver',confusion:'Confusion',mirrorReward:'Mirror',doorSearch:'Door',door:'Door!',nightmare:'Nightmare!',prophecy:'Prophecy',happyDream:'Happy Dream!',happyFetch:'Search',rally:'Denizen',premonitionPick:'Premonitions',premonitionDoor:'Lose a Door',premonitionKeys:'Discard Keys',premonitionNightmare:'Return a Nightmare',incantation:'Incantation',towerLook:'Towers',spellPeek:'Prophecy',happyPeek:'Happy Dream',denizenPeek:'Denizen',catchChoose:'Dreamcatcher',catchOverload:'Overload!',towerPenalty:'Choose a Tower',moduleDecision:'Effect'};
+// The dock title describes the CURRENT PLAYER ACTION, not merely the card/effect name.
+// Keep headings short: the controls and card inspector provide the full rules text.
+const decisionTitles={
+ sphinxName:'Sphinx: name an aspect',
+ sphinxResolve:'Sphinx: arrange revealed cards',
+ diver:'Diver: reveal or stop',
+ confusion:'Confusion: reorder your hand',
+ doorSearch:'Retrieve a Door',
+ door:'Drawn Door: use a Key?',
+ nightmare:'Nightmare: choose a penalty',
+ prophecy:'Prophecy: choose a discard',
+ happyDream:'Happy Dream: choose an effect',
+ happyFetch:'Happy Dream: choose a card',
+ rally:'Rally a Denizen: choose a card',
+ premonitionPick:'Choose a Dark Premonition',
+ premonitionDoor:'Dark Premonition: remove a Door',
+ premonitionKeys:'Dark Premonition: discard Keys',
+ premonitionNightmare:'Dark Premonition: return a Nightmare',
+ incantation:'Incantation: arrange cards',
+ incantationOrder:'Incantation: arrange remaining cards',
+ towerLook:'Tower: arrange revealed cards',
+ spellPeek:'Paradoxical Prophecy: choose a card',
+ happyPeek:'Happy Dream: discard and arrange',
+ denizenPeek:'Reorder revealed cards',
+ catchChoose:'Catch the Limbo cards',
+ catchOverload:'Overload!',
+ towerPenalty:'Choose a Tower',
+ moduleDecision:'Choose an effect',
+ coopSwap:'Swap cards or pass',
+ drawReady:'Draw a card',
+ drawn:'Continue drawing'
+};
 export const DOCK_PENDING_TYPES=PENDING_DECISIONS;
-export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null,failsafeChoosing=false}={}){
+export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDiscard=null,dialog=null,failsafeChoosing=false,nightChoice=null,happyBanishMode=false,doorSearchChromatic=false}={}){
  if(game.status==='won')return {title:'You escaped the dream!',hint:''};
  if(game.status!=='active')return {title:'Game over',hint:''};
  if(dialog?.freeing&&seat===game.active)return {title:'Free a dreamcatcher?',hint:''};
- if(game.phase==='turnComplete')return {title:seat===game.active?'Turn complete':'Waiting for partner',hint:''};
- if(game.phase==='draft')return {title:seat===game.active?'Draft':'Partner drafting',hint:''};
- if(game.phase==='refill')return {title:'Draw',hint:''};
+ if(game.phase==='turnComplete'&&seat!==game.active)return {title:'Waiting for partner',hint:''};
+ if(game.phase==='draft')return {title:seat===game.active?'Draft a card':'Partner drafting',hint:''};
+ if(game.phase==='refill')return {title:seat===game.active?'Draw a card':'Partner drawing',hint:''};
+ if(seat!==game.active)return {title:'Waiting for partner',hint:''};
+ // Optional and interrupting actions take precedence over the suspended decision.
+ if(dialog?.title)return {title:dialog.title,hint:''};
+ if(dialog?.type==='spellbook')return {title:'Book of Steps: cast a spell',hint:''};
+ if(dialog?.type==='denizen')return {title:'Use a Denizen?',hint:''};
+ if(dialog?.type==='mirrorPair')return {title:'Mirror: choose two cards',hint:''};
+ if(dialog?.type==='cyclobot')return {title:'Cyclobot: choose a Location',hint:''};
+ if(game.phase==='turnComplete')return {title:'End your turn',hint:''};
  if(game.phase==='decision'){
-  if(seat!==game.active)return {title:'Partner resolving',hint:''};
-  if(dialog?.type==='spellbook')return {title:'Spellbook',hint:''};
-  const type=game.pending?.type||'';
-  if(type==='coopSwap')return {title:'Swap cards',hint:''};
-  if(type==='drawReady')return {title:'Draw',hint:''};
-  if(type==='drawn')return {title:'Drawn',hint:''};
-  if(type==='incantation')return {title:game.pending.cards?.some(c=>c.kind==='door')?'Incantation: choose a Door':'Incantation: arrange cards',hint:''};
-  if(type==='incantationOrder')return {title:'Incantation: arrange remaining cards',hint:''};
-  return {title:type==='prophecy'&&prophecyDiscard?'Prophecy · order':'Prophecy'===step[type]?'Prophecy · discard':step[type]||'Resolve',hint:''};
+  const p=game.pending||{},type=p.type||'';
+  if(type==='nightmare'&&nightChoice==='key')return {title:'Nightmare: discard a Key',hint:''};
+  if(type==='nightmare'&&nightChoice==='door')return {title:'Nightmare: remove a Door',hint:''};
+  if(type==='prophecy'&&prophecyDiscard)return {title:'Prophecy: arrange remaining cards',hint:''};
+  if(type==='doorSearch'&&doorSearchChromatic)return {title:'Chromatic Chaos: choose a Door',hint:''};
+  if(type==='happyDream'&&happyBanishMode)return {title:'Happy Dream: remove a Premonition',hint:''};
+  if(type==='incantation'&&p.cards?.some(c=>c.kind==='door'))return {title:'Incantation: choose a Door',hint:''};
+  if(type==='diver'&&p.cards?.at(-1)?.kind==='nightmare')return {title:'Diver: resolve a Nightmare',hint:''};
+  if(type==='sphinxResolve'&&p.aspect&&Array.isArray(p.cards)){
+   const matched=p.cards.some(c=>['red','blue','green','brown'].includes(p.aspect)?c.color===p.aspect||c.color==='wild':c.symbol===p.aspect);
+   return {title:matched?'Sphinx: choose a top card':'Sphinx: return cards to bottom',hint:''};
+  }
+  if(type==='denizenPeek')return {title:p.place==='bottom'?'Harpoon Hunter: arrange cards':'Squirrel Spies: arrange cards',hint:''};
+  if(type==='premonitionKeys'&&Number.isInteger(p.count))return {title:`Dark Premonition: discard ${p.count} ${p.count===1?'Key':'Keys'}`,hint:''};
+  if(type==='mirrorReward'){
+   const mirror=String(p.mirror||'').toLowerCase();
+   const action=['brown','glyph','key'].includes(mirror)?'choose Doors':'choose cards';
+   const label=mirror?`${mirror[0].toUpperCase()}${mirror.slice(1)} Mirror`:'Mirror';
+   return {title:`${label}: ${action}`,hint:''};
+  }
+  return {title:decisionTitles[type]||'Choose an action',hint:''};
  }
- if(seat!==game.active)return {title:`${game.players[game.active]?.name||'Partner'}’s turn`,hint:''};
- if(dialog)return {title:dialog.type==='mirrorPair'?'Mirror':dialog.type==='cyclobot'?'Cyclobot':'Spellbook',hint:''};
- if(failsafeChoosing)return {title:'Choose a Dreamcatcher',hint:''};
+ if(failsafeChoosing)return {title:'Failsafe: choose a Dreamcatcher',hint:''};
  return {title:'Play or discard',hint:''};
 }
 const button=(label,action)=>`<button type="button" data-action="${escape(action)}" class="tt6-dock-button">${escape(label)}</button>`;
-export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false}={}){
- const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing});
+export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false,nightChoice=null,happyBanishMode=false,doorSearchChromatic=false}={}){
+ const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic});
  let controls='';
  if(game.phase==='draft'&&game.status==='active'){controls=`<div class="tt28-draft-cards" style="--tt28-per-card:${(100/Math.max(1,game.draft?.length||0)).toFixed(5)}cqw" aria-label="Draft cards">${(game.draft||[]).map(c=>renderCard(c,{select:seat===game.active})).join('')}</div>`;}
  if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');

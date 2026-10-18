@@ -376,7 +376,8 @@ function denizenWorkspace(g){
  else if(stage==='pick')content=`<p>Select a ${a==='keeper'?'card to store':a==='architect'?'Location to play':'Location to exchange'}.</p><div class="tt22-denizen-choices">${eligible.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenCard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
  else if(stage==='discard')content=`<p>Select the Location to take from the discard pile.</p><div class="tt22-denizen-choices">${g.discard.filter(c=>c.kind==='location').map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenDiscard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
  else if(stage==='chromaticKey')content=`<p>Choose a differently colored Key to claim the Door.</p><div class="tt22-denizen-choices">${chromaticKeys.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenChromaticKey:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
- return {type:'denizen',key:`denizen:${d.id}:${stage}`,html:`<section class="decision tt22-denizen-dialog">${content}</section>`};
+ const title=stage==='confirm'?'Use this Denizen?':stage==='chromaticKey'?'Chromatic Chaos: choose a Key':stage==='discard'?'Cyclobot: choose a replacement':a==='keeper'?'Keeper: choose a card to store':a==='architect'?'Architect: choose a Location':'Choose a Location';
+ return {type:'denizen',title,key:`denizen:${d.id}:${stage}`,html:`<section class="decision tt22-denizen-dialog">${content}</section>`};
 }
 function contextualDialog(g,room){
  if(g.status!=='active'||!['action','decision','turnComplete'].includes(g.phase)||room.seat!==g.active)return null;
@@ -392,7 +393,7 @@ function contextualDialog(g,room){
   return {type:'cyclobot',key:`context:cyclobot:${cyclobotTarget}`,html};
  }
  if(spellOpen&&e.book){
-  return {type:'spellbook',key:'context:spellbook',html:renderSpellbook(g,{choice:spellChoice,selectedGoals:spellGoals})};
+  return {type:'spellbook',title:spellChoice==='parallel'?'Parallel Planning: choose two Goals':spellChoice==='paradox'?'Paradoxical Prophecy: cast spell':'Powerful Punishment: cast spell',key:'context:spellbook',html:renderSpellbook(g,{choice:spellChoice,selectedGoals:spellGoals})};
  }
  return null;
 }
@@ -440,7 +441,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const errorMessage=error?`<div class="shell-notice-layer" data-notice-backdrop><section class="shell-notice-dialog" role="alertdialog" aria-modal="true" aria-label="Information" tabindex="-1"><p>${escape(error)}</p>${btn('OK','clearError','primary')}</section></div>`:'';
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
-  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing}):''):'';
+  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic}):''):'';
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
