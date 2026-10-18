@@ -7,9 +7,9 @@ const app=file('public/app.js'),css=file('public/tabletop/card-system.css');
 const dock=(pending)=>renderActionDock({phase:'decision',status:'active',active:0,players:[{hand:[]}],pending},0,{dialog:{type:'decision',html:'<section class="decision"><button>Confirm</button></section>'}});
 
 test('Phase 8: drawn-Door/Key choice keeps its own large left-side preview, without altering three-Location search',()=>{
- assert.match(app,/if\(p\.type==='door'\)return `<section class="decision tt25-drawn-door-decision">/);
+ assert.match(app,/if\(p\.type==='door'\)\{const label=drawnDoorSpendsChromatic\(g\)/);
  assert.match(app,/class="tt25-drawn-door-preview" data-action="useKey:gain"/);
- assert.match(app,/class="tt25-drawn-door-actions">\$\{btn\('Use Key','useKey:gain','primary'\)\}\$\{btn\('Pass','useKey:limbo'\)\}/);
+ assert.match(app,/class="tt25-drawn-door-actions">\$\{btn\(label,'useKey:gain','primary'\)\}\$\{btn\('Pass','useKey:limbo'\)\}/);
  assert.match(app,/if\(p\.type==='doorSearch'\)return doorSearchDecision\(g,p\)/);
  assert.match(css,/\.tt25-drawn-door-decision\{display:grid!important;grid-template-columns:minmax\(0,clamp\(70px,22vw,92px\)\) minmax\(0,1fr\)/);
  assert.match(css,/\.tt25-drawn-door-preview>\.card\{width:100%!important/);

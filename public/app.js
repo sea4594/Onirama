@@ -208,6 +208,14 @@ function pagedCards(items,renderOne,pageSize=3){
 function orderSlice(ids){const page=Math.min(choicePage,Math.max(0,Math.ceil(ids.length/4)-1));return {visible:ids.slice(page*4,(page+1)*4),offset:page*4,pages:Math.max(1,Math.ceil(ids.length/4)),page};}
 function orderPages(ids){const {page,pages}=orderSlice(ids);return pages>1?`<div class="tt7-page-actions"><button data-action="choicePrev" ${page===0?'disabled':''} aria-label="Previous cards">‹</button><small>${page+1}/${pages}</small><button data-action="choiceNext" ${page===pages-1?'disabled':''} aria-label="Next cards">›</button></div>`:'';}
 function handAndShared(g){return [...g.players[g.active].hand,...(g.mode==='coop'?g.shared:[]),...(g.expansion?.oniverse?.treasure||[]).filter(c=>g.mode==='solo'||c.owner===g.active)];}
+// The displayed key action and the dispatched key choice must agree.
+function defaultDoorKey(g){
+ const pending=g.pending;if(pending?.type!=='door')return null;
+ const available=handAndShared(g);
+ const rank=c=>pending.card.color==='wild'?(c.color==='wild'?1:0):(c.color===pending.card.color?0:c.color==='wild'?1:2);
+ return (pending.keys||[]).map(k=>available.find(c=>c.id===k.id)).filter(Boolean).sort((a,b)=>rank(a)-rank(b))[0]||null;
+}
+function drawnDoorSpendsChromatic(g){const key=defaultDoorKey(g),door=g.pending?.card;return Boolean(key&&door&&door.color!=='wild'&&key.color!=='wild'&&key.color!==door.color);}
 function eligibleDecisionCards(g){
  const ids=new Set();if(!g||g.status!=='active'||state?.room?.paused||state?.room?.seat!==g.active)return ids;
  const p=g.pending||{},cards=handAndShared(g);
@@ -307,7 +315,7 @@ function decision(g,canAct){
   if(p.type==='mirrorReward')return `<section class="decision stack"><h2>${escape(p.mirror)} Mirror reward</h2>${p.mirror==='key'?`<label>Door color <select id="mirrorColor" class="inline-input">${COLOR.map(c=>`<option>${c}</option>`).join('')}</select></label>`:''}${pagedCards(p.options,c=>`<label class="tt4-card-option"><input type="checkbox" data-mirror-choice="${escape(c.id)}" ${mirrorSelection.has(c.id)?'checked':''}>${card(c,{tiny:true})}</label>`)}${btn('Confirm','mirrorRewardConfirm','primary')}</section>`;
   if(p.type==='doorSearch')return doorSearchDecision(g,p);
 
-  if(p.type==='door')return `<section class="decision tt25-drawn-door-decision"><button type="button" class="tt25-drawn-door-preview" data-action="useKey:gain" aria-label="Gain ${escape(p.card.color==='wild'?'Door to the Oniverse':p.card.color+' Door')}">${card(p.card)}</button><div class="tt25-drawn-door-actions">${btn('Use Key','useKey:gain','primary')}${btn('Pass','useKey:limbo')}</div></section>`;
+  if(p.type==='door'){const label=drawnDoorSpendsChromatic(g)?'Chromatic Chaos + Key':'Use Key';return `<section class="decision tt25-drawn-door-decision"><button type="button" class="tt25-drawn-door-preview" data-action="useKey:gain" aria-label="${escape(label)} to gain ${escape(p.card.color==='wild'?'Door to the Oniverse':p.card.color+' Door')}">${card(p.card)}</button><div class="tt25-drawn-door-actions">${btn(label,'useKey:gain','primary')}${btn('Pass','useKey:limbo')}</div></section>`;}
   if(p.type==='nightmare'){
     const keys=handAndShared(g).filter(c=>c.symbol==='key'),doors=g.players[g.active].doors;
     const option=(name,id,enabled,chosen=false)=>`<button type="button" data-tt-card-info="${escape(JSON.stringify({kind:'nightmarePenalty',option:name}))}" class="tt7-option ${chosen?'tt7-option-active':''}" data-action="${id}" aria-disabled="${!enabled}" aria-pressed="${chosen}">${name}</button>`;
@@ -741,7 +749,7 @@ async function handle(actionName){
     }
     if(mode==='claim')return action({type:'doorSearch',option:'claim',doorId:id});
   }
-  if(actionName==='useKey:gain'){const pending=g.pending,hand=[...g.players[g.active].hand,...(g.shared||[])];const best=pending?.keys?.map(k=>hand.find(c=>c.id===k.id)).filter(Boolean).sort((a,b)=>{const rank=c=>pending.card.color==='wild'?(c.color==='wild'?1:0):(c.color===pending.card.color?0:c.color==='wild'?1:2);return rank(a)-rank(b);})[0];if(!best)return setError('No eligible Key to claim this Door.');return action({type:'chooseDoor',keyId:best.id});}
+  if(actionName==='useKey:gain'){const best=defaultDoorKey(g);if(!best)return setError('No eligible Key to claim this Door.');return action({type:'chooseDoor',keyId:best.id});}
   if(actionName.startsWith('useKey:'))return action({type:'chooseDoor',keyId:actionName.slice(7)});
   if(actionName.startsWith('nightKey:'))return action({type:'nightmare',option:'key',cardId:actionName.slice(9)});
   if(actionName.startsWith('nightDoor:'))return action({type:'nightmare',option:'door',cardId:actionName.slice(10)});

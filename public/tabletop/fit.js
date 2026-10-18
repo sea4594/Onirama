@@ -123,10 +123,9 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
  let zoom=1;
  if(table.scrollHeight>height){zoom=clamp((height-1)/table.scrollHeight,.5,1);table.style.width=`${width/zoom}px`;overlapRows(table);fitTiles(table);zoom=Math.min(zoom,(height-1)/table.scrollHeight);table.style.transform=`scale(${zoom})`;}
  else {table.style.height=`${height}px`;}
- // Widening an oversized cooperative board can reduce its measured content height.
- // Keep its flex layout stretched to the entire tabletop slot after the scale is
- // applied, rather than leaving a blank strip above the fixed action panel.
- if(mode==='coop'&&zoom<1&&table.scrollHeight<height/zoom){
+ // A resized solo or co-op board must still reach the action panel.
+ // Scaling can otherwise leave an intermittent gap beneath the hand.
+ if(zoom<1&&table.scrollHeight<height/zoom){
   table.style.height=`${height/zoom}px`;
  }
  overlapRows(table);fitTiles(table);
