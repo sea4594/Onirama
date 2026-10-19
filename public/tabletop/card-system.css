@@ -643,3 +643,21 @@
  width:52%!important;height:auto!important;aspect-ratio:1 / 1!important;
  max-height:60%!important;margin:0!important;place-self:center!important
 }
+
+/* A hand slot defines card height, not its contents. Tower faces contain
+   full-height artwork; sizing only the inner .card allowed that artwork to
+   affect the flex row in some render states. All hand slots use the same
+   portrait rectangle, including before/after selection and during handoff. */
+.game-viewport .tt2-root .tt2-hand-row>.tt2-hand-card,
+.game-viewport .tt2-root .tt6-hand-block:not(.tt6-shared-block) .tt6-hand-cards>.tt6-card-wrap{
+ box-sizing:border-box!important;aspect-ratio:1 / 1.42!important;
+ height:auto!important;min-height:0!important;align-self:center!important;
+}
+.game-viewport .tt2-root .tt2-hand-row>.tt2-hand-card>.card,
+.game-viewport .tt2-root .tt6-hand-block:not(.tt6-shared-block) .tt6-hand-cards>.tt6-card-wrap>.card{
+ box-sizing:border-box!important;display:flex!important;
+ width:100%!important;height:100%!important;
+ min-width:0!important;min-height:0!important;
+ max-width:100%!important;max-height:100%!important;
+ aspect-ratio:1 / 1.42!important;
+}
