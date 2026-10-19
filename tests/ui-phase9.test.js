@@ -20,7 +20,8 @@ test('the only game boards are solo and cooperative; legacy panels cannot resurf
 test('the released shell retains no-login Firebase multiplayer and a current commit',()=>{
  assert.match(source,/firebase\.firebaseAction\(/);
  assert.match(source,/firebase\.joinFirebaseRoom\(/);
- assert.match(source,/BUILD_COMMIT\.slice\(0,8\)/);
+ assert.match(source,/commit:BUILD_COMMIT/);
+ assert.match(readFileSync('public/game-overlay.js','utf8'),/commit\.slice\(0,8\)/);
  assert.match(source,/9 of 9/);
  assert.doesNotMatch(source,/renderDoors\(/);
 });

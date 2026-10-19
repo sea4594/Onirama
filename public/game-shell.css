@@ -79,3 +79,26 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 /* Drag sources retain pointer capture; other controls suppress double-tap zoom. */
 #app .game-viewport [data-tt-card]{touch-action:none!important}
+
+/* The pause window uses the same semantic palette as the current app theme. */
+.game-menu-layer{
+ --overlay-panel:var(--ui-panel);
+ --overlay-soft:var(--ui-soft);
+ --overlay-soft-hover:color-mix(in srgb,var(--ui-soft) 78%,var(--ui-text));
+ --overlay-text:var(--ui-text);
+ --overlay-muted:var(--ui-muted);
+ --overlay-border:var(--ui-border);
+ --overlay-primary:var(--ui-accent);
+ --overlay-primary-hover:color-mix(in srgb,var(--ui-accent) 83%,var(--ui-text));
+ --overlay-input:var(--ui-bg);
+}
+.game-menu-dialog button.primary{color:var(--ui-bg)}
+.game-menu-dialog .game-menu-close{color:var(--overlay-text)}
+/* There is only one scroll container: the full-height menu content area. */
+.game-menu-dialog .tt9-action-log{max-height:none;overflow:visible;overscroll-behavior:auto}
+.game-menu-dialog .game-menu-history{min-height:0;overflow:visible}
+/* Use the same Settings controls/spacing as the main page, without a nested route width. */
+.game-menu-settings-fields .shell-settings-body{padding:0;width:100%;max-width:none}
+.game-menu-settings-fields .shell-settings-meta{margin-top:0}
+.game-menu-dialog .shell-settings-footer .shell-link{width:100%;text-align:left;background:transparent;color:var(--ui-text);border:0;border-radius:0;border-bottom:1px solid var(--ui-border)}
+.game-menu-dialog .shell-settings-footer .shell-link:hover{background:var(--ui-soft)}

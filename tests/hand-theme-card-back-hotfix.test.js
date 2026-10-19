@@ -8,7 +8,8 @@ const app=readFileSync('public/app.js','utf8');
 const css=readFileSync('public/tabletop/card-system.css','utf8');
 test('Moonlit appears first in theme selection and remains the new-install default',()=>{
  assert.match(app,/THEME_PRESETS=\[\{id:'moonlit',name:'Moonlit'\},\{id:'forest',name:'Forest'\}/);
- assert.match(app,/THEME_PRESETS\.map\(t=>\[t\.id,t\.name\]\)/);
+ assert.match(app,/renderSettingsContents\(\{\.\.\.uiSettings,themes:THEME_PRESETS,commit:BUILD_COMMIT\}\)/);
+ assert.match(readFileSync('public/game-overlay.js','utf8'),/themes\.map\(t=>\[t\.id,t\.name\]\)/);
  assert.match(app,/raw\.theme:'moonlit'/);
  assert.match(app,/THEME_PRESETS\.some\(p=>p\.id===raw\.theme\)\?raw\.theme/);
 });

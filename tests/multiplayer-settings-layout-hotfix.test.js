@@ -29,8 +29,10 @@ test('co-op portrait layout has no space-between rows; premonitions follow doors
 test('settings and rules remove obsolete shortcuts but retain searchable rules and tutorial',()=>{
  const app=read('public/app.js'),css=read('public/shell.css'),rules=renderRulesReference();
  assert.match(app,/shell-settings-tabs/);
- assert.match(app,/shell-settings-commit/);
- assert.match(app,/History & statistics/);
+ assert.match(app,/renderSettingsContents/);
+ const settingsView=read('public/game-overlay.js');
+ assert.match(settingsView,/shell-settings-commit/);
+ assert.match(settingsView,/History &amp; statistics/);
  assert.match(app,/data-action="tutorial">Guided tutorial/);
  assert.doesNotMatch(rules,/Complete base rules, co-op play|guide-chapter-nav/);
  assert.match(rules,/data-guide-search/);

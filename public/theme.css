@@ -60,7 +60,7 @@ body{background:var(--table-background)}
 .tt2-root .tt2-pill{background:var(--table-gold);color:var(--table-ink)}
 .tt2-zone,.tt6-player,.tt6-hand-block,.tt6-piles,.tt6-draft{border-color:var(--table-line);background:var(--table-zone)}
 .tt5-zone{border-color:var(--table-line)}
-.game-menu-dialog button.primary{color:#fff}
+.game-menu-dialog button.primary{color:var(--ui-bg)}
 .game-menu-dialog .game-menu-home{color:var(--overlay-primary)}
 /* Non-emoji inline SVG icon system; UI icon scale follows the surrounding font. */
 .ui-icon{display:inline-block;width:1.2em;height:1.2em;flex:none;vertical-align:-.2em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

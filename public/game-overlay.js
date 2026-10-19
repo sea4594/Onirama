@@ -38,20 +38,30 @@ export function renderActionHistory(log=[]){
   };
   return `<details class="game-menu-history" data-pause-history open><summary>Action log <small>${entries.length}</small></summary><ol class="tt9-action-log" aria-label="Previous game actions">${entries.map(item).join('')||'<li>No actions yet</li>'}</ol></details>`;
 }
+// Shared by the main Settings page and the in-game Settings tab.
+export function renderSettingsContents({theme='moonlit',motion='normal',themes=[],commit=null}={}){
+  const options=(key,choices)=>choices.map(([value,label])=>`<option value="${value}"${(key==='theme'?theme:motion)===value?' selected':''}>${escape(label)}</option>`).join('');
+  const field=(id,label,key,choices)=>`<label class="shell-setting"><span>${label}</span><select class="inline-input" id="${id}" data-setting="${key}" aria-label="${label}">${options(key,choices)}</select></label>`;
+  const revision=/^[a-f0-9]{40}$/.test(commit||'')?`<a href="https://github.com/sea4594/Onirama/commit/${commit}" target="_blank" rel="noopener noreferrer" title="${commit}" class="commit-sha"><code>${commit.slice(0,8)}</code></a>`:'local';
+  return `<div class="shell-settings-meta"><span class="shell-settings-commit">commit: ${revision}</span></div>
+    <section class="shell-card shell-settings"><h2 class="shell-section-title">Appearance</h2>
+      ${field('themeChoice','Theme','theme',themes.map(t=>[t.id,t.name]))}
+      ${field('motionChoice','Animations','motion',[['normal','On'],['reduced','Reduced motion']])}
+    </section>
+    <div class="shell-settings-footer"><button type="button" data-action="history" class="shell-link">History &amp; statistics</button></div>`;
+}
 export function renderOverlay(kind,expansions=[],coop=false,settings={}){
   if(!['pause','rules'].includes(kind))return '';
   const active=['log','settings','rules'].includes(settings.tab)?settings.tab:(kind==='rules'?'rules':'log');
-  const options=(key,items)=>items.map(([value,label])=>`<option value="${value}"${settings[key]===value?' selected':''}>${label}</option>`).join('');
-  const field=(key,label,items)=>`<label class="game-menu-setting"><span>${label}</span><select class="inline-input" data-setting="${key}" aria-label="${label}">${options(key,items)}</select></label>`;
   const tabs=['log','settings','rules'].map(tab=>`<button type="button" class="game-menu-tab ${active===tab?'is-active':''}" role="tab" id="game-menu-tab-${tab}" aria-controls="game-menu-panel-${tab}" aria-selected="${active===tab}" data-action="gameMenuTab:${tab}">${tab==='log'?'Log':tab==='settings'?'Settings':'Rules'}</button>`).join('');
-  const settingsFields=field('theme','Theme',(settings.themes||[{id:'forest',name:'Forest'}]).map(p=>[p.id,p.name]))+field('motion','Animations',[['normal','On'],['reduced','Reduced motion']]);
+  const settingsFields=renderSettingsContents(settings);
   const actions=`<footer class="game-menu-footer"><button type="button" data-action="gameGoHome" class="primary">Exit game</button>${settings.multiplayer?`<div class="game-room-actions"><button type="button" data-action="leaveRoom">Leave game</button>${settings.host?'<button type="button" data-action="endRoom">End game for both</button>':''}</div>`:''}</footer>`;
   return `<div class="game-menu-layer" data-game-overlay="${kind}"><div class="game-menu-scrim" data-game-menu-dismiss aria-hidden="true"></div><section class="game-menu-dialog" role="dialog" aria-modal="true" aria-label="Game menu" tabindex="-1" data-game-menu-dialog>
     <header class="game-menu-head"><h2>Game menu</h2><button type="button" data-action="closeGameOverlay" class="game-menu-close" aria-label="Close game menu" title="Close">${icon('close')}</button></header>
     <nav class="game-menu-tabs" role="tablist" aria-label="Game menu tabs">${tabs}</nav>
     <div class="game-menu-content" data-game-menu-scroll>
       <section id="game-menu-panel-log" role="tabpanel" aria-labelledby="game-menu-tab-log" ${active==='log'?'':'hidden'}>${renderActionHistory(settings.log)}</section>
-      <section id="game-menu-panel-settings" role="tabpanel" aria-labelledby="game-menu-tab-settings" ${active==='settings'?'':'hidden'}><div class="game-menu-settings-fields">${settingsFields}</div></section>
+      <section id="game-menu-panel-settings" role="tabpanel" aria-labelledby="game-menu-tab-settings" ${active==='settings'?'':'hidden'}><div class="game-menu-settings-fields"><div class="shell shell-settings-body">${settingsFields}</div></div></section>
       <section id="game-menu-panel-rules" role="tabpanel" aria-labelledby="game-menu-tab-rules" ${active==='rules'?'':'hidden'}><div class="game-menu-accordions"><button type="button" class="game-menu-tutorial" data-action="tutorial">Guided tutorial</button>${renderRulesReference(expansions,coop,{inGame:true})}</div></section>
     </div>
     ${actions}
