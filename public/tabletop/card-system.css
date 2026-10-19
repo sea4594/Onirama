@@ -405,7 +405,7 @@
    precisely the same space as the resting card, with no default button inset. */
 .game-viewport .tt8-door-slot>button.card.tiny{
   appearance:none!important;box-sizing:border-box!important;
-  width:min(100%,var(--tt4-mini))!important;max-width:100%!important;
+  width:min(100%,var(--tt4-mini,42px))!important;max-width:100%!important;
   min-width:0!important;min-height:0!important;height:auto!important;
   padding:0!important;margin:0!important;aspect-ratio:1/1.42!important;
   flex:0 0 auto!important;transform:none!important
@@ -660,4 +660,74 @@
  min-width:0!important;min-height:0!important;
  max-width:100%!important;max-height:100%!important;
  aspect-ratio:1 / 1.42!important;
+}
+
+/* Compact, pile-sized Spell Book. Never wrap it into a separate row. */
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-pile-row:has(.tt32-spell-book),
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-piles:has(.tt32-spell-book){
+  display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+  justify-content:space-between!important;gap:2px!important;min-width:0!important;
+}
+.game-viewport :is(.tt2-pile-row,.tt6-piles)>.tt32-spell-book{
+  appearance:none!important;box-sizing:border-box!important;flex:0 1 calc(var(--tt4-mini,42px)*1.08)!important;
+  width:calc(var(--tt4-mini,42px)*1.08)!important;min-width:0!important;min-height:0!important;max-height:none!important;
+  border:0!important;background:transparent!important;color:var(--table-text)!important;
+  padding:0 1px!important;margin:0!important;display:flex!important;
+  flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:3px!important;box-shadow:none!important;filter:none!important;
+}
+.game-viewport .tt32-book-cover{
+  position:relative;box-sizing:border-box;width:var(--tt4-mini,42px);max-width:100%;
+  height:calc(var(--tt4-mini,42px)*1.42);aspect-ratio:0.7042;
+  border:2px solid var(--table-gold);border-left:6px solid var(--table-gold);
+  border-radius:3px 7px 7px 3px;
+  background:linear-gradient(95deg,#192536 0%,#30435a 18%,#233249 80%,#152032 100%);
+  display:grid;place-items:center;box-shadow:inset -3px 0 0 #d5c08b6c,2px 2px 0 var(--card-back-shadow);
+}
+.game-viewport .tt32-book-cover::before{content:'';position:absolute;left:-4px;top:2px;bottom:2px;border-left:1px solid #b8a776;opacity:.7}
+.game-viewport .tt32-book-cover::after{content:'';position:absolute;right:-3px;top:5px;bottom:5px;border-right:2px solid #e2d8b0;opacity:.8}
+.game-viewport .tt32-book-count{font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:#f8e9ba;font-size:clamp(12px,calc(var(--tt4-mini,42px)*.43),21px);text-shadow:0 1px 2px #000}
+.game-viewport .tt32-book-label{font-size:clamp(8px,1.7vw,11px);line-height:1.1;color:var(--table-text);white-space:nowrap}
+.game-viewport .tt32-spell-book:is(:focus-visible,.tt3-target-ready) .tt32-book-cover{outline:3px solid var(--table-gold)!important;outline-offset:2px}
+.game-viewport :is(.tt2-pile-row,.tt6-piles):has(.tt32-spell-book)>.tt2-pile,
+.game-viewport .tt6-piles:has(.tt32-spell-book)>.tt6-pile{min-width:0!important;flex:1 1 0!important}
+/* Slightly larger deck counts, without leaving the card border. */
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count{font-size:clamp(8px,51cqw,23px)!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="2"]{font-size:clamp(8px,43cqw,21px)!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="3"]{font-size:clamp(7px,33cqw,17px)!important}
+.game-viewport :is(.tt2-pile,.tt6-pile) .tt10-draw-count[data-count-digits="4"]{font-size:clamp(6px,24cqw,14px)!important}
+/* A Prophecy preview never changes card width as one card moves to Discard. */
+.game-viewport .tt6-dock-decision .tt7-prophecy .tt7-prophecy-slot{
+  display:grid!important;place-items:center!important;align-content:center!important;
+  justify-content:center!important;padding:2px!important;
+}
+.game-viewport .tt6-dock-decision .tt7-prophecy-slot>.card{
+  box-sizing:border-box!important;margin:0 auto!important;place-self:center!important;
+  flex:none!important;min-width:0!important;min-height:0!important;
+}
+/* Override legacy expansion layout's full-row Spell button and split four
+   mini-pile positions evenly even in narrow portrait equipment areas. */
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-pile-row:has(.tt32-spell-book)>.tt8-spell-button.tt32-spell-book,
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-piles:has(.tt32-spell-book)>.tt8-spell-button.tt32-spell-book{
+  flex:1 1 0!important;width:auto!important;min-width:0!important;
+  max-height:none!important;min-height:0!important;padding:0!important;
+}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-pile-row:has(.tt32-spell-book)>.tt2-pile,
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-piles:has(.tt32-spell-book)>.tt6-pile{
+  box-sizing:border-box!important;flex:1 1 0!important;min-width:0!important;
+  max-width:none!important;width:auto!important;
+}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-pile-row:has(.tt32-spell-book) :is(.tt2-deck-back,.tt2-pile-face),
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-piles:has(.tt32-spell-book) :is(.tt2-deck-back,.tt6-pile-face){
+  box-sizing:border-box!important;width:min(100%,var(--tt4-mini,42px))!important;
+  max-width:100%!important;height:auto!important;aspect-ratio:0.7042!important;
+}
+.game-viewport :is(.tt2-pile-row,.tt6-piles) .tt32-spell-book .tt32-book-cover{
+  width:var(--tt4-mini,42px)!important;max-width:100%!important;
+  height:auto!important;aspect-ratio:0.7042!important;
+}
+.game-viewport .tt2-root[data-tabletop-solo] .tt2-pile-row:has(.tt32-spell-book)>.tt2-pile>.tt6-pile-inspect,
+.game-viewport .tt2-root[data-tabletop-coop] .tt6-piles:has(.tt32-spell-book)>.tt6-pile>.tt6-pile-inspect{
+  box-sizing:border-box!important;width:100%!important;max-width:100%!important;
+  min-width:0!important;padding:0!important;
 }

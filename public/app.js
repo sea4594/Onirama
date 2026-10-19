@@ -8,7 +8,7 @@ import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
-import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap} from './tabletop/interactions.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,isBlankGameTap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
@@ -240,7 +240,7 @@ function incantationDecision(p){
  }
  const ids=p.cards.map(c=>c.id);
  if(effectOrder.length!==ids.length||effectOrder.some(id=>!ids.includes(id)))effectOrder=[...ids];
- return `<section class="decision stack tt20-incantation" data-tt-incantation-step="order"><h2>Incantation: arrange remaining cards</h2><div class="tt20-incantation-cards tt3-order-list" style="--tt20-per-card:${(100/Math.max(1,ids.length)).toFixed(5)}cqw" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" tabindex="0" role="button" aria-label="Reorder ${escape(c.kind)} card">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div>${btn('Confirm','effectConfirm','primary')}</section>`;
+ return `<section class="decision stack tt20-incantation" data-tt-incantation-step="order"><h2>Incantation: arrange remaining cards</h2><div class="tt20-incantation-cards tt3-order-list" style="--tt20-per-card:${(100/Math.max(1,p.cards.length)).toFixed(5)}cqw" data-tt-order-group="effect">${effectOrder.map(id=>{const c=p.cards.find(c=>c.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" tabindex="0" role="button" aria-label="Reorder ${escape(c.kind)} card">${card(c)}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="effect" aria-label="Move selected card to end"></button></div>${btn('Confirm','effectConfirm','primary')}</section>`;
 }
 function happyPeekDecision(p){
  const ids=p.cards.map(c=>c.id);
@@ -349,7 +349,7 @@ function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
   if(prophecyOrder.length!==cards.length||prophecyOrder.some(id=>!cards.some(c=>c.id===id)))prophecyOrder=cards.map(c=>c.id);
   const remaining=prophecyOrder.filter(id=>id!==prophecyDiscard);
   const discarded=cards.find(c=>c.id===prophecyDiscard);
-  return `<section class="decision stack tt7-prophecy" style="--tt7-per-card:${(100/Math.max(1,remaining.length+1)).toFixed(5)}cqw"><div class="tt7-compact-row"><div class="cards tt3-order-list tt26-prophecy-cards" data-tt-order-group="prophecy">${remaining.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Move card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="prophecy" aria-label="Move selected card to end"></button></div><button type="button" class="tt7-prophecy-slot" data-tt-prophecy-discard aria-label="Prophecy discard slot: drag or select a card, then activate">${discarded?card(discarded,{tiny:true}):'Discard<br>↓'}</button></div>${prophecyDiscard?btn('Confirm','prophecyConfirm','primary'):'<span class="tt7-micro">Drag a card to Discard</span>'}</section>`;
+  return `<section class="decision stack tt7-prophecy" style="--tt7-per-card:${(100/Math.max(1,cards.length+1)).toFixed(5)}cqw"><div class="tt7-compact-row"><div class="cards tt3-order-list tt26-prophecy-cards" data-tt-order-group="prophecy">${remaining.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Move card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="prophecy" aria-label="Move selected card to end"></button></div><button type="button" class="tt7-prophecy-slot" data-tt-prophecy-discard aria-label="Prophecy discard slot: drag or select a card, then activate">${discarded?card(discarded,{tiny:true}):'Discard<br>↓'}</button></div>${prophecyDiscard?btn('Confirm','prophecyConfirm','primary'):'<span class="tt7-micro">Drag a card to Discard</span>'}</section>`;
 }
 // The new solo and cooperative tabletops are the only supported gameplay surfaces.
 // Unknown modes fail visibly instead of silently falling back to obsolete controls.
@@ -828,7 +828,7 @@ app.addEventListener('click',e=>{
   if(e.target.closest?.('[data-game-menu-dismiss]')){handle('closeGameOverlay');return;}
   if(pileOpen&&!e.target.closest?.('[data-pile-inspector],[data-action^="inspectPile:"],[data-action^="inspectCatcher:"]')){pileOpen=null;render();return;}
   const jump=e.target.closest?.('[data-guide-jump]');if(jump){const root=jump.closest('[data-guide-root]'),chapter=[...(root?.querySelectorAll('[data-guide-chapter]')||[])].find(el=>el.dataset.guideChapter===jump.dataset.guideJump);if(chapter){if(chapter.hidden){const search=root?.querySelector('[data-guide-search]');if(search)search.value='';filterGuide(root,'');}chapter.querySelector('[data-guide-entry]')?.setAttribute('open','');chapter.scrollIntoView?.({block:'start',behavior:'smooth'});}return;}
-  const target=e.target.closest('[data-action],[data-pick]');if(!target||target.getAttribute('aria-disabled')==='true')return;
+  const target=e.target.closest('[data-action],[data-pick]');if(!target){if(page==='#/game'&&selected!==null&&!gameOverlay&&!pileOpen&&isBlankGameTap(e.target)){selected=null;render();}return;}if(target.getAttribute('aria-disabled')==='true')return;
   if(gameOverlay&&!target.closest?.('[data-game-menu-dialog]'))return;
   if(target.dataset.pick){if(state?.game?.phase==='draft')handle(`draft:${target.dataset.pick}`);else pick(target.dataset.pick);return;}
   handle(target.dataset.action);

@@ -18,7 +18,8 @@ test('Premonition counters use Door-color, set and aggregate objectives',()=>{
 test('draw pile has no icon and spell count tracks available discards in both modes',()=>{
  for(const mode of ['solo','coop']){const g=viewFor(newGame({seed:3,mode,config:{expansions:['book']}}),0);
  const html=mode==='solo'?renderSoloTabletop(g):renderCooperativeTabletop(g);
- assert.match(html,/Spells · 0/);
+ assert.match(html,/class="tt32-book-count">0<\/span>/);
+ assert.match(html,/class="tt32-book-label">Spells<\/span>/);
  assert.doesNotMatch(html,/tt2-deck-back[^>]*>\s*<svg/);
  }
 });

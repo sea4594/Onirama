@@ -43,6 +43,12 @@ export function targetState(g, cardId, seat=0){
   return {play:legal.includes('play'),discard:legal.includes('discard')};
 }
 const DRAG_THRESHOLD=8;
+// Small deliberate movements are gestures, not taps, even when the card returns
+// to its starting position before release. Ignore subpixel touch jitter.
+export function isCancelledCardGesture(maxDistance, durationMs){return maxDistance>=DRAG_THRESHOLD||(maxDistance>=2.5&&durationMs>=130);}
+export function isBlankGameTap(target){
+  return !!target?.closest&&!target.closest('button,a,input,select,textarea,summary,label,[role="button"],[role="link"],[data-action],[data-pick],[data-tt-card],[data-tt-drop],[data-tt-inspect],[data-tt-order-id],[data-tt-order-group],[data-tt-prophecy-discard],[data-tt-happy-discard],[data-tt-happy-restore],[data-tt-order-end],[data-tt-incantation-drop]');
+}
 export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy=()=>false, onSelect, onClearSelection=()=>{}, onCommand, onDrop=()=>{}, onSwap=()=>{}, onInspect=()=>{}}){
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
@@ -82,6 +88,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   function move(e){
     if(!pointer||e.pointerId!==pointer.id)return;
     const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
+    pointer.maxDistance=Math.max(pointer.maxDistance,Math.hypot(dx,dy));
     if(!pointer.dragging&&Math.hypot(dx,dy)<DRAG_THRESHOLD)return;
     if(!pointer.dragging){
       pointer.dragging=true;
@@ -100,31 +107,34 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   }
   function release(e){
     if(!pointer||e.pointerId!==pointer.id)return;
+    pointer.maxDistance=Math.max(pointer.maxDistance,Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y));
     const {cardId,dragging}=pointer;
+    const cancelled=isCancelledCardGesture(pointer.maxDistance,performance.now()-pointer.started);
     const hover=dragging&&swapZone(cardId)?document.elementFromPoint(e.clientX,e.clientY)?.closest?.('[data-tt-card]'):null;
     const drop=hover&&swapZone(hover.dataset.ttCard)&&swapZone(hover.dataset.ttCard)!==swapZone(cardId)?hover:dragging?hitTarget(e.clientX,e.clientY,cardId):null;
-    if(dragging){
-      // Browsers synthesize click after pointerup. Suppress it so a completed
-      // drag cannot accidentally select a different card or run an action twice.
-      suppressClick=true;setTimeout(()=>{suppressClick=false;},0);
+    if(dragging||cancelled){
+      // Mobile Safari can delay the synthetic click beyond the next event-loop
+      // turn. Consume exactly that click; the next pointerdown resets the guard.
+      suppressClick=true;
     }
     const released=dragging&&ghost?.getBoundingClientRect?.();
     clearDrag();
     if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
     if(drop){onDrop(cardId,released);dispatch(drop.dataset.ttDrop,cardId);return;}
-    if(dragging)onClearSelection();
+    if(dragging||cancelled)onClearSelection();
   }
   function onPointerDown(e){
+    suppressClick=false;
     if(e.button!==0&&e.pointerType==='mouse')return;
     const c=e.target.closest?.('[data-tt-card]');
     if(!c||!board()?.contains(c)||!(legal(c.dataset.ttCard).length||swapZone(c.dataset.ttCard)))return;
     const bounds=c.getBoundingClientRect();
-    pointer={id:e.pointerId,card:c,cardId:c.dataset.ttCard,x:e.clientX,y:e.clientY,offsetX:e.clientX-bounds.left,offsetY:e.clientY-bounds.top,dragging:false};
+    pointer={id:e.pointerId,card:c,cardId:c.dataset.ttCard,x:e.clientX,y:e.clientY,offsetX:e.clientX-bounds.left,offsetY:e.clientY-bounds.top,dragging:false,maxDistance:0,started:performance.now()};
   }
   function onClick(e){
     // Pile-inspection buttons live inside discard drop targets; inspection must never discard.
-    if(e.target.closest?.('[data-action^="inspectPile:"]'))return;
     if(suppressClick){e.preventDefault();e.stopImmediatePropagation();suppressClick=false;return;}
+    if(e.target.closest?.('[data-action^="inspectPile:"]'))return;
     const t=e.target.closest?.('[data-tt-drop]');
     if(t&&board()?.contains(t)){
       // A click on a zone invokes the action only when there is a selected card;
