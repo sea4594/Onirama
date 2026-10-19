@@ -1,3 +1,4 @@
+import {coopSpectatorDecision} from './coop-visibility.js';
 import {createDeck,COLORS,expectedCards} from './cards.js';
 import {pileInventory} from './pile-inventory.js';
 import {shuffle} from './random.js';
@@ -519,7 +520,7 @@ export function viewFor(s,seat=null){const c=structuredClone(normalizeSave(s));d
  if(c.mode==='coop')for(let i=0;i<c.players.length;i++)if(i!==seat)c.players[i].hand=c.players[i].hand.map(x=>({id:x.id,kind:'hidden'}));
  if(c.pending?.type==='diver')c.pending.remaining=s.deck.length;
  if(c.pending?.type==='doorSearch'&&(c.mode==='solo'||seat===s.active))c.pending.targets=doorSearchTargets(s,c.pending.color);
- if(c.pending&&c.mode==='coop'&&seat!==s.active)c.pending={type:'private-decision',player:s.active};
+ if(c.mode==='coop'&&seat!==s.active){c.spectatorDecision=coopSpectatorDecision(s);if(c.pending)c.pending={type:'private-decision',player:s.active};}
  return c;
 }
 export function assertConserved(s){return assertCardsUnique(normalizeSave(s),expectedCards(s.config?.expansions||[]));}

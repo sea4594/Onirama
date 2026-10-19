@@ -21,7 +21,8 @@ export function recordReplay(previous,game,actor,command=null){
  }
  return replay;
 }
-export function visibleReplay(entries){return Array.isArray(entries)?entries.filter(e=>e&&[0,1,null].includes(e.actor)&&e.frame?.mode==='coop').map(e=>e):[];}
+// Intermediate choice previews are live UI announcements, not additional turns.
+export function visibleReplay(entries){return Array.isArray(entries)?entries.filter(e=>e&&e.action!=='previewChoice'&&[0,1,null].includes(e.actor)&&e.frame?.mode==='coop').map(e=>e):[];}
 export function opponentReplay(entries,viewerSeat){
  if(![0,1].includes(viewerSeat))return [];
  const list=visibleReplay(entries);

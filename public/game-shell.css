@@ -102,3 +102,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .game-menu-settings-fields .shell-settings-meta{margin-top:0}
 .game-menu-dialog .shell-settings-footer .shell-link{width:100%;text-align:left;background:transparent;color:var(--ui-text);border:0;border-radius:0;border-bottom:1px solid var(--ui-border)}
 .game-menu-dialog .shell-settings-footer .shell-link:hover{background:var(--ui-soft)}
+
+/* Live, privacy-filtered partner decisions: visual choices without any input. */
+.tt30-spectator{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-width:0;max-height:100%;overflow:hidden}
+.tt30-spectator-preview{display:flex;align-items:center;justify-content:center;flex:0 0 auto;max-height:100%}
+.tt30-spectator-preview .card{width:clamp(48px,14vw,78px)!important;max-height:min(125px,100%);height:auto!important;aspect-ratio:var(--tt-card-ratio,0.7)}
+.tt30-spectator-options{display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:6px;min-width:0;flex:1}
+.tt30-spectator-choice{pointer-events:none;cursor:default;opacity:1!important;filter:none!important;outline:0;max-width:100%}
+.tt30-spectator-chosen{outline:3px solid var(--gold,#d9ae62)!important;outline-offset:1px;box-shadow:0 0 0 2px rgba(255,255,255,.55);animation:tt30-choice-pulse .55s ease-out both}
+@keyframes tt30-choice-pulse{0%{transform:scale(.97)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+@media(max-width:480px){.tt30-spectator{gap:6px}.tt30-spectator-choice{padding:5px 8px;font-size:12px}.tt30-spectator-preview .card{width:56px!important}}
+@media(prefers-reduced-motion:reduce){.tt30-spectator-chosen{animation:none}}

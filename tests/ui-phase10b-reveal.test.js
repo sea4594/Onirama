@@ -30,7 +30,7 @@ test('Nightmare remains a decision and animated revealed face stays public only 
  s=act(s,{type:'draw'});assert.equal(s.pending.type,'nightmare');
  const next=viewFor(s,s.active),other=viewFor(s,1-s.active);
  const plan=planGameTransitions(before,next);assert(plan.drawn.includes(c.id));assert.equal(plan.draw,1);
- assert.equal(other.pending.type,'private-decision');assert(!JSON.stringify(other).includes('"kind":"nightmare"'));
+ assert.equal(other.pending.type,'private-decision');assert.equal(other.spectatorDecision.card.kind,'nightmare');
  assert.match(renderActionDock(next,s.active),/tt8-drawn-card/);assertConserved(s);
 });
 test('five-card Nightmare penalty reveals only public cards, with sequential visual candidates',()=>{

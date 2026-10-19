@@ -1,3 +1,4 @@
+import {coopPublicChoice} from '../engine/coop-visibility.js';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {readFileSync,writeFileSync,existsSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
@@ -35,6 +36,8 @@ const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer
 const allowedOrigins=new Set((process.env.ONIRAMA_CORS_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
 const asError=e=>({error:e instanceof Error?e.message:'Request rejected'});
 const roomGameView=(x,seat)=>{if(!x.game)return null;const v=viewFor(x.game,seat);for(let i=0;i<v.players.length;i++)if(x.mode==='coop'&&x.seats[i]?.name)v.players[i].name=x.seats[i].name;return v;};
+const spectatorEvent=(x,seat)=>x.game&&x.mode==='coop'&&seat!==x.replay?.at(-1)?.actor?x.replay?.at(-1)?.publicChoice||null:null;
+const spectatorLive=(x,seat)=>x.game&&x.mode==='coop'&&seat!==x.replay?.at(-1)?.actor&&x.replay.at(-1)?.action==='previewChoice'&&!x.replay.at(-1)?.publicChoice?.clear?x.replay.at(-1).publicChoice:null;
 const roomSummary=(x,seat)=>({id:x.id,code:x.code,mode:x.mode,seat,host:seat===(x.hostSeat??0),hostSeat:x.hostSeat??0,paused:!!x.game&&x.seats.some(v=>!v)&&!x.ended,ended:!!x.ended,ready:x.ready,connected:x.seats.map(Boolean),started:!!x.game,phase:x.game?.phase,status:x.game?.status,config:x.config||validateConfig()});
 const limits=new Map();let requests=0;
 function rateLimit(req,pathname){
@@ -69,7 +72,7 @@ function credentials(x,request){
 function sendEvents(x){
   for(const record of listeners.get(x.id)||[])try{
     if(x.seats[record.seat]?.token!==record.token){record.res.end();listeners.get(x.id)?.delete(record);continue;}
-    record.res.write(`data: ${JSON.stringify({room:roomSummary(x,record.seat),game:roomGameView(x,record.seat)})}\n\n`);
+    record.res.write(`data: ${JSON.stringify({room:roomSummary(x,record.seat),game:roomGameView(x,record.seat),spectatorEvent:spectatorEvent(x,record.seat),spectatorLive:spectatorLive(x,record.seat)})}\n\n`);
   }catch{record.res.end();listeners.get(x.id)?.delete(record);}
 }
 function create(mode,name,rawConfig){
@@ -101,12 +104,12 @@ function endpoint(req,res,url,data){
   if(segments[0]!=='api'||segments[1]!=='rooms'||!segments[2])return json(res,404,{error:'Unknown API route'});
   const original=sessions[segments[2]];if(!original)return json(res,404,{error:'Game not found'});
   const seat=credentials(original,req),operation=segments[3];
-  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:roomGameView(original,seat),replay:visibleReplay(original.replay),version:original.version});
+  if(req.method==='GET'&&operation==='state')return json(res,200,{room:roomSummary(original,seat),game:roomGameView(original,seat),spectatorEvent:spectatorEvent(original,seat),spectatorLive:spectatorLive(original,seat),replay:visibleReplay(original.replay),version:original.version});
   if(req.method==='GET'&&operation==='stream'){
     if((listeners.get(original.id)?.size||0)>=12)throw Object.assign(Error('Too many open connections'),{status:429});
     res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
     if(!listeners.has(original.id))listeners.set(original.id,new Set());const record={res,seat,token:original.seats[seat].token};listeners.get(original.id).add(record);
-    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:roomGameView(original,seat),replay:visibleReplay(original.replay)})}\n\n`);
+    res.write(`data: ${JSON.stringify({room:roomSummary(original,seat),game:roomGameView(original,seat),spectatorEvent:spectatorEvent(original,seat),spectatorLive:spectatorLive(original,seat),replay:visibleReplay(original.replay)})}\n\n`);
     const keepAlive=setInterval(()=>{try{res.write(': heartbeat\n\n');}catch{res.end();}},25000);
     req.on('close',()=>{clearInterval(keepAlive);listeners.get(original.id)?.delete(record);if(!listeners.get(original.id)?.size)listeners.delete(original.id);});return;
   }
@@ -145,7 +148,9 @@ function endpoint(req,res,url,data){
     if(!original.game)throw Error('Game has not started');if(original.ended||(original.mode==='coop'&&original.seats.some(v=>!v)))throw Error('Game paused until another player joins');
     if(seat!==original.game.active)throw Error('It is not your turn');
     if(!Number.isInteger(data.expectedVersion)||data.expectedVersion!==original.version)throw Error('State changed. The board has been refreshed; choose your action again.');
-    const next=structuredClone(original);next.game=act(original.game,data.command);assertConserved(next.game);next.replay=recordReplay(original.replay,next.game,seat,data.command);next.version++;commit(next);
+    if(data.command?.type==='previewChoice'&&!((['action','decision','turnComplete'].includes(original.game.phase)&&['spellbook','denizen','failsafe','freeing','clear'].includes(data.command.choice))||(original.game.phase==='decision'&&['nightmare','doorSearch','happyDream'].includes(original.game.pending?.type)&&['key','door','chromatic','banish'].includes(data.command.choice))))throw Error('Invalid public choice preview');
+    const publicChoice=coopPublicChoice(original.game,data.command);
+    const next=structuredClone(original);next.game=data.command.type==='previewChoice'?structuredClone(original.game):act(original.game,data.command);assertConserved(next.game);next.replay=recordReplay(original.replay,next.game,seat,data.command);if(publicChoice)next.replay.at(-1).publicChoice=publicChoice;next.version++;commit(next);
     return json(res,200,{ok:true,version:next.version});
   }
   return json(res,404,{error:'Unknown room operation'});

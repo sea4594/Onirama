@@ -50,6 +50,16 @@ let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
 let gameOverlay=null,gameMenuTab='log',gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false,failsafeChoosing=false;
 let searchFreeIntent=null,happyFetchSelection=null,lastInputWasKeyboard=false;
 let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
+let spectatorFlash=null,spectatorFlashTimer=null,previewInFlight=null;
+function captureSpectatorChoice(next){
+ if(next?.version<=version||!state?.game?.spectatorDecision||!next?.spectatorEvent||page!=='#/game')return;
+ const choice=next.spectatorEvent,previous=state.game.spectatorDecision;
+ if(previous.type!==choice.type&&choice.type!=='action-preview')return;
+ if(spectatorFlashTimer!==null)clearTimeout(spectatorFlashTimer);
+ spectatorFlash={type:choice.type,title:choice.title,card:choice.card,buttons:choice.buttons,visibility:'public',choice:choice.choice};
+ spectatorFlashTimer=setTimeout(()=>{spectatorFlashTimer=null;spectatorFlash=null;if(page==='#/game')render();},720);
+}
+
 let reconnectAttempts=0;
 function readSettings(){try{const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');return {theme:THEME_PRESETS.some(p=>p.id===raw.theme)?raw.theme:'moonlit',motion:raw.motion==='reduced'?'reduced':'normal',cardSize:raw.cardSize==='large'?'large':'normal',contrast:raw.contrast==='high'?'high':'normal',textSize:raw.textSize==='large'?'large':'normal'};}catch{return {theme:'moonlit',motion:'normal',cardSize:'normal',contrast:'normal',textSize:'normal'};}}
 let uiSettings=readSettings();
@@ -78,7 +88,7 @@ const btn=(label,action,klass='')=>`<button type="button" class="${klass}" data-
 const card=(c,options={})=>renderCard(c,{...options,selectedId:selected});
 function nav(){return `<header class="nav shell-nav"><a class="brand" href="#/" aria-label="Onirama home"><img class="brand-icon" src="./icons/icon-64.png" width="24" height="24" alt="" aria-hidden="true"><span>ONIRAMA</span></a></header>`;}
 function bottomNav(){if(page==='#/game')return '';const entries=[['#/','Single Player','single'],['#/multiplayer','Multiplayer','users'],['#/settings','Settings','settings']];const active=page==='#/multiplayer'||page.startsWith('#/join')?'#/multiplayer':(page==='#/settings'||page==='#/rules'||page==='#/history'||page==='#/roadmap')?'#/settings':'#/';return `<nav class="bottom-nav" aria-label="Primary">${entries.map(([url,label,iconName])=>`<a href="${url}" class="bottom-nav-item${active===url?' active':''}" ${active===url?'aria-current="page"':''}><span aria-hidden="true" class="bottom-icon">${icon(iconName)}</span><span>${label}</span></a>`).join('')}</nav>`;}
-function setRoute(path){if(path!=='#/game'){stopReplay();gameOverlay=null;gameRulesFromPause=false;pileOpen=null;failsafeChoosing=false;}location.hash=path;page=path;render();}
+function setRoute(path){if(path!=='#/game'){if(spectatorFlashTimer!==null)clearTimeout(spectatorFlashTimer);spectatorFlashTimer=null;spectatorFlash=null;stopReplay();gameOverlay=null;gameRulesFromPause=false;pileOpen=null;failsafeChoosing=false;}location.hash=path;page=path;render();}
 function setError(msg){error=msg;render();}
 async function api(route,method='GET',body=null){
   const headers={'Content-Type':'application/json'};if(session?.token)headers.Authorization=`Bearer ${session.token}`;
@@ -97,7 +107,7 @@ async function refresh(){if(IS_LOCAL_GAME()){
   session={id:hot?'hotseat':'local',seat};online=true;error='';sessionMeta();recordCurrentResult();render();announceCurrent();
  }catch(e){console.error('Unable to resume local game',e);session=null;state=null;version=0;localStorage.removeItem('onirama.session');error='Cannot open this saved game ('+e.message+'). The save has been preserved; you can start a new game or resume the other save.';setRoute('#/');}
  return;
- }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
+ }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
 function closeEndedRoom(){stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the lobby.';setRoute('#/multiplayer');}
 async function departRoom(end=false){
  if(!session||['local','hotseat'].includes(session.id))return;
@@ -123,12 +133,27 @@ async function join(){const code=(document.querySelector('#roomcode')?.value||jo
   try{const o=USE_FIREBASE?{...(await firebase.joinFirebaseRoom(code,name)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api('/api/join','POST',{code,name});saveSession(o);await refresh();setRoute('#/multiplayer');startStream();}catch(e){setError(e.message);}
 }
 async function doRoom(operation,body={}){if(busy)return;busy=true;try{if(session.transport==='firebase'){if(operation==='ready')await firebase.firebaseReady(session.id,body.ready);else if(operation==='setup')await firebase.firebaseSetup(session.id,body.config);else if(operation==='start')await firebase.firebaseStart(session.id);else if(operation==='restart')await firebase.firebaseRestart(session.id);else throw Error('Unsupported room action');}else await api(`/api/rooms/${session.id}/${operation}`,'POST',body);await refresh();}catch(e){setError(e.message);}finally{busy=false;render();}}
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+// Non-mutating announcement for an intermediate *public* choice. This does
+// not submit the choice or reset the local selection, and the room still checks
+// that the announcing player owns the active turn.
+async function publishSpectatorChoice(choice){
+ if(IS_LOCAL_GAME()||!session||state?.room?.seat!==state?.game?.active)return;
+ const prior=previewInFlight;
+ const task=(async()=>{try{
+  if(prior)await prior;
+  const result=session.transport==='firebase'?await firebase.firebaseAction(session.id,version,{type:'previewChoice',choice}):await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command:{type:'previewChoice',choice}});
+  if(result?.game&&result.version>=version){state=result;version=result.version;render();}
+  else if(result?.version>version){version=result.version;}
+ }catch(e){console.warn('Unable to mirror the public choice',e);await refresh();}})();
+ previewInFlight=task;
+ try{await task;}finally{if(previewInFlight===task)previewInFlight=null;}
+}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(previewInFlight)await previewInFlight;if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
     cancelStream();const controller=new AbortController(),roomId=session.id,uid=session.uid;streamAbort=controller;online=false;render();
-    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}state=data;version=data.version;error='';online=true;reconnectAttempts=0;if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;console.warn('Realtime Firebase connection lost',e);render();retryStream();});
+    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';online=true;reconnectAttempts=0;if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;console.warn('Realtime Firebase connection lost',e);render();retryStream();});
       if(controller.signal.aborted){unsubscribe();return;}controller.signal.addEventListener('abort',unsubscribe,{once:true});
     }catch(e){if(!controller.signal.aborted){online=false;console.warn('Unable to connect to Firebase',e);render();retryStream();}}return;
   }
@@ -147,7 +172,7 @@ async function startStream(){
         // Fetch the version and filtered state together, never pair an event with a stale version.
         const fresh=await api(`/api/rooms/${roomId}/state`);
         if(controller.signal.aborted||session?.id!==roomId||session?.token!==credential)return;
-        if(Number.isInteger(fresh.version)&&fresh.version>=version){if(fresh.room?.ended){closeEndedRoom();return;}state=fresh;version=fresh.version;error='';if(fresh.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}
+        if(Number.isInteger(fresh.version)&&fresh.version>=version){if(fresh.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(fresh);state=fresh;version=fresh.version;error='';if(fresh.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}
       }
     }
   }catch(e){if(!controller.signal.aborted&&session?.id===roomId){online=false;render();}}
@@ -254,7 +279,7 @@ function towerEdgeConflict(left,right){const marks=v=>Array.isArray(v)?v:typeof 
 function beginSearchFree(g,command){
  const d=g.expansion?.dreamcatchers;
  if(!d||!d.stacks.some((stack,i)=>d.active[i]&&stack.length))return action(command);
- searchFreeIntent={command,selected:null};pileOpen=null;return render();
+ searchFreeIntent={command,selected:null};pileOpen=null;render();void publishSpectatorChoice('freeing');return;
 }
 function searchFreeCatchers(g){
  const d=g.expansion?.dreamcatchers;
@@ -435,7 +460,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const errorMessage=error?`<div class="shell-notice-layer" data-notice-backdrop><section class="shell-notice-dialog" role="alertdialog" aria-modal="true" aria-label="Information" tabindex="-1"><p>${escape(error)}</p>${btn('OK','clearError','primary')}</section></div>`:'';
   const workspace=inGame?gameWorkspace(state.game,state.room):null;
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
-  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic}):''):'';
+  const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic,spectatorFlash,spectatorLive:state.spectatorLive}):''):'';
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
@@ -597,16 +622,16 @@ async function handle(actionName){
   if(actionName==='closePile'){pileOpen=null;return render();}
   if(actionName==='failsafeStart'){
     const g=state?.game,d=g?.expansion?.dreamcatchers;
-    if(g?.phase==='action'&&state.room?.seat===g.active&&d?.failsafes>0&&d.active.some((a,i)=>a&&d.stacks[i]?.length)){failsafeChoosing=true;pileOpen=null;return render();}
+    if(g?.phase==='action'&&state.room?.seat===g.active&&d?.failsafes>0&&d.active.some((a,i)=>a&&d.stacks[i]?.length)){failsafeChoosing=true;pileOpen=null;render();void publishSpectatorChoice('failsafe');return;}
     return;
   }
-  if(actionName==='failsafeCancel'){failsafeChoosing=false;return render();}
+  if(actionName==='failsafeCancel'){failsafeChoosing=false;render();void publishSpectatorChoice('clear');return;}
   if(actionName==='choicePrev'){choicePage=Math.max(0,choicePage-1);return render();}
   if(actionName==='choiceNext'){choicePage++;return render();}
   if(actionName.startsWith('goalPick:')){const i=Number(actionName.slice(9));if(!spellOpen||spellChoice!=='parallel'||!Number.isInteger(i)||i<0||i>=(state?.game?.expansion?.book?.goals?.length||0))return;spellGoals=spellGoals.includes(i)?spellGoals.filter(j=>j!==i):[...spellGoals.slice(-1),i];return render();}
-  if(actionName==='dialogClose'){if(state?.game?.phase!=='decision'||spellOpen)closeOptionalDialog();return;}
+  if(actionName==='dialogClose'){if(state?.game?.phase!=='decision'||spellOpen)closeOptionalDialog();void publishSpectatorChoice('clear');return;}
   if(actionName.startsWith('spellSelect:')){const next=actionName.slice('spellSelect:'.length);if(!['parallel','paradox','punishment'].includes(next))return;spellChoice=next;spellGoals=[];return render();}
-  if(actionName==='openSpells'){spellOpen=true;spellSelected.clear();spellGoals=[];choicePage=0;freeSearchId='';return render();}
+  if(actionName==='openSpells'){spellOpen=true;spellSelected.clear();spellGoals=[];choicePage=0;freeSearchId='';render();void publishSpectatorChoice('spellbook');return;}
   if(actionName==='clearError'){error='';return render();}
   if(!state?.game||state.room?.paused||IS_HOTSEAT()&&passDevice)return;
   const g=state.game;if(state.room.seat!==g.active)return;
@@ -639,7 +664,7 @@ async function handle(actionName){
   }
   if(actionName==='mirrorRewardConfirm'){const ids=[...mirrorSelection],color=document.querySelector('#mirrorColor')?.value;mirrorSelection.clear();const command={type:'mirrorReward',ids,color};return g.pending?.mirror!=='blue'?beginSearchFree(g,command):action(command);}
   if(actionName.startsWith('mirror:'))return action({type:'nightmare',option:'mirror',denizenId:actionName.slice(7)});
-  if(actionName==='happyBanishStart'){if(g.pending?.type==='happyDream'&&(g.expansion?.premonitions?.faceUp||[]).length){happyBanishMode=true;happyPremonitionChoice=null;render();}return;}
+  if(actionName==='happyBanishStart'){if(g.pending?.type==='happyDream'&&(g.expansion?.premonitions?.faceUp||[]).length){happyBanishMode=true;happyPremonitionChoice=null;render();void publishSpectatorChoice('banish');}return;}
   if(actionName==='happyBanishCancel'){happyBanishMode=false;happyPremonitionChoice=null;return render();}
   if(actionName.startsWith('happyPremonitionSelect:')){const id=actionName.slice('happyPremonitionSelect:'.length);if(happyBanishMode&&state?.game?.pending?.type==='happyDream'&&state?.room?.seat===state.game.active&&state.game.expansion?.premonitions?.faceUp?.includes(id)){happyPremonitionChoice=happyPremonitionChoice===id?null:id;return render();}return;}
   if(actionName==='happyBanishConfirm'){if(happyBanishMode&&happyPremonitionChoice&&state?.game?.pending?.type==='happyDream'&&state.game.expansion?.premonitions?.faceUp?.includes(happyPremonitionChoice))return action({type:'happyDream',option:'banish',premonitionId:happyPremonitionChoice});return;}
@@ -668,8 +693,8 @@ async function handle(actionName){
   if(actionName.startsWith('premonitionNightmare:')&&g.pending?.type==='premonitionNightmare')return action({type:'premonitionNightmare',id:actionName.slice(21)});
   if(actionName.startsWith('effectRestore:')){effectDiscards.delete(actionName.slice(14));return render();}
   if(actionName.startsWith('effectDiscard:')){const id=actionName.slice(14);if(effectDiscards.has(id))effectDiscards.delete(id);else effectDiscards.add(id);return render();}
-  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen)return;denizenIntent={id,step:'confirm'};return render();}
-  if(actionName==='denizenCancel'){denizenIntent=null;return render();}
+  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen)return;denizenIntent={id,step:'confirm'};render();void publishSpectatorChoice('denizen');return;}
+  if(actionName==='denizenCancel'){denizenIntent=null;render();void publishSpectatorChoice('clear');return;}
   if(actionName==='denizenUse'&&denizenIntent){const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent.id&&x.owner===g.active);if(!d)return;const a=d.ability;
     if(a==='mirror'&&g.pending?.type==='nightmare')return action({type:'nightmare',option:'mirror',denizenId:d.id});
     if(a==='chromatic'&&g.pending?.type==='door'){denizenIntent.step='chromaticKey';return render();}
@@ -749,7 +774,7 @@ async function handle(actionName){
   if(actionName.startsWith('useKey:'))return action({type:'chooseDoor',keyId:actionName.slice(7)});
   if(actionName.startsWith('nightKey:'))return action({type:'nightmare',option:'key',cardId:actionName.slice(9)});
   if(actionName.startsWith('nightDoor:'))return action({type:'nightmare',option:'door',cardId:actionName.slice(10)});
-  if(actionName.startsWith('nightChoose:')){nightChoice=nightChoice===actionName.slice(12)?null:actionName.slice(12);return render();}
+  if(actionName.startsWith('nightChoose:')){nightChoice=nightChoice===actionName.slice(12)?null:actionName.slice(12);render();if(nightChoice)void publishSpectatorChoice(nightChoice);return;}
   if(actionName==='nightReveal')return action({type:'nightmare',option:'reveal'});
   if(actionName==='nightHand')return action({type:'nightmare',option:'hand'});
   if(actionName.startsWith('prophecyDiscard:')){prophecyDiscard=actionName.slice(16);return render();}

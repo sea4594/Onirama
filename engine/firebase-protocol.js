@@ -1,3 +1,4 @@
+import {coopPublicChoice} from './coop-visibility.js';
 // Pure cooperative-room transitions shared by Firebase and offline regression tests.
 import {newGame,act,viewFor,assertConserved} from './game.js';
 import {validateConfig} from './config.js';
@@ -29,7 +30,7 @@ export function roomView(room,uid){
  const ended=room.ended===true;
  const game=!ended&&room.game?viewFor(room.game,seat):null;
  if(game)for(const [i,display] of [room.hostName,room.guestName].entries())if((i===0?room.hostUid:room.guestUid)&&display)game.players[i].name=display;
- return {replay:visibleReplay(room.replay),room:{id:room.code,code:room.code,mode:'coop',seat,host:seat===hostSeat(room),hostSeat:hostSeat(room),ready:room.ready,connected:[!!room.hostUid,!!room.guestUid],paused:!!room.game&&!occupied(room)&&!ended,ended,started:!!room.game||ended,phase:room.game?.phase,status:ended?'ended':room.game?.status,config:room.config},game,version:room.version};
+ return {spectatorLive:game&&seat!==room.replay?.at(-1)?.actor&&room.replay?.at(-1)?.action==='previewChoice'&&!room.replay.at(-1).publicChoice?.clear?room.replay.at(-1).publicChoice:null,spectatorEvent:game&&seat!==room.replay?.at(-1)?.actor?room.replay?.at(-1)?.publicChoice||null:null,replay:visibleReplay(room.replay),room:{id:room.code,code:room.code,mode:'coop',seat,host:seat===hostSeat(room),hostSeat:hostSeat(room),ready:room.ready,connected:[!!room.hostUid,!!room.guestUid],paused:!!room.game&&!occupied(room)&&!ended,ended,started:!!room.game||ended,phase:room.game?.phase,status:ended?'ended':room.game?.status,config:room.config},game,version:room.version};
 }
 export function joinRoom(room,uid,name,now=Date.now()){
  identity(uid);requireRule(room&&now<room.expiresAt,'Room has expired');requireRule(!room.ended,'Game has ended');
@@ -63,8 +64,15 @@ export function playRoom(room,uid,expectedVersion,command,now=Date.now()){
  requireRule(!room.ended&&occupied(room),'Game paused until another player joins');
  requireRule(room.version===expectedVersion,'State changed. Choose your action again.');
  requireRule(room.game?.status==='active','Game is not active');requireRule(room.game.active===seat,'It is not your turn');
- const next=act(room.game,command);assertConserved(next);
- return {...room,game:clone(next),replay:recordReplay(room.replay,next,seat,command),updatedAt:now,version:room.version+1};
+ if(command?.type==='previewChoice'){
+  const stage=['spellbook','denizen','failsafe','freeing','clear'].includes(command.choice)&&['action','decision','turnComplete'].includes(room.game.phase);
+  const decision=room.game.phase==='decision'&&['nightmare','doorSearch','happyDream'].includes(room.game.pending?.type)&&['key','door','chromatic','banish'].includes(command.choice);
+  requireRule(stage||decision,'Not a public decision choice');
+ }
+ const publicChoice=coopPublicChoice(room.game,command);
+ const next=command.type==='previewChoice'?room.game:act(room.game,command);assertConserved(next);
+ const replay=recordReplay(room.replay,next,seat,command);if(publicChoice)replay[replay.length-1].publicChoice=publicChoice;
+ return {...room,game:clone(next),replay,updatedAt:now,version:room.version+1};
 }
 export function leaveRoom(room,uid,now=Date.now()){
  const seat=seatFor(room,uid);requireRule(seat>=0,'Not a room member');requireRule(!room.ended,'Game has ended');

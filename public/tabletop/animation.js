@@ -17,7 +17,8 @@ const arrays = game => [
   // Only the currently revealed decision cards. Never include deck-search
   // options or unrevealed card identities.
   game?.pending?.cards,
-  game?.pending?.card ? [game.pending.card] : []
+  game?.pending?.card ? [game.pending.card] : [],
+  game?.spectatorDecision?.card ? [game.spectatorDecision.card] : []
 ];
 const allVisible = game => new Set(arrays(game).flatMap(a => cards(a).map(c => c.id)));
 const locations = game => {
@@ -213,6 +214,17 @@ export function createTabletopAnimator({root}){
           if(!rectOK(destination))return;
           revealGhost(c,deck,destination,i*250,cleanups,{target:target?.el||null,scope:flightScope});
         });
+      }
+      // A private inspection becomes public only when a card actually leaves
+      // the inspected deck for a public pile. Animate that reveal at resolution,
+      // never while its identity remains private to the acting player.
+      if(previous?.spectatorDecision?.visibility==='private'&&rectOK(deck)&&rectOK(discard)){
+        const beforeDiscard=membership(previous,'discard'),afterDiscard=membership(game,'discard'),known=publicCardMap(game);
+        let revealIndex=0;
+        for(const id of afterDiscard){
+          if(beforeDiscard.has(id)||old.has(id)||revealIndex>=8)continue;
+          const c=known.get(id);if(c)revealGhost(c,deck,discard,revealIndex++*180,cleanups,{scope:flightScope});
+        }
       }
       if(plan.premRevealed?.length){
         const reserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;

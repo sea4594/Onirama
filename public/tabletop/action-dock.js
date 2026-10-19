@@ -78,9 +78,21 @@ export function actionDockPrompt(game,seat,{selectedId=null,legal=[],prophecyDis
  return {title:'Play or discard',hint:''};
 }
 const button=(label,action)=>`<button type="button" data-action="${escape(action)}" class="tt6-dock-button">${escape(label)}</button>`;
-export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false,nightChoice=null,happyBanishMode=false,doorSearchChromatic=false}={}){
- const {title}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic});
+// Public decisions are read-only for the non-active player. The client never
+// receives private peek cards or the other player's personal hand for this view.
+export function renderSpectatorDecision(decision,chosen=null){
+ if(!decision)return '';
+ const preview=decision.card?`<div class="tt30-spectator-preview" aria-label="Revealed card">${renderCard(decision.card,{tiny:true})}</div>`:'';
+ const choices=(decision.buttons||[]).map(o=>`<button type="button" tabindex="-1" aria-disabled="true" class="tt6-dock-button tt30-spectator-choice ${chosen===o.label?'tt30-spectator-chosen':''}" aria-label="${escape(o.label)}">${escape(o.label)}</button>`).join('');
+ return `<div class="tt30-spectator" data-spectator-decision="${escape(decision.type)}" data-visibility="${escape(decision.visibility||'public')}" aria-label="Partner's action; view only">${preview}${choices?`<div class="tt30-spectator-options">${choices}</div>`:''}</div>`;
+}
+export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null,prophecyDiscard=null,failsafeChoosing=false,nightChoice=null,happyBanishMode=false,doorSearchChromatic=false,spectatorFlash=null,spectatorLive=null}={}){
+ const spectator=game.mode==='coop'&&seat!==game.active?game.spectatorDecision:null;
+ const visibleDecision=spectatorFlash||spectatorLive||spectator;
+ const {title:ownTitle}=actionDockPrompt(game,seat,{selectedId,legal,prophecyDiscard,dialog,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic});
+ const title=visibleDecision?.title||ownTitle;
  let controls='';
+ if(spectator&&game.status==='active')controls=renderSpectatorDecision(visibleDecision,spectatorFlash?.choice||null);
  if(game.phase==='draft'&&game.status==='active'){controls=`<div class="tt28-draft-cards" style="--tt28-per-card:${(100/Math.max(1,game.draft?.length||0)).toFixed(5)}cqw" aria-label="Draft cards">${(game.draft||[]).map(c=>renderCard(c,{select:seat===game.active})).join('')}</div>`;}
  if(game.phase==='turnComplete'&&game.status==='active'&&seat===game.active)controls=button('End turn','endTurn');
  if(game.phase==='decision'&&game.pending?.type==='coopSwap'&&seat===game.active)controls=button('Pass','swapPass');
