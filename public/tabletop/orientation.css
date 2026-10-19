@@ -1,0 +1,59 @@
+/* Orientation parity. This file intentionally leaves all phone-portrait rules
+   untouched. Tablet portrait uses the same occupied-row / equipment order. */
+.game-viewport>.tt6-hand-shelf{display:none}
+@media (orientation:portrait) and (min-width:675px){
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:stretch}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-doors{grid-column:1/-1!important;width:100%}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-solo] .tt2-labyrinth{margin-top:auto}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-grid.tt6-grid{justify-content:flex-start!important;align-content:stretch!important;gap:var(--tt15-gap,4px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-equipment,
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-equipment>.tt5-expansions{display:contents!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-doors{order:1}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-premonitions{order:2;flex:0 0 var(--tt15-prem-h)!important;width:100%!important;height:var(--tt15-prem-h)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt8-towers-slot{order:3;flex:1 1 calc(var(--tt15-tower)*1.42 + 25px)!important;width:100%;min-height:calc(var(--tt15-tower)*1.42 + 25px)}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt8-towers-slot .tt5-alignment{height:100%!important;min-height:calc(var(--tt15-tower)*1.42 + 22px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-catchers{order:4;flex:0 0 var(--tt15-catcher-h)!important;width:100%!important;height:var(--tt15-catcher-h)!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-mirrors,
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt5-incubus{order:5;flex:0 0 var(--tt15-zone-h)!important;width:100%!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt6-piles{order:6;flex:0 0 auto!important;width:100%;min-width:0!important}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-denizens{order:7}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-labyrinths{order:8;flex:1 1 auto;min-height:0}
+ .game-viewport .tt2-root[data-tt15-layout="portrait"][data-tabletop-coop] .tt17-coop-hands{order:9;flex:0 0 auto}
+}
+/* One full-width bottom band: playable hand on the left, dock on the right.
+   Only the center board is fitted; the hand is never scaled with it. */
+@media (orientation:landscape){
+ #app>.page.game-viewport{--tt6-dock-height:clamp(114px,26dvh,190px)!important}
+ .game-viewport>.tt6-table-slot{inset:0 0 var(--tt6-dock-height) 0!important;overflow:hidden}
+ .game-viewport>.tt6-hand-shelf{display:flex!important;position:absolute;box-sizing:border-box;bottom:0;left:0;width:50%;height:var(--tt6-dock-height);padding:5px max(5px,env(safe-area-inset-left)) max(5px,env(safe-area-inset-bottom)) 5px;align-items:stretch;justify-content:center;overflow:hidden;border-top:1px solid var(--ui-border);border-right:1px solid var(--ui-border);background:var(--table-background);z-index:3;--landscape-card:min(var(--tt15-card,70px),calc((50vw - 36px)/5))}
+ .game-viewport>.tt6-workspace{inset:auto 0 0 50%!important;width:50%!important;height:var(--tt6-dock-height)!important;max-height:var(--tt6-dock-height)!important;padding:5px max(7px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) 7px!important;border-top:1px solid var(--ui-border);border-left:0!important;border-radius:0!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;overflow:hidden!important}
+ .game-viewport .tt6-workspace .tt6-dock-status{flex:0 0 auto!important;width:100%;min-width:0}
+ .game-viewport .tt6-workspace .tt6-dock-scroll{flex:1 1 0!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;width:100%}
+ .game-viewport .tt6-workspace .tt6-dock-decision{width:100%;min-width:0}
+ .game-viewport>.tt6-hand-shelf>.tt2-hand,.game-viewport>.tt6-hand-shelf>.tt6-self{display:flex!important;flex-direction:column!important;justify-content:center;min-width:0;min-height:0;width:100%;height:100%;padding:3px!important;gap:2px;box-sizing:border-box;overflow:hidden}
+ .game-viewport>.tt6-hand-shelf .tt2-hand>header,.game-viewport>.tt6-hand-shelf .tt6-region-heading{font-size:10px;line-height:14px;min-height:14px;margin:0;padding:0 3px;color:var(--table-text)}
+ .game-viewport>.tt6-hand-shelf .tt6-hand-block{min-width:0;min-height:0;width:100%;height:100%;padding:2px;box-sizing:border-box;overflow:hidden}
+ .game-viewport>.tt6-hand-shelf :is(.tt2-hand-row,.tt6-hand-cards){display:flex!important;align-items:center!important;justify-content:space-evenly!important;flex-flow:row nowrap!important;gap:3px!important;padding:1px!important;min-width:0;min-height:0!important;width:100%;height:auto;overflow:hidden}
+ .game-viewport>.tt6-hand-shelf :is(.tt2-hand-card,.tt6-card-wrap){min-width:0!important;flex:0 1 var(--landscape-card)!important;max-width:var(--landscape-card)!important}
+ .game-viewport>.tt6-hand-shelf :is(.tt2-hand-card,.tt6-card-wrap) .card,.game-viewport>.tt6-hand-shelf .tt6-card-back{display:block;width:100%!important;height:auto!important;aspect-ratio:1/1.42!important;min-width:0!important;max-width:100%!important;box-sizing:border-box}
+ .game-viewport>.tt6-hand-shelf .card.selected,.game-viewport>.tt6-hand-shelf .card.tt7-eligible{outline:3px solid var(--table-gold)!important;outline-offset:-2px!important;transform:none!important}
+ .game-viewport>.tt6-hand-shelf .tt3-drag-source{opacity:.45}
+ .game-viewport .tt17-coop-hands:has(> .tt6-self + .tt6-shared-block){grid-template-columns:minmax(0,1fr) minmax(0,.72fr)!important}
+ .game-viewport .tt17-coop-hands:not(:has(> .tt6-self)){grid-template-columns:minmax(0,1fr) minmax(0,.72fr)!important}
+ .game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo] .tt2-grid,
+ .game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo] .tt2-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'doors doors' 'towers piles' 'primary primary' 'secondary secondary' 'labyrinth labyrinth'!important;grid-template-rows:auto auto auto auto minmax(0,1fr)!important;align-content:stretch}
+ .game-viewport .tt2-root[data-tabletop-solo]:not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors doors' 'piles piles' 'primary primary' 'secondary secondary' 'labyrinth labyrinth'!important}
+ /* Match the occupied solo reading order even when Oniverse adds its
+    Denizens shelf. Late expansion styles must not reinstate 3-column lanes. */
+ .game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid,
+ .game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:has(.tt9-exp-denizens) .tt2-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'doors doors' 'towers piles' 'primary primary' 'secondary secondary' 'denizens denizens' 'labyrinth labyrinth'!important;grid-template-rows:auto auto auto auto auto minmax(0,1fr)!important}
+ .game-viewport .tt2-root[data-tt15-layout="wide"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid,
+ .game-viewport .tt2-root[data-tt15-layout="short"][data-tabletop-solo]:has(.tt9-exp-denizens):not(:has(.tt8-towers-slot)) .tt2-grid{grid-template-areas:'doors doors' 'piles piles' 'primary primary' 'secondary secondary' 'denizens denizens' 'labyrinth labyrinth'!important}
+ .game-viewport .tt2-root[data-tabletop-solo] .tt2-labyrinth{margin-top:auto}
+ .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions{display:grid!important;flex-flow:initial!important;grid-template-columns:repeat(var(--tt15-exp-cols,2),minmax(0,1fr))!important;grid-auto-rows:max-content!important}
+ .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone{height:var(--tt15-zone-h,65px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone.tt5-catchers{height:var(--tt15-catcher-h,96px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-expansions>.tt5-zone.tt5-premonitions{height:var(--tt15-prem-h,88px)!important}
+ .game-viewport .tt2-root[data-tt15-layout="short"] .tt5-premonitions .tt5-premonition{height:min(100%,calc(var(--tt15-prem-h) - 23px))!important}
+ .game-viewport .tt6-pile-inspector{bottom:calc(var(--tt6-dock-height) + 6px)!important;max-height:calc(100dvh - var(--tt6-dock-height) - 14px)!important}
+}

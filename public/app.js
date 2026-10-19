@@ -6,6 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {arrangeGameplayHand} from './tabletop/orientation.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,isBlankGameTap} from './tabletop/interactions.js';
@@ -446,7 +447,11 @@ function historyPage(){const list=readHistory(localStorage),stats=summarizeHisto
  </div>`;}
 function fitGameTabletop(){
   const viewport=app.querySelector?.('.tt6-table-slot'),table=viewport?.querySelector?.('.tt2-root');
-  return fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
+  if(typeof arrangeGameplayHand==='function'&&typeof window!=='undefined')arrangeGameplayHand(app,window.matchMedia?.('(orientation: landscape)')?.matches??window.innerWidth>window.innerHeight);
+  const result=fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
+  // The hand is outside the scaled board in landscape, so match its card size.
+  if(table)app.querySelector('.tt6-hand-shelf')?.style.setProperty('--tt15-card',table.style.getPropertyValue('--tt15-card'));
+  return result;
 }
 let lastRenderedMarkup=null;
 function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='active')failsafeChoosing=false;tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=lastInputWasKeyboard?['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]):null;const focusValue=focusKind?focused.dataset[focusKind]:null;
@@ -474,7 +479,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
   const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
-  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div><div class="tt6-hand-shelf" aria-label="Your hand"></div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
   if(markup!==lastRenderedMarkup){app.innerHTML=markup;lastRenderedMarkup=markup;}
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
@@ -904,7 +909,12 @@ render();if(typeof createCardInspector==='function')cardInspector=createCardInsp
 function resizeGameplay(){
  if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);
  if(page==='#/game'&&state?.room?.started){
-  applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
+  const table=app.querySelector?.('.tt2-root');
+  const viewport=app.querySelector?.('.tt6-table-slot');
+  // Do not measure yesterday's scaled board after a phone or tablet rotates.
+  // Reset geometry before the legacy metrics pass as well as the final fit.
+  if(table&&viewport){table.style.transform='';table.style.zoom='1';table.style.width=`${viewport.clientWidth}px`;table.style.height='auto';}
+  applyTabletopMetrics(table,{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
   fitGameTabletop();
  }
 }
@@ -920,6 +930,17 @@ addEventListener('resize',fitAfterViewportSettles);
 if(typeof window!=='undefined'){
  window.visualViewport?.addEventListener?.('resize',fitAfterViewportSettles);
  window.addEventListener?.('orientationchange',fitAfterViewportSettles);
+ window.addEventListener?.('orientationchange',()=>{
+  // Safari can retain a magnified visual viewport through rotation. Reassert
+  // initial scale for that rotation, then immediately restore pinch zoom.
+  const meta=document.querySelector('meta[name="viewport"]');
+  if(meta){
+   const original=meta.content;
+   meta.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover';
+   requestAnimationFrame(()=>{meta.content=original;fitAfterViewportSettles();});
+  }
+  fitAfterViewportSettles();
+ });
  window.addEventListener?.('pageshow',fitAfterViewportSettles);
 }
 // Suppress iOS double-tap text magnification on game controls; preserve pinch zoom.

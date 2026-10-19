@@ -53,6 +53,8 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   let pointer=null, ghost=null, currentDrop=null, suppressClick=false;
   const $=selector=>root.querySelector(selector);
   const board=()=>$('.tt2-root[data-tabletop-solo="true"],.tt6-root[data-tabletop-coop="true"]');
+  const inPlay=el=>Boolean(board()?.contains(el)||$('.tt6-hand-shelf')?.contains(el));
+  const playableCards=()=>[...(board()?.querySelectorAll('[data-tt-card]')||[]),...($('.tt6-hand-shelf')?.querySelectorAll('[data-tt-card]')||[])];
   const selected=()=>board()?.dataset.selectedCard||'';
   const legal=id=>isBusy()?[]:tabletopLegalTargets(getGame(),id,getSeat());
   const swapZone=id=>{const g=getGame(),seat=getSeat();if(isBusy()||g?.mode!=='coop'||g.phase!=='decision'||g.pending?.type!=='coopSwap'||g.active!==seat)return null;return g.players[seat].hand.some(c=>c.id===id)?'personal':g.shared.some(c=>c.id===id)?'shared':null;};
@@ -65,7 +67,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
       if(el.matches('button'))el.disabled=!allowed;
       el.setAttribute('data-tt-legal',String(allowed));
     }
-    for(const card of b.querySelectorAll('[data-tt-card]')){
+    for(const card of playableCards()){
       card.setAttribute('aria-grabbed',String(card.dataset.ttCard===id&&!!id));
     }
   }
@@ -127,7 +129,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     suppressClick=false;
     if(e.button!==0&&e.pointerType==='mouse')return;
     const c=e.target.closest?.('[data-tt-card]');
-    if(!c||!board()?.contains(c)||!(legal(c.dataset.ttCard).length||swapZone(c.dataset.ttCard)))return;
+    if(!c||!inPlay(c)||!(legal(c.dataset.ttCard).length||swapZone(c.dataset.ttCard)))return;
     const bounds=c.getBoundingClientRect();
     pointer={id:e.pointerId,card:c,cardId:c.dataset.ttCard,x:e.clientX,y:e.clientY,offsetX:e.clientX-bounds.left,offsetY:e.clientY-bounds.top,dragging:false,maxDistance:0,started:performance.now()};
   }
@@ -146,7 +148,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     if(inspect&&board()?.contains(inspect))onInspect(inspect.dataset.ttInspect);
   }
   function onKey(e){
-    const b=board();if(!b||!b.contains(e.target))return;
+    const b=board();if(!b||!inPlay(e.target))return;
     if(e.key==='Escape'){
       if(pointer)clearDrag();
       if(selected()){onSelect(selected());e.preventDefault();}
@@ -156,7 +158,7 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
     // adjacent hand cards without requiring repeated Tab presses.
     const card=e.target.closest?.('[data-tt-card]');
     if(card&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){
-      const cards=[...b.querySelectorAll('[data-tt-card]')];let idx=cards.indexOf(card);
+      const cards=playableCards();let idx=cards.indexOf(card);
       idx=Math.max(0,Math.min(cards.length-1,idx+(e.key==='ArrowRight'?1:-1)));
       cards[idx]?.focus();e.preventDefault();return;
     }

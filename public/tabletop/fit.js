@@ -41,7 +41,7 @@ function fitTiles(table){
  }
 }
 function assign(table,plan,{mode,width,height,zoneCount,tier,cardFactor=1}={}){
- const landscape=plan.shape==='short',tablet=plan.shape==='medium',layout=plan.shape==='wide'?'wide':landscape?'short':tablet?'tablet':'portrait';
+ const landscape=width>height,short=landscape&&height<560,tablet=plan.shape==='medium',layout=landscape?(short?'short':'wide'):'portrait';
  const crowded=zoneCount>=5,veryCrowded=zoneCount>=8;
  const multipliers={comfortable:1,compact:.89,dense:.79,ultra:.71};
  const pressure=multipliers[tier]||1;
@@ -49,10 +49,10 @@ function assign(table,plan,{mode,width,height,zoneCount,tier,cardFactor=1}={}){
  const gap=tier==='comfortable'?7:tier==='compact'?5:3;
  const baseCard=Math.round(plan.card*cardFactor*pressure),baseMini=Math.round(plan.mini*(.94+(cardFactor-1)*.45)*pressure);
  const card=Math.max(33,baseCard),mini=Math.max(20,baseMini);
- const catcher=Math.round((landscape?91:veryCrowded?100:112)*pressure+(tier==='dense'||tier==='ultra'?8:0));
- const prem=Math.round((landscape?84:veryCrowded?93:101)*pressure+(tier==='dense'||tier==='ultra'?6:0));
+ const catcher=Math.round((short?91:veryCrowded?100:112)*pressure+(tier==='dense'||tier==='ultra'?8:0));
+ const prem=Math.round((short?84:veryCrowded?93:101)*pressure+(tier==='dense'||tier==='ultra'?6:0));
  const zone=Math.round((landscape?61:veryCrowded?67:73)*pressure+4);
- const columns=landscape?Math.min(4,Math.max(2,zoneCount)):plan.shape==='wide'?Math.min(5,Math.max(2,zoneCount)):tablet?Math.min(4,Math.max(2,zoneCount)):zoneCount>=6?3:2;
+ const columns=short?Math.min(4,Math.max(2,zoneCount)):plan.shape==='wide'?Math.min(5,Math.max(2,zoneCount)):tablet?Math.min(4,Math.max(2,zoneCount)):zoneCount>=6?3:2;
  table.dataset.tt15Layout=layout;table.dataset.tt15Tier=tier;table.dataset.tt4Shape=plan.shape;table.dataset.tt4Pressure=tier==='comfortable'?'normal':tier==='compact'?'tight':'minimum';
  table.style.setProperty('--tt15-card',`${card}px`);table.style.setProperty('--tt15-mini',`${mini}px`);
  table.style.setProperty('--tt15-tower',`${clamp(Math.round(mini*1.25),35,73)}px`);
@@ -91,7 +91,7 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
  if(!width||!height)return null;
  const zones=table.querySelectorAll('.tt5-expansions>.tt5-zone').length;
  const plan=tabletopDimensions(width,height,mode,zones);
- const portraitSolo=mode==='solo'&&plan.shape==='portrait';
+ const portraitSolo=mode==='solo'&&width<=height;
  fitPortraitSoloRows(table,portraitSolo);
  table.style.width=`${width}px`;table.style.height='auto';table.style.minHeight='0';table.style.transform='';table.style.zoom='1';table.style.left='0';table.style.transformOrigin='top left';
  let choice,selected;
