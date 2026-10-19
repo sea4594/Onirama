@@ -623,3 +623,23 @@
 .game-viewport .tt2-root .tt8-towers-slot .tt5-tower-target.tt3-drop-hover{
  outline:3px solid #fff4c4!important;outline-offset:-2px!important;opacity:1!important;
 }
+
+/* Hand cards have one physical size regardless of kind (including Towers).
+   The face artwork may vary, but must not affect the card's outer rectangle. */
+.game-viewport .tt2-root[data-tt15-layout] .tt2-hand-card>.card,
+.game-viewport .tt2-root[data-tt15-layout] .tt6-card-wrap>.card{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ max-width:100%!important;height:auto!important;min-height:0!important;
+ aspect-ratio:1 / 1.42!important;padding:2px!important
+}
+/* Earlier card-back rules capped the icon wrapper at 55% of the card's
+   height, which centered the diamond in the TOP half instead of the card. */
+.game-viewport .tt2-root .tt6-card-back>span{
+ max-height:none!important;aspect-ratio:auto!important;
+ inset:0!important;width:100%!important;height:100%!important;
+ display:grid!important;place-items:center!important;box-sizing:border-box!important
+}
+.game-viewport .tt2-root .tt6-card-back>span>.ui-icon{
+ width:52%!important;height:auto!important;aspect-ratio:1 / 1!important;
+ max-height:60%!important;margin:0!important;place-self:center!important
+}

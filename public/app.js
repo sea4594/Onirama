@@ -43,7 +43,7 @@ let denizenIntent=null,premonitionKeysSelected=new Set(),happyPremonitionChoice=
 let session=null;try{const saved=JSON.parse(localStorage.getItem('onirama.session')||'null');if(saved&&typeof saved.id==='string'&&saved.id.length<64&&(['local','hotseat'].includes(saved.id)||typeof saved.token==='string'||saved.transport==='firebase'))session=saved;}catch{localStorage.removeItem('onirama.session');}
 if(STATIC_SITE&&USE_FIREBASE&&!['local','hotseat'].includes(session?.id)&&session?.transport!=='firebase'){session=null;localStorage.removeItem('onirama.session');}
 let selectedExpansions=new Set(),selectedDifficulties={},spellSelected=new Set(),spellChoice='parallel',effectOrder=[],effectPick=null,incantationStage='claim',effectDiscards=new Set();
-const THEME_PRESETS=[{id:'forest',name:'Forest'},{id:'moonlit',name:'Moonlit'},{id:'copper',name:'Copper'},{id:'lagoon',name:'Lagoon'},{id:'heather',name:'Heather'},{id:'sandstone',name:'Sandstone'}];
+const THEME_PRESETS=[{id:'moonlit',name:'Moonlit'},{id:'forest',name:'Forest'},{id:'copper',name:'Copper'},{id:'lagoon',name:'Lagoon'},{id:'heather',name:'Heather'},{id:'sandstone',name:'Sandstone'}];
 const SETTINGS_KEY='onirama.ui.settings.v1';
 const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
