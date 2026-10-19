@@ -731,3 +731,92 @@
   box-sizing:border-box!important;width:100%!important;max-width:100%!important;
   min-width:0!important;padding:0!important;
 }
+
+/* A closed, bound volume: visible paper edges, a raised spine and gilded cover.
+   The complete face is the action target; the pile label stays outside it. */
+.game-viewport .tt2-root .tt32-spell-book .tt32-book-cover{
+ isolation:isolate;position:relative!important;display:flex!important;flex-direction:column!important;
+ justify-content:center!important;align-items:center!important;gap:2px!important;
+ box-sizing:border-box!important;overflow:visible!important;
+ border:2px solid #c8ac66!important;border-left:7px solid #59412e!important;
+ border-radius:3px 7px 7px 3px!important;
+ background:linear-gradient(90deg,#233c42 0%,#385b5b 16%,#203d44 58%,#152c35 100%)!important;
+ box-shadow:inset 0 0 0 2px #bda970,inset 0 0 0 4px #182a30,
+            inset -5px 0 6px #101f25,3px 3px 0 #e4d6ae,4px 4px 0 #a38c60,
+            5px 5px 4px #0006!important;
+ transform:perspective(160px) rotateY(-5deg);
+}
+.game-viewport .tt2-root .tt32-spell-book .tt32-book-cover::before{
+ content:''!important;position:absolute!important;left:-5px!important;top:1px!important;bottom:1px!important;
+ width:4px!important;border:0!important;opacity:1!important;
+ background:repeating-linear-gradient(to bottom,#9b8552 0 2px,#51382f 2px 6px,#c4a76c 6px 7px,#51382f 7px 13px)!important;
+ box-shadow:inset -1px 0 #dfc38e!important;
+}
+.game-viewport .tt2-root .tt32-spell-book .tt32-book-cover::after{
+ content:''!important;position:absolute!important;right:-5px!important;top:5px!important;bottom:5px!important;
+ width:4px!important;opacity:1!important;border:1px solid #a28c64!important;border-radius:0 2px 2px 0!important;
+ background:repeating-linear-gradient(to bottom,#f0e3be 0 2px,#d2be95 2px 3px)!important;
+}
+.game-viewport .tt2-root .tt32-spell-book .tt33-book-ornament{
+ display:flex;align-items:center;justify-content:center;color:#e6c988!important;
+ font-size:clamp(12px,2.5vw,17px)!important;line-height:1!important;
+ width:58%;height:28%;border:1px solid #bca268;border-radius:50%;
+ box-shadow:0 0 0 1px #101f25,0 0 0 2px #806e4c;
+ font-family:Georgia,serif;text-shadow:0 1px #211a12;
+}
+.game-viewport .tt2-root .tt32-spell-book .tt32-book-count{
+ z-index:1!important;font:800 clamp(11px,2.8vw,18px)/1 Georgia,serif!important;
+ font-variant-numeric:tabular-nums!important;color:#ffe7a2!important;
+}
+.game-viewport .tt2-root .tt32-spell-book:is(:hover,:focus-visible) .tt32-book-cover{
+ filter:brightness(1.15)!important;
+}
+/* A single invariant freeing layout for Door searches and every other search.
+   The right-side buttons remain fixed with zero, one, or many preview cards. */
+.game-viewport .tt6-dock-decision .tt21-free-step.tt33-free-step{
+ box-sizing:border-box;display:flex!important;flex-direction:column!important;
+ width:100%!important;max-width:100%!important;height:100%!important;
+ min-height:0!important;align-items:stretch!important;justify-content:center!important;
+ overflow:hidden!important;padding:2px 4px!important;margin:0!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-detail{
+ box-sizing:border-box;display:grid!important;
+ grid-template-columns:minmax(0,1fr) clamp(67px,22%,92px)!important;
+ column-gap:8px!important;align-items:center!important;
+ justify-content:stretch!important;flex-wrap:nowrap!important;
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ height:100%!important;min-height:0!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt33-free-preview{
+ box-sizing:border-box;display:flex;flex-direction:column;gap:3px;
+ align-items:center;justify-content:center;min-width:0;max-width:100%;height:100%;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt33-free-name{
+ color:var(--table-text);opacity:.8;font-size:11px;line-height:1;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-cards{
+ box-sizing:border-box;container-type:inline-size;display:flex!important;gap:3px!important;
+ align-items:center!important;justify-content:center!important;
+ flex:0 1 auto!important;min-width:0!important;max-width:100%!important;
+ width:100%!important;overflow:hidden!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-cards .card{
+ box-sizing:border-box!important;flex:0 1 min(52px,calc(var(--tt21-per-card) - 4px),calc((var(--tt6-dock-height) - 58px)/1.42))!important;
+ width:min(52px,calc(var(--tt21-per-card) - 4px),calc((var(--tt6-dock-height) - 58px)/1.42))!important;
+ min-width:0!important;max-width:100%!important;height:auto!important;
+ aspect-ratio:1/1.42!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt33-free-placeholder{
+ display:flex;align-items:center;justify-content:center;text-align:center;
+ font-size:12px;line-height:1.3;opacity:.75;min-height:55px;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-buttons{
+ box-sizing:border-box;display:flex!important;flex-direction:column!important;
+ gap:7px!important;width:100%!important;min-width:0!important;max-width:100%!important;
+ align-items:stretch!important;justify-content:center!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-buttons button{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ min-height:36px!important;margin:0!important;padding:4px 2px!important;
+}
+.game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-buttons button:disabled{opacity:.35!important}

@@ -287,7 +287,7 @@ function searchFreeCatchers(g){
 }
 function searchFreeWorkspace(g){
  const available=searchFreeCatchers(g),chosen=available.find(x=>x.i===searchFreeIntent?.selected);
- return `<section class="decision stack tt21-free-step"><p>Free a dreamcatcher?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" style="--tt21-per-card:${(100/Math.max(1,chosen.cards.length)).toFixed(5)}cqw">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`searchFree:free:${chosen.i}`,'primary')}${btn('Pass','searchFree:pass','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','searchFree:pass','tt21-muted')}</div>`}</section>`;
+ return freeingPanel(chosen,'searchFree:pass',chosen?`searchFree:free:${chosen.i}`:null);
 }
 // Search is an engine action; choosing an optional Dreamcatcher is a UI-only step.
 // This does not expose deck identities or change state until the player confirms.
@@ -295,12 +295,21 @@ function searchableCatchers(g,intent){
  const d=g.expansion?.dreamcatchers,source=(g.pending?.targets||[]).find(t=>t.id===intent?.doorId)?.source;
  return d?d.stacks.map((cards,i)=>({cards,i})).filter(({cards,i})=>cards.length&&d.active[i]&&source!==`catch${i}`):[];
 }
+// Both Door searches and other reshuffles use the same fixed-width card/action layout.
+// All cards remain visible on the left. The right-hand actions never move when
+// switching between Dreamcatchers with different card counts.
+function freeingPanel(chosen,passAction,freeAction){
+ const cards=chosen?.cards||[];
+ const preview=chosen?`<div class="tt21-free-cards" style="--tt21-per-card:${(100/Math.max(1,cards.length)).toFixed(5)}cqw" aria-label="Dreamcatcher ${chosen.i+1} cards">${cards.map(c=>card(c,{tiny:true})).join('')}</div>`:'<div class="tt33-free-placeholder">Tap a highlighted Dreamcatcher</div>';
+ const free=chosen?btn('Free',freeAction,'primary'):'<button type="button" class="primary" disabled>Free</button>';
+ return `<section class="decision tt21-free-step tt33-free-step" aria-label="Free a dreamcatcher?"><div class="tt21-free-detail"><div class="tt33-free-preview">${chosen?`<span class="tt33-free-name">Dreamcatcher ${chosen.i+1}</span>`:''}${preview}</div><div class="tt21-free-buttons">${free}${btn('Pass',passAction,'tt21-muted')}</div></div></section>`;
+}
 function doorSearchDecision(g,p){
  const all=p.targets||[],intent=doorSearchIntent;
  const valid=intent&&(!intent.doorId||all.some(t=>t.id===intent.doorId));
  if(valid&&g.expansion?.dreamcatchers){
   const available=searchableCatchers(g,intent),chosen=available.find(x=>x.i===intent.selected);
-  return `<section class="decision stack tt21-free-step"><p>Free a dreamcatcher?</p>${available.length?'<p>Tap a highlighted Dreamcatcher.</p>':''}${chosen?`<div class="tt21-free-detail"><div class="tt21-free-cards" style="--tt21-per-card:${(100/Math.max(1,chosen.cards.length)).toFixed(5)}cqw" aria-label="Dreamcatcher ${chosen.i+1} cards">${chosen.cards.map(c=>card(c,{tiny:true})).join('')}</div><div class="tt21-free-buttons">${btn('Free',`doorSearch:free:${chosen.i}`,'primary')}${btn('Pass','doorSearch:passFree','tt21-muted')}</div></div>`:`<div class="tt21-free-buttons">${btn('Pass','doorSearch:passFree','tt21-muted')}</div>`}</section>`;
+  return freeingPanel(chosen,'doorSearch:passFree',chosen?`doorSearch:free:${chosen.i}`:null);
  }
  const chromatic=!!(g.expansion?.oniverse?.rallied||[]).find(d=>d.owner===g.active&&d.ability==='chromatic');
  const more=doorSearchChromatic&&chromatic;
