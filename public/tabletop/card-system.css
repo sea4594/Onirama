@@ -685,7 +685,7 @@
   display:grid;place-items:center;box-shadow:inset -3px 0 0 #d5c08b6c,2px 2px 0 var(--card-back-shadow);
 }
 .game-viewport .tt32-book-cover::before{content:'';position:absolute;left:-4px;top:2px;bottom:2px;border-left:1px solid #b8a776;opacity:.7}
-.game-viewport .tt32-book-cover::after{content:'';position:absolute;right:-3px;top:5px;bottom:5px;border-right:2px solid #e2d8b0;opacity:.8}
+.game-viewport .tt32-book-cover::after{content:none;display:none}
 .game-viewport .tt32-book-count{font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:#f8e9ba;font-size:clamp(12px,calc(var(--tt4-mini,42px)*.43),21px);text-shadow:0 1px 2px #000}
 .game-viewport .tt32-book-label{font-size:clamp(8px,1.7vw,11px);line-height:1.1;color:var(--table-text);white-space:nowrap}
 .game-viewport .tt32-spell-book:is(:focus-visible,.tt3-target-ready) .tt32-book-cover{outline:3px solid var(--table-gold)!important;outline-offset:2px}
@@ -742,8 +742,7 @@
  border-radius:3px 7px 7px 3px!important;
  background:linear-gradient(90deg,#233c42 0%,#385b5b 16%,#203d44 58%,#152c35 100%)!important;
  box-shadow:inset 0 0 0 2px #bda970,inset 0 0 0 4px #182a30,
-            inset -5px 0 6px #101f25,3px 3px 0 #e4d6ae,4px 4px 0 #a38c60,
-            5px 5px 4px #0006!important;
+            inset -5px 0 6px #101f25,0 2px 5px #0006!important;
  transform:perspective(160px) rotateY(-5deg);
 }
 .game-viewport .tt2-root .tt32-spell-book .tt32-book-cover::before{
@@ -753,9 +752,7 @@
  box-shadow:inset -1px 0 #dfc38e!important;
 }
 .game-viewport .tt2-root .tt32-spell-book .tt32-book-cover::after{
- content:''!important;position:absolute!important;right:-5px!important;top:5px!important;bottom:5px!important;
- width:4px!important;opacity:1!important;border:1px solid #a28c64!important;border-radius:0 2px 2px 0!important;
- background:repeating-linear-gradient(to bottom,#f0e3be 0 2px,#d2be95 2px 3px)!important;
+ content:none!important;display:none!important;
 }
 .game-viewport .tt2-root .tt32-spell-book .tt33-book-ornament{
  display:flex;align-items:center;justify-content:center;color:#e6c988!important;

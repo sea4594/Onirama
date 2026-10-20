@@ -409,11 +409,11 @@ function decision(g,canAct){
 }
 let prophecyDiscard=null,prophecyOrder=[];
 function prophecy(g){const cards=g.pending.cards;if(!cards)return '';
-  if(!cards.some(c=>c.id===prophecyDiscard)){prophecyDiscard=null;prophecyOrder=cards.map(c=>c.id);}
+  if(prophecyDiscard&&!cards.some(c=>c.id===prophecyDiscard))prophecyDiscard=null;
   if(prophecyOrder.length!==cards.length||prophecyOrder.some(id=>!cards.some(c=>c.id===id)))prophecyOrder=cards.map(c=>c.id);
   const remaining=prophecyOrder.filter(id=>id!==prophecyDiscard);
   const discarded=cards.find(c=>c.id===prophecyDiscard);
-  return `<section class="decision stack tt7-prophecy" style="--tt7-per-card:${(100/Math.max(1,cards.length+1)).toFixed(5)}cqw"><div class="tt7-compact-row"><div class="cards tt3-order-list tt26-prophecy-cards" data-tt-order-group="prophecy">${remaining.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Move card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="prophecy" aria-label="Move selected card to end"></button></div><button type="button" class="tt7-prophecy-slot" data-tt-prophecy-discard aria-label="Prophecy discard slot: drag or select a card, then activate">${discarded?card(discarded,{tiny:true}):'Discard<br>↓'}</button></div>${prophecyDiscard?btn('Confirm','prophecyConfirm','primary'):'<span class="tt7-micro">Drag a card to Discard</span>'}</section>`;
+  return `<section class="decision stack tt7-prophecy" style="--tt7-per-card:${(100/Math.max(1,cards.length+1)).toFixed(5)}cqw"><div class="tt7-compact-row"><div class="cards tt3-order-list tt26-prophecy-cards" data-tt-order-group="prophecy">${remaining.map(id=>{const c=cards.find(x=>x.id===id);return `<div class="tt3-order-item" data-tt-order-id="${escape(id)}"><div class="tt3-order-handle" data-tt-order-handle="${escape(id)}" role="button" tabindex="0" aria-label="Move card">${card(c,{tiny:true})}</div></div>`;}).join('')}<button type="button" class="tt5-order-end" data-tt-order-end="prophecy" aria-label="Move selected card to end"></button></div><button type="button" class="tt7-prophecy-slot" data-tt-prophecy-discard aria-label="${discarded?'Return discarded card to the ordered cards':'Discard slot: drag or select a card, then activate'}" title="${discarded?'Tap to return this card':'Drag a card here to discard it'}">${discarded?card(discarded,{tiny:true}):'Discard<br>↓'}</button></div><button type="button" class="primary" data-action="prophecyConfirm" ${prophecyDiscard?'':'disabled aria-label="Choose a card to discard before confirming"'}>Confirm</button></section>`;
 }
 // The new solo and cooperative tabletops are the only supported gameplay surfaces.
 // Unknown modes fail visibly instead of silently falling back to obsolete controls.
@@ -868,6 +868,7 @@ function installTabletopController(){
   });
   createDecisionReorder({root:app,
     canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&state.game.pending.cards.some(c=>c.kind==='door')),
+    onUndiscard:()=>{if(state?.game?.pending?.type!=='prophecy'||!prophecyDiscard)return;prophecyDiscard=null;render();},
     onDiscard:id=>{if(state?.game?.pending?.type==='happyPeek'){effectDiscards.add(id);render();return;}if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
     onRestore:(id,gap)=>{if(state?.game?.pending?.type!=='happyPeek'||!effectDiscards.has(id))return;
       effectOrder=restoreDiscardedCardToGap(effectOrder,effectDiscards,id,gap);
@@ -875,7 +876,7 @@ function installTabletopController(){
     },
     onReorder:(kind,from,gap)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
-      if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){if(!prophecyDiscard)return;const ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);prophecyOrder=[...moved,...(prophecyDiscard?[prophecyDiscard]:[])];}
+      if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){const originalDiscardIndex=prophecyOrder.indexOf(prophecyDiscard),ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);if(prophecyDiscard)moved.splice(Math.min(originalDiscardIndex,moved.length),0,prophecyDiscard);prophecyOrder=[...moved];}
       else if(kind==='effect'&&state.game.pending?.type==='happyPeek'){const kept=effectOrder.filter(id=>!effectDiscards.has(id)),discarded=effectOrder.filter(id=>effectDiscards.has(id));effectOrder=[...moveOrderedCardToGap(kept,from,gap),...discarded];}
       else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(state.game.pending?.type==='confusion'?orderSlice(effectOrder).offset:0)+gap);
       else return;

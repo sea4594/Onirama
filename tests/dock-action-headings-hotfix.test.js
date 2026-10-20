@@ -13,7 +13,7 @@ test('every bottom-panel decision heading describes the player action, not just 
   diver:'Diver: reveal or stop',confusion:'Confusion: reorder your hand',
   mirrorReward:'Mirror: choose cards',doorSearch:'Retrieve a Door',
   door:'Drawn Door: use a Key?',nightmare:'Nightmare: choose a penalty',
-  prophecy:'Prophecy: choose a discard',happyDream:'Happy Dream: choose an effect',
+  prophecy:'Prophecy: arrange / choose discard',happyDream:'Happy Dream: choose an effect',
   happyFetch:'Happy Dream: choose a card',rally:'Rally a Denizen: choose a card',
   premonitionPick:'Choose a Dark Premonition',premonitionDoor:'Dark Premonition: remove a Door',
   premonitionKeys:'Dark Premonition: discard Keys',premonitionNightmare:'Dark Premonition: return a Nightmare',

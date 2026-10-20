@@ -41,6 +41,6 @@ test('Spells controls resemble physical bound books rather than flat card button
   assert.match(src,/class="tt33-book-ornament"/);assert.match(src,/class="tt32-book-count"/);assert.match(src,/class="tt32-book-label">Spells/);
  }
  assert.match(css,/\.tt32-spell-book \.tt32-book-cover\{[\s\S]*?border-left:7px solid/);
- assert.match(css,/\.tt32-spell-book \.tt32-book-cover::after\{[\s\S]*?repeating-linear-gradient\(to bottom,#f0e3be/);
+ assert.match(css,/\.tt32-spell-book \.tt32-book-cover::after\{\s*content:none!important;display:none!important/);
  assert.match(css,/\.tt32-spell-book \.tt32-book-cover::before\{[\s\S]*?repeating-linear-gradient\(to bottom,#9b8552/);
 });

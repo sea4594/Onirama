@@ -13,7 +13,7 @@ const decisionTitles={
  doorSearch:'Retrieve a Door',
  door:'Drawn Door: use a Key?',
  nightmare:'Nightmare: choose a penalty',
- prophecy:'Prophecy: choose a discard',
+ prophecy:'Prophecy: arrange / choose discard',
  happyDream:'Happy Dream: choose an effect',
  happyFetch:'Happy Dream: choose a card',
  rally:'Rally a Denizen: choose a card',
