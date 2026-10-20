@@ -1,5 +1,6 @@
 import {CARD_MOTION,catcherTransferCounts} from './animation-timing.js';
 import {renderCard} from './cards.js';
+import {planExpansionMotion,expansionMotionSignature,expansionDestinationRect} from './animation-expansions.js';
 /* Phase 7: presentation-only transitions from successive *public game views*.
    Never mutate the engine, issue actions, read the unrevealed deck, or replay
    an effect by re-submitting a command. The source of truth is always the view. */
@@ -63,7 +64,7 @@ export function transferDestinationZone(id,previous,next){
 export function transferTargetRect(zone,visibleRect,anchors){
   if(zone==='discard'||zone==='limbo')return anchors?.[zone]||null;
   if(zone?.startsWith('catcher:'))return anchors?.catchers?.[Number(zone.slice(8))]||null;
-  return visibleRect||null;
+  return expansionDestinationRect(zone,visibleRect,anchors);
 }
 // A group of returned cards either animates individually or as one clearly
 // counted stack. Never invent a fixed number of representative cards.
@@ -78,7 +79,7 @@ function signature(game){
   return JSON.stringify([game.phase,game.status,game.turn,game.active,game.pending?.type,
     game.deckCount,game.shuffleSerial||0,(game.discard||[]).length,(game.limbo||[]).length,
     (game.players||[]).map(p=>(p.hand||[]).filter(c=>c?.kind==='hidden').length),
-    arrays(game).map(a=>cards(a).map(c=>c.id))]);
+    arrays(game).map(a=>cards(a).map(c=>c.id)),expansionMotionSignature(game)]);
 }
 export function planGameTransitions(previous,next){
   if (!previous || !next || previous.mode !== next.mode) return null;
@@ -127,7 +128,8 @@ export function planGameTransitions(previous,next){
     catcherFreed:(previous.expansion?.dreamcatchers?.stacks||[]).map((stack,index)=>({index,removed:(stack||[]).filter(c=>!(next.expansion?.dreamcatchers?.stacks?.[index]||[]).some(d=>d.id===c.id)&&!after.has(c.id))})).filter(x=>x.removed.length&&(next.shuffleSerial||0)>(previous.shuffleSerial||0)),
     draft:previous.phase==='draft'||next.phase==='draft',
     // Cards no longer visible anywhere after leaving Limbo returned to the deck.
-    returnedLimbo:cards(previous.limbo).filter(c=>!after.has(c.id)).map(c=>c.id)
+    returnedLimbo:cards(previous.limbo).filter(c=>!after.has(c.id)).map(c=>c.id),
+    expansion:planExpansionMotion(previous,next)
   };
 }
 const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
@@ -349,10 +351,30 @@ export function createTabletopAnimator({root}){
       const catcherRects=new Map([...catcherEls].map(([index,el])=>[index,rect(el)]));
       const premonitionEls=new Map((plan.premRevealed||[]).map(id=>[id,premonitionNode(root,id)]));
       const premonitionRects=new Map([...premonitionEls].map(([id,el])=>[id,rect(el)]));
-      const premonitionReserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;
+      const premonitionReserve=rect(root.querySelector?.('.tt5-premonitions .tt14-reserve'))||deck;
       const statusEl=root.querySelector?.('.tt6-dock-status');
       const turnEl=root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top');
       const workspaceEl=root.querySelector?.('.tt6-workspace');
+      const expansion=plan.expansion||{};
+      const anchorsExtra={
+        towers:rect(root.querySelector?.('.tt5-alignment .tt5-tower-cards, .tt5-alignment')),
+        incubus:rect(root.querySelector?.('.tt5-incubus .tt5-tile, .tt5-incubus')),
+        denizens:rect(root.querySelector?.('[data-tt-zone="denizens"]')),
+        mirrors:Object.fromEntries(Object.keys(game.expansion?.mirrors?.stacks||{}).map((name,index)=>{
+          const tiles=root.querySelectorAll?.('.tt5-mirrors .tt5-mirror')||[];
+          return [name,rect(tiles[index])];
+        }))
+      };
+      const spellbookEl=root.querySelector?.('.tt32-spell-book');
+      const spellbook=rect(spellbookEl);
+      const doorsEl=root.querySelector?.('.tt2-doors, .tt17-coop-doors');
+      const towerEl=root.querySelector?.('.tt5-alignment');
+      const incubusEl=root.querySelector?.('.tt5-incubus');
+      const denizensEl=root.querySelector?.('[data-tt-zone="denizens"]');
+      const premZone=root.querySelector?.('.tt5-premonitions');
+      const mirrorTiles=new Map(Object.keys(game.expansion?.mirrors?.stacks||{}).map((name,index)=>[
+        name,(root.querySelectorAll?.('.tt5-mirrors .tt5-mirror')||[])[index]
+      ]));
       const play=()=>{
       activeStage=motionStage(root);
       const flightScope=activeStage.scope;
@@ -362,7 +384,7 @@ export function createTabletopAnimator({root}){
       for(const transfer of [...(plan.catcherCaptured||[]),...(plan.catcherFreed||[])]){
         catchers[transfer.index]=catcherRects.get(transfer.index);
       }
-      const anchors={discard,limbo,catchers};
+      const anchors={discard,limbo,catchers,...anchorsExtra};
       const queue=(id,template,from,to,target,front=false,count=1)=>{
         if(id&&scheduled.has(id))return;
         if(!template||!rectOK(from)||!rectOK(to))return;
@@ -379,16 +401,17 @@ export function createTabletopAnimator({root}){
         const dest=transferTargetRect(zone,b?.r,anchors);
         const origin=released?.id===id?released.from:a.r;
         if(!rectOK(dest))continue;
-        const target=(zone==='discard'||zone==='limbo'||zone?.startsWith('catcher:'))?null:b?.el;
+        const target=(zone==='discard'||zone==='limbo'||zone?.startsWith('catcher:')||zone?.startsWith('mirror:'))?null:b?.el;
         if(Math.hypot(center(origin).x-center(dest).x,center(origin).y-center(dest).y)>14)
           queue(id,zone==='discard'||zone==='limbo'?a.template:(b?.template||a.template),origin,dest,target);
       }
       // Newly revealed deck cards animate independently of how the previous
       // action was triggered. Dragging one card must not hide its draw/refill.
       if(plan.draw&&rectOK(deck)){
+        const incubusIds=new Set(expansion.incubusStored||[]);
         const known=publicCardMap(game);
         plan.drawn.slice(0,8).forEach((id,i)=>{
-          const c=known.get(id);if(!c)return;
+          const c=known.get(id);if(!c||incubusIds.has(id))return;
           const target=now.get(id);
           const zone=locations(game).get(id);
           const destination=transferTargetRect(zone,target?.r,anchors);
@@ -426,6 +449,18 @@ export function createTabletopAnimator({root}){
         for(const bundle of stackMotionCounts(plan.anonymousDraw))queue(null,newBack.template,deck,newBack.r,null,true,bundle);
       }
       for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)queue(id,oldBack.template,oldBack.r,b.r,b.el,true);}
+      // Incubus stores cards drawn from an unknown deck. Show a face-down,
+      // exactly counted stack, not a parade of newly discovered card faces.
+      if(expansion.incubusStored?.length&&rectOK(deck)&&rectOK(anchors.incubus)&&deckEl){
+        for(const count of stackMotionCounts(expansion.incubusStored.length))
+          queue(null,deckEl,deck,anchors.incubus,null,false,count);
+      }
+      // Book spells physically spend discard cards: one counted stack moves
+      // from Discard to the spellbook without claiming to reveal their faces.
+      if(expansion.spellSpent?.length&&rectOK(discard)&&rectOK(spellbook)&&deckEl){
+        for(const count of stackMotionCounts(expansion.spellSpent.length,0))
+          queue(null,deckEl,discard,spellbook,null,false,count);
+      }
       if(plan.draw&&plan.hiddenDraw&&rectOK(deck)&&newBack){
         // Draft-to-hand already has a public source and a single face-down flight.
         const count=Math.max(0,plan.hiddenDraw-plan.toHidden.length);
@@ -488,6 +523,21 @@ export function createTabletopAnimator({root}){
         shuffleOverlay(deckEl,cleanups,plan.overload?CARD_MOTION.move+650:plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0,flightScope,deck);
         flash(deckEl,'tt8-shuffle-cue',CARD_MOTION.shuffle);
       }
+      // Expansion state feedback stays localized. Do not make uninvolved
+      // equipment fly because one counter, status, or goal changed.
+      const focus=(el,loss=false)=>flash(el,loss?'tt8-expansion-loss':'tt8-expansion-cue',650);
+      if(expansion.towersPlaced?.length||expansion.towerProtectionChanged||expansion.towersRemoved?.length)focus(towerEl,!!expansion.towersRemoved?.length);
+      for(const index of expansion.catcherLost||[])focus(catcherEls.get(index)||root.querySelector?.(`[data-action="inspectCatcher:${index}"]`),true);
+      if(expansion.failsafeSpent)focus(root.querySelector?.('.tt5-catchers'));
+      for(const name of expansion.mirrorCompleted||[])focus(mirrorTiles.get(name));
+      for(const id of expansion.premonitionProgress||[])focus(premonitionEls.get(id)||premonitionNode(root,id));
+      if(expansion.premonitionResolved?.length)focus(premZone);
+      if(expansion.rallied?.length||expansion.denizensDeparted?.length||expansion.treasureStored?.length)focus(denizensEl);
+      if(expansion.incubusActivated||expansion.incubusStored?.length)focus(incubusEl,expansion.incubusActivated);
+      if(expansion.spellSpent?.length)focus(spellbookEl);
+      if(expansion.doorsGained?.length||expansion.bookGoalsChanged)focus(doorsEl);
+      if(expansion.doorsLost?.length)focus(doorsEl,true);
+      if(expansion.nightmareRevealed)focus(workspaceEl,true);
       if(plan.turn||plan.phase||plan.finished)flash(statusEl,'tt8-progress-cue');
       if(!released&&plan.turn)flash(turnEl,'tt8-turn-cue');
       if(!released&&plan.phase&&game.phase==='decision')flash(workspaceEl,'tt8-decision-cue');
@@ -502,7 +552,8 @@ export function createTabletopAnimator({root}){
         CARD_MOTION.move+delay,
         plan.drawn.length&&plan.draw?CARD_MOTION.reveal+Math.min(7,plan.drawn.length-1)*250:0,
         plan.shuffle?CARD_MOTION.shuffle+450:0,
-        plan.premRevealed?.length?CARD_MOTION.reveal+Math.min(4,plan.premRevealed.length-1)*180:0
+        plan.premRevealed?.length?CARD_MOTION.reveal+Math.min(4,plan.premRevealed.length-1)*180:0,
+        plan.expansion?.incubusStored?.length?CARD_MOTION.move+450:0
       )+60);
       motionQueue.enqueue(play,duration);
     },
