@@ -118,6 +118,13 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
  return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong>${menu}</div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }
+// Replay is a peer of Pause in the dock status row, never an overlaid
+// absolute control at the corner of the entire panel.
+export function dockWithReplay(dock,available){
+ if(!available||typeof dock!=='string')return dock;
+ const launch='<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>';
+ return dock.replace(/(<div class="tt6-dock-status">[\s\S]*?)(<button type="button" class="game-menu-trigger tt27-dock-menu")/,'$1'+launch+'$2');
+}
 export function renderInventoryTrack(count,total){
  const totalCards=Math.max(0,Number(total)||0),remaining=Math.max(0,Math.min(totalCards,Number(count)||0));
  const slots=Math.min(48,Math.ceil(totalCards)),filled=slots?Math.round(slots*remaining/Math.max(1,totalCards)):0;

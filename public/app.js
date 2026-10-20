@@ -11,11 +11,12 @@ import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,isBlankGameTap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
-import {renderActionDock,renderPileInspector} from './tabletop/action-dock.js';
+import {renderActionDock,renderPileInspector,dockWithReplay} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
 import {renderOverlay,renderSettingsContents} from './game-overlay.js';
 import {GUIDE_CHAPTERS,renderRulesReference,renderGuideTutorial,filterGuide} from './rules-guide.js';
 import {opponentReplay,replayOverlay,fitReplay,replayStage,replayCaption} from './multiplayer-replay.js';
+import {readHotseatReplay,resetHotseatReplay,advanceHotseatReplay} from './engine/hotseat-replay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io')||(typeof window!=='undefined'&&window.ONIRAMA_STATIC_BUILD===true);
 const REMOTE_API=typeof window!=='undefined'&&typeof window.ONIRAMA_API_ORIGIN==='string'&&/^https:\/\/[^/]+$/.test(window.ONIRAMA_API_ORIGIN)?window.ONIRAMA_API_ORIGIN:'';
@@ -67,6 +68,7 @@ let uiSettings=readSettings();
 let playerDisplayName='',partnerDisplayName='',hotseatName1='',hotseatName2='',multiplayerTab='online',hotseatNewGame=false,joinCode='',passDevice=session?.id==='hotseat';
 function applySettings(){const preset=THEME_PRESETS.find(p=>p.id===uiSettings.theme)||THEME_PRESETS[0];Object.assign(document.documentElement.dataset,{theme:preset.id,motion:uiSettings.motion,cardSize:uiSettings.cardSize,contrast:uiSettings.contrast,textSize:uiSettings.textSize});const meta=document.querySelector('meta[name="theme-color"]');if(meta&&typeof getComputedStyle==='function')meta.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--ui-bg').trim());}
 applySettings();
+let exitingRoom=null;
 let state=null,selected=null,error='',busy=false,online=false,streamAbort=null,streamRetry=null,version=0,selectedMode='solo',page=location.hash||'#/';
 // Lobby setup is rendered optimistically and submitted in order. New edits replace
 // queued edits instead of being discarded while a Firestore transaction runs.
@@ -107,22 +109,23 @@ async function refresh(){if(IS_LOCAL_GAME()){
  try{
   const game=JSON.parse(raw);if(game?.mode!==(hot?'coop':'solo')||![0,1].includes(game.active)||!Array.isArray(game.players))throw Error('Unrecognized saved game');
   const seat=hot?game.active:0,view=localEngine.viewFor(game,seat);
-  state={room:{seat,mode:hot?'coop':'solo',started:true,hotseat:hot,host:true},game:view,version:(version||0)+1};
+  state={room:{seat,mode:hot?'coop':'solo',started:true,hotseat:hot,host:true},game:view,replay:hot?readHotseatReplay(localStorage,game):[],version:(version||0)+1};
   session={id:hot?'hotseat':'local',seat};online=true;error='';sessionMeta();recordCurrentResult();render();announceCurrent();
  }catch(e){console.error('Unable to resume local game',e);session=null;state=null;version=0;localStorage.removeItem('onirama.session');error='Cannot open this saved game ('+e.message+'). The save has been preserved; you can start a new game or resume the other save.';setRoute('#/');}
  return;
  }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
-function closeEndedRoom(){stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;error='The host ended the lobby.';setRoute('#/multiplayer');}
+function closeEndedRoom(){const endedByMe=exitingRoom===session?.id,wasGame=!!state?.room?.started;stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;multiplayerTab='online';error=endedByMe?'':wasGame?'The host ended the game.':'The host ended the lobby.';setRoute('#/multiplayer');}
 async function departRoom(end=false){
  if(!session||['local','hotseat'].includes(session.id))return;
  if(end&&!state?.room?.host)return setError('Only the host can end the game.');
  if(end&&!confirm('End the game for both players?'))return;
- if(busy)return;busy=true;
+ if(busy)return;busy=true;const roomId=session.id;exitingRoom=roomId;
  try{
-  if(session.transport==='firebase'){if(end)await firebase.firebaseEnd(session.id);else await firebase.firebaseLeave(session.id);}
-  else await api(`/api/rooms/${session.id}/${end?'end':'leave'}`,'POST',{});
-  stopReplay();cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');setRoute('#/');
- }catch(e){setError(e.message);}finally{busy=false;render();}
+  if(session.transport==='firebase'){if(end)await firebase.firebaseEnd(roomId);else await firebase.firebaseLeave(roomId);}
+  else await api(`/api/rooms/${roomId}/${end?'end':'leave'}`,'POST',{});
+  // An end-room snapshot may already have closed the session while we awaited Firebase.
+  if(session?.id===roomId){stopReplay();cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');multiplayerTab='online';error='';setRoute('#/multiplayer');}
+ }catch(e){if(session?.id===roomId)setError(e.message);}finally{if(exitingRoom===roomId)exitingRoom=null;busy=false;render();}
 }
 function saveSession(o){stopReplay();cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
 async function create(mode,repeatConfig=null){
@@ -184,7 +187,7 @@ async function publishSpectatorChoice(choice){
  previewInFlight=task;
  try{await task;}finally{if(previewInFlight===task)previewInFlight=null;}
 }
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(previewInFlight)await previewInFlight;if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
+async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(previewInFlight)await previewInFlight;if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot)advanceHotseatReplay(localStorage,original,updated,command);if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();}catch(e){setError(e.message);await refresh();}finally{busy=false;render();}}
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
@@ -515,10 +518,11 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const legal=inGame&&selected&&state.room.seat===state.game.active?(state.game.mode==='coop'?cooperativeLegalTargets(state.game,selected,state.room.seat):soloLegalTargets(state.game,selected,state.room.seat)):[];
   const dock=inGame?(state.room.paused?`<section class="tt6-workspace tt8-required" data-action-dock aria-label="Waiting for player"><div class="tt6-dock-status"><strong>Waiting for player</strong><button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button></div><div class="tt6-dock-buttons"><button type="button" data-action="copyInvite">Copy invite</button></div></section>`:typeof renderActionDock==='function'?renderActionDock(state.game,state.room.seat,{selectedId:selected,legal,dialog:workspace,prophecyDiscard,failsafeChoosing,nightChoice,happyBanishMode,doorSearchChromatic,spectatorFlash,spectatorLive:state.spectatorLive}):''):'';
   const replayAvailable=inGame&&state?.room?.mode==='coop'&&opponentReplay(state?.replay,state.room.seat).length>1;
-  const replayLaunch=replayAvailable?'<button type="button" class="tt9-replay-launch" data-action="replayOpen" aria-label="Replay partner turn">Replay</button>':'';
-  const dockWithReplay=replayAvailable?dock.replace(/(<section\b[^>]*data-action-dock[^>]*>)/,'$1'+replayLaunch):dock;
+  const actionPanel=replayAvailable?dockWithReplay(dock,true):dock;
+  const waitingForPartner=inGame&&!IS_LOCAL_GAME()&&state.room.mode==='coop'&&!state.room.paused&&state.game?.status==='active'&&state.room.seat!==state.game.active;
+  const waitingIndicator=waitingForPartner?`<div class="tt34-wait-turn" role="status" aria-live="polite"><span class="tt34-wait-label"><span aria-hidden="true" class="tt34-wait-star">✦</span>${escape(state.game.players?.[state.game.active]?.name||'Your partner')}'s turn</span></div>`:'';
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
-  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}</div><div class="tt6-hand-shelf" aria-label="Your hand"></div>${dockWithReplay}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}${waitingIndicator}</div><div class="tt6-hand-shelf" aria-label="Your hand"></div>${actionPanel}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),hotseat:IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
   if(markup!==lastRenderedMarkup){app.innerHTML=markup;lastRenderedMarkup=markup;}
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
@@ -614,11 +618,11 @@ async function handle(actionName){
   }
   if(actionName==='leaveRoom')return departRoom(false);
   if(actionName==='endRoom')return departRoom(true);
-  if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;if(IS_HOTSEAT()){multiplayerTab='hotseat';hotseatNewGame=false;return setRoute('#/multiplayer');}return setRoute('#/');}
+  if(actionName==='gameGoHome'){gameOverlay=null;gameRulesFromPause=false;if(IS_HOTSEAT()){multiplayerTab='hotseat';hotseatNewGame=false;return setRoute('#/multiplayer');}if(state?.room?.mode==='coop')return departRoom(false);return setRoute('#/');}
   if(actionName==='soloStart'){selectedMode='solo';return create('solo');}if(actionName==='coopStart'){selectedMode='coop';return create('coop');}
   if(actionName==='passReady'){passDevice=false;return render();}
   if(actionName==='hotseatNewGame'){hotseatNewGame=true;return render();}
-  if(actionName==='startHotseat'){if(session&&!['hotseat','local'].includes(session.id)&&navigator.onLine!==false)return setError('Leave your online lobby before starting hot seat.');const n1=hotseatName1.trim(),n2=hotseatName2.trim();if(!n1||!n2)return setError('Enter both player names.');try{cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'coop',names:[n1,n2],config:currentSetup(),interactiveDraw:true,manualTurnEnd:true});localStorage.setItem('onirama.hotseat.v1',JSON.stringify(game));session={id:'hotseat',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));passDevice=true;hotseatNewGame=false;beginGuestSession();await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;}
+  if(actionName==='startHotseat'){if(session&&!['hotseat','local'].includes(session.id)&&navigator.onLine!==false)return setError('Leave your online lobby before starting hot seat.');const n1=hotseatName1.trim(),n2=hotseatName2.trim();if(!n1||!n2)return setError('Enter both player names.');try{cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'coop',names:[n1,n2],config:currentSetup(),interactiveDraw:true,manualTurnEnd:true});localStorage.setItem('onirama.hotseat.v1',JSON.stringify(game));resetHotseatReplay(localStorage,game);session={id:'hotseat',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));passDevice=true;hotseatNewGame=false;beginGuestSession();await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;}
   if(actionName.startsWith('multiplayerTab:')){multiplayerTab=actionName.slice(15)==='hotseat'?'hotseat':'online';hotseatNewGame=false;return render();}
   if(actionName==='history')return setRoute('#/history');
   if(actionName==='tutorial'){tutorialStep=0;tutorialChapter=0;return setRoute('#/tutorial');}
@@ -629,12 +633,12 @@ async function handle(actionName){
   if(actionName==='presetSave'){try{const preset=savePreset(localStorage,document.querySelector('#presetName')?.value,currentSetup());return render();}catch(e){return setError(e.message);}}
   if(actionName.startsWith('presetLoad:')){const preset=readPresets(localStorage).find(p=>p.id===actionName.slice(11));if(!preset)return setError('Saved setup not found');selectedExpansions=new Set(preset.config.expansions);selectedDifficulties={...preset.config.difficulties};return render();}
   if(actionName.startsWith('presetDelete:')){const id=actionName.slice(13);if(confirm('Delete this saved setup?')){deletePreset(localStorage,id);return render();}return;}
-  if(actionName==='exitFinished'){if(state?.game?.status==='active')return;return setRoute('#/');}
+  if(actionName==='exitFinished'){if(state?.game?.status==='active')return;if(IS_HOTSEAT()){multiplayerTab='hotseat';hotseatNewGame=false;return setRoute('#/multiplayer');}if(state?.room?.mode==='coop')return departRoom(false);return setRoute('#/');}
   if(actionName==='playAgain'){
     const finished=state?.game;if(!finished||finished.status==='active')return;
     const config=finished.config;
     if(IS_LOCAL_GAME()){
-      try{localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT();const again=localEngine.newGame({mode:hot?'coop':'solo',config,names:hot?finished.players.map(p=>p.name):['You'],interactiveDraw:true,manualTurnEnd:hot});localStorage.setItem(hot?'onirama.hotseat.v1':'onirama.solo.v1',JSON.stringify(again));selected=null;gameOverlay=null;passDevice=hot;await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;
+      try{localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT();const again=localEngine.newGame({mode:hot?'coop':'solo',config,names:hot?finished.players.map(p=>p.name):['You'],interactiveDraw:true,manualTurnEnd:hot});localStorage.setItem(hot?'onirama.hotseat.v1':'onirama.solo.v1',JSON.stringify(again));if(hot)resetHotseatReplay(localStorage,again);selected=null;gameOverlay=null;passDevice=hot;await refresh();setRoute('#/game');}catch(e){setError(e.message);}return;
     }
     if(finished.mode==='solo')return create('solo',config);
     return doRoom('restart',{expectedVersion:version});

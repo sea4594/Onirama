@@ -41,7 +41,7 @@ test('hot-seat pause hides online room controls and Exit returns to Hot Seat men
  const localPause=renderOverlay('pause',[],true,{multiplayer:false});
  assert.doesNotMatch(localPause,/Leave game|End game for both/);
  const onlinePause=renderOverlay('pause',[],true,{multiplayer:true,host:true});
- assert.match(onlinePause,/Leave game/);assert.match(onlinePause,/End game for both/);
+ assert.match(onlinePause,/Exit to multiplayer/);assert.doesNotMatch(onlinePause,/Leave game/);assert.match(onlinePause,/End game for both/);
  vm.runInContext('session={id:"hotseat",seat:0}',u.ctx);
  await vm.runInContext('handle("gameGoHome")',u.ctx);
  assert.equal(u.location.hash,'#/multiplayer');assert.match(u.app.innerHTML,/data-action="resumeLocalHotseat"/);

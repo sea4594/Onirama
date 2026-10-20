@@ -1,0 +1,34 @@
+/* Online-only turn veil: legible and calm, without intercepting inspection taps.
+   The player's controls and the separate landscape hand shelf remain uncovered. */
+.game-viewport>.tt6-table-slot>.tt34-wait-turn{
+ position:absolute;inset:0;z-index:5;pointer-events:none;
+ background:repeating-linear-gradient(135deg,transparent 0 16px,rgba(5,16,23,.055) 16px 18px);
+ box-shadow:inset 0 0 0 3px var(--table-gold-line),inset 0 0 0 7px rgba(3,12,20,.17),inset 0 0 35px rgba(3,12,20,.12);
+}
+.game-viewport .tt34-wait-label{
+ position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ border:1px solid var(--table-gold-line);border-radius:999px;
+ padding:5px 13px;box-shadow:0 2px 12px rgba(2,13,20,.25);
+ color:var(--table-text);background:var(--table-background);font-weight:700;font-size:clamp(11px,1.9vw,14px);
+}
+.game-viewport .tt34-wait-star{flex:none;color:var(--table-gold)}
+/* Replay and Pause occupy adjacent, separate touch targets within the same
+   status strip. Keep the prompt readable at both phone and desktop widths. */
+.game-viewport .tt6-workspace:has(.tt9-replay-launch) .tt6-dock-status{padding:0 113px 0 7px!important}
+.game-viewport .tt6-workspace .tt6-dock-status .tt9-replay-launch{
+ position:absolute!important;right:38px!important;top:0!important;
+ z-index:2;min-height:31px;max-height:31px;line-height:1;
+ padding:0 7px;border-radius:7px;border:1px solid var(--ui-border);
+ background:var(--ui-soft);color:var(--ui-text);font-size:12px;font-weight:700;
+}
+.game-viewport .tt6-workspace .tt6-dock-status .tt9-replay-launch:focus-visible{
+ outline:3px solid var(--ui-accent);outline-offset:1px;
+}
+.game-viewport .tt6-workspace:has(.tt9-replay-launch) .tt6-dock-status strong{
+ display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media (orientation:landscape) and (max-height:430px){
+ .game-viewport .tt34-wait-label{top:3px;padding:3px 9px;font-size:11px}
+}
