@@ -28,8 +28,8 @@ service cloud.firestore {
       // legacy rooms may lack hostSeat, so use the same defaulted accessor as host().
       function setupChange() {
         return host() && !ended() && resource.data.game == null &&
-          changedOnly(['config','ready','updatedAt','version']) &&
-          request.resource.data.config is map && request.resource.data.ready == [false,false];
+          changedOnly(['config','updatedAt','version']) &&
+          request.resource.data.config is map && request.resource.data.ready == resource.data.ready;
       }
       function readyChange() {
         return member() && !ended() && resource.data.game == null &&

@@ -40,7 +40,7 @@ export function joinRoom(room,uid,name,now=Date.now()){
 }
 export function updateSetup(room,uid,rawConfig,now=Date.now()){
  requireRule(seatFor(room,uid)===hostSeat(room),'Only the host can change setup');requireRule(!room.ended&&!room.game,'Setup is locked after the game starts');
- return {...room,config:validateConfig(rawConfig),ready:[false,false],updatedAt:now,version:room.version+1};
+ return {...room,config:validateConfig(rawConfig),updatedAt:now,version:room.version+1};
 }
 export function setReady(room,uid,value,now=Date.now()){
  const seat=seatFor(room,uid);requireRule(seat>=0,'Not a room member');requireRule(!room.ended&&!room.game,'Game already started');

@@ -125,7 +125,7 @@ function endpoint(req,res,url,data){
   }
   if(req.method==='POST'&&operation==='setup'){
     if(seat!==(original.hostSeat??0)||original.game||original.ended)throw Error('Only the host can configure a waiting room');
-    const next=structuredClone(original);next.config=validateConfig(data.config);next.ready=[false,false];next.version++;commit(next);return json(res,200,{ok:true});
+    const next=structuredClone(original);next.config=validateConfig(data.config);next.version++;commit(next);return json(res,200,{ok:true});
   }
   if(req.method==='POST'&&operation==='ready'){
     if(original.game||original.ended)throw Error('The game has already started');const next=structuredClone(original);next.ready[seat]=!!data.ready;next.version++;commit(next);

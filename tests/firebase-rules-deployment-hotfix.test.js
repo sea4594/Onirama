@@ -13,7 +13,7 @@ test('All tested expansion selections and start writes match the locked-down Fir
     room=joinRoom(room,'guest','Guest',2000);
     const configured=updateSetup(room,'host',{expansions},3000);
     assert.deepEqual(configured.ready,[false,false]);
-    assert.ok(diffKeys(room,configured).every(key=>['config','ready','updatedAt','version'].includes(key)),JSON.stringify(expansions));
+    assert.ok(diffKeys(room,configured).every(key=>['config','updatedAt','version'].includes(key)),JSON.stringify(expansions));
     room=setReady(configured,'guest',true,4000);
     const started=startRoom(room,'host',5000);
     assert.equal(started.game.mode,'coop');

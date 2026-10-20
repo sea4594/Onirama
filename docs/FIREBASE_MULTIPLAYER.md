@@ -15,6 +15,8 @@ This matches the hosting model in the supplied BibleGuessr checkpoint: a static 
 1. In Onirama Settings choose **Test multiplayer connection**. This verifies the browser can load the SDK and establish anonymous Firebase auth; it does **not** establish that every Firestore rule is correct.
 2. Browser A: Multiplayer → Online. Enter a display name, create a lobby, select expansions/difficulties, and share the four-letter code or invitation link.
 3. Browser B: Online → Join. Enter a display name and the four-letter code, or open the invitation link **on a different device or separate browser profile/private window**. The guest can view the shared expansion setup but only the host can edit it. Two tabs within the same browser profile share an anonymous Firebase UID and therefore occupy the same seat, not two seats.
+The host can toggle expansions and difficulties after the guest has marked Ready. Changes appear immediately in the host lobby while Firestore syncs; **neither player’s readiness is reset**. The host Start button stays disabled until any outstanding setup edits have been saved. New multiplayer turns and replay snapshots are stored using a reversible Firestore-safe representation of the game’s nested arrays; this is transparent to players.
+
 4. Both choose Ready; the host presses Start game. Each drafts three cards. Check separate hands, shared cards, expansion decision dialogs, the explicit End turn button, and reconnection after refresh. The host can end the lobby for both players.
 5. Confirm Firestore → Data contains `oniramaRooms/<CODE>` and that the room's `version` increases for accepted actions. Reload either tab. Test an incorrect code, third browser and simultaneous actions: these must not displace a member or override a version conflict.
 
@@ -46,3 +48,5 @@ The Multiplayer → Hot seat tab runs two-player cooperative play locally on one
 - **Old Render backend variable:** Remove `ONIRAMA_API_ORIGIN`; no Node server is necessary on Pages.
 
 For any change to the Firestore rules, repeat the two-device smoke test. The repository's automated gate validates the engine, UI and pure room-state transitions but **does not execute against a live Firebase project or Firestore emulator**; live Firebase permissions and browser flows must be verified after setup.
+
+**Rules upgrades:** Changes to `firestore.rules` are not published by GitHub Pages. After applying this hotfix, the included installer will run the full release gate, deploy updated Firestore rules to `onirama-5124e` using an authorized Firebase CLI account, then commit/push only if both succeed. Without the updated rules, preserving readiness during host setup would be rejected as a permission error.
