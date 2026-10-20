@@ -21,9 +21,32 @@ const arrays = game => [
   game?.spectatorDecision?.card ? [game.spectatorDecision.card] : []
 ];
 const allVisible = game => new Set(arrays(game).flatMap(a => cards(a).map(c => c.id)));
+// Card indices are layout positions, not game transfers. A hand losing its
+// first card must not cause every remaining hand card to fly to a new slot.
+// The first visible occurrence owns the card: a pending decision may also
+// reference a card already present in its actual zone.
+const zoneGroups = game => [
+  ...((game?.players || []).flatMap((p,seat) => [
+    [`player:${seat}:hand`,p.hand], [`player:${seat}:labyrinth`,p.labyrinth],
+    [`player:${seat}:doors`,p.doors]
+  ])),
+  ['shared',game?.shared], ['draft',game?.draft],
+  ['discard',game?.discard], ['limbo',game?.limbo],
+  ['towers',game?.expansion?.towers?.alignment],
+  ['rallied',game?.expansion?.oniverse?.rallied],
+  ['treasure',game?.expansion?.oniverse?.treasure],
+  ...Object.entries(game?.expansion?.mirrors?.stacks || {}).map(([name,stack])=>[`mirror:${name}`,stack]),
+  ...(game?.expansion?.dreamcatchers?.stacks || []).map((stack,index)=>[`catcher:${index}`,stack]),
+  ['incubus',game?.expansion?.incubus?.stored],
+  ['pending',game?.pending?.cards],
+  ['pending',game?.pending?.card ? [game.pending.card] : []],
+  ['spectator',game?.spectatorDecision?.card ? [game.spectatorDecision.card] : []]
+];
 const locations = game => {
   const out=new Map();
-  arrays(game).forEach((group,zone)=>cards(group).forEach((card,index)=>{if(!out.has(card.id))out.set(card.id,`${zone}:${index}`);}));
+  for(const [zone,group] of zoneGroups(game))for(const card of cards(group)){
+    if(!out.has(card.id))out.set(card.id,zone);
+  }
   return out;
 };
 const membership = (game,field) => ids(game?.[field]);
@@ -44,13 +67,17 @@ export function planGameTransitions(previous,next){
   const fromHidden=[...after].filter(id=>hiddenBefore.has(id));
   const drawn=[...after].filter(id=>!before.has(id)&&!hiddenBefore.has(id));
   const removed=[...before].filter(id=>!after.has(id)&&!hiddenAfter.has(id));
+  const previousDiscard=membership(previous,'discard'), previousLimbo=membership(previous,'limbo');
   const destinations={discard:membership(next,'discard'),limbo:membership(next,'limbo')};
   return {
     moved,drawn,removed,toHidden,fromHidden,
-    draftToHand: cards(previous.draft).filter(c=>!ids(next.draft).has(c.id)&&!after.has(c.id)).map(c=>c.id),
+    // Concealment owns the transfer; do not schedule the same draft card twice.
+    draftToHand: cards(previous.draft).filter(c=>!ids(next.draft).has(c.id)&&hiddenAfter.has(c.id)).map(c=>c.id),
     hiddenDraw:Math.max(0,hiddenAfter.size-hiddenBefore.size),
-    toDiscard:removed.filter(id=>destinations.discard.has(id)),
-    toLimbo:removed.filter(id=>destinations.limbo.has(id)),
+    // Destination membership, not disappearance from all public arrays: a
+    // discarded card is still visible and therefore cannot be `removed`.
+    toDiscard:[...destinations.discard].filter(id=>!previousDiscard.has(id)&&before.has(id)),
+    toLimbo:[...destinations.limbo].filter(id=>!previousLimbo.has(id)&&before.has(id)),
     draw:Math.max(0,(previous.deckCount||0)-(next.deckCount||0)),
     shuffle:(next.shuffleSerial||0)>(previous.shuffleSerial||0)||((next.deckCount||0)>(previous.deckCount||0)&&(previous.limbo||[]).length>(next.limbo||[]).length),
     premRevealed:(next.expansion?.premonitions?.faceUp||[]).filter(id=>!(previous.expansion?.premonitions?.faceUp||[]).includes(id)),
@@ -88,37 +115,62 @@ function motionStage(root){
 function motionTemplate(el){return el.cloneNode(true);}
 function capture(root){
   const found=new Map();
-  for(const el of root.querySelectorAll?.('.tt6-table-slot .tt2-root [data-tt-motion-id], .tt6-workspace [data-tt-motion-id]')||[]){
+  // Landscape relocates the original solo/co-op hand outside .tt2-root.
+  // Capture it as part of the same visual scene, without touching its cards.
+  for(const el of root.querySelectorAll?.('.tt6-table-slot .tt2-root [data-tt-motion-id], .tt6-workspace [data-tt-motion-id], .tt6-hand-shelf [data-tt-motion-id]')||[]){
     const id=el.dataset.ttMotionId,r=rect(el);
     if(id&&!found.has(id)&&rectOK(r))found.set(id,{el,r,template:motionTemplate(el)});
   }
-  found.backs=[...(root.querySelectorAll?.('.tt6-table-slot .tt6-opponent .tt6-card-back')||[])].map(el=>({el,r:rect(el),template:el.cloneNode(true)})).filter(entry=>rectOK(entry.r));
+  found.backs=[...(root.querySelectorAll?.('.tt6-table-slot .tt6-opponent .tt6-card-back, .tt6-hand-shelf .tt6-opponent .tt6-card-back')||[])].map(el=>({el,r:rect(el),template:el.cloneNode(true)})).filter(entry=>rectOK(entry.r));
   return found;
 }
 function pile(root,name){
   return root.querySelector?.(`.tt6-table-slot [data-action="inspectPile:${name}"] .tt2-deck-back, .tt6-table-slot [data-action="inspectPile:${name}"] .tt6-pile-face, .tt6-table-slot [data-action="inspectPile:${name}"] .tt2-pile-face`)
     ||root.querySelector?.(`.tt6-table-slot [data-action="inspectPile:${name}"]`);
 }
+// Coordinate flight endpoints in viewport space. Scaling must be UNIFORM:
+// distinct x/y scales would stretch a card while it travels across layouts.
+export function flightGeometry(from,to){
+  if(!rectOK(from)||!rectOK(to))return null;
+  const source=center(from),dest=center(to);
+  const scale=Math.max(.15,Math.min(from.width/to.width,from.height/to.height));
+  return {dx:source.x-dest.x,dy:source.y-dest.y,scale};
+}
+// A CSS layout sometimes yields different bounding-box proportions for a card
+// in the hand and in a compact pile. The moving copy stays a physical 1:1.42
+// card throughout; it simply fits INSIDE each source/destination footprint.
+export function cardFlightRects(from,to,card=true){
+  if(!rectOK(from)||!rectOK(to))return null;
+  if(!card)return {from,to};
+  const fit=r=>{
+    const width=Math.min(r.width,r.height/1.42),height=width*1.42;
+    return {left:r.left+(r.width-width)/2,top:r.top+(r.height-height)/2,width,height};
+  };
+  return {from:fit(from),to:fit(to)};
+}
 function animateFlight(template,from,to,target,delay,active,scope){
   if(!rectOK(from)||!rectOK(to))return;
+  const isCard=template.matches?.('.card,.tt6-card-back,.tt2-deck-back,.tt6-pile-face');
+  const geometry=cardFlightRects(from,to,isCard);
+  const start=geometry.from,destination=geometry.to;
   const ghost=template.cloneNode(true);ghost.removeAttribute('id');ghost.removeAttribute('data-pick');ghost.removeAttribute('data-action');ghost.querySelectorAll?.('.tt10-draw-count,.tt2-pile-label,.tt6-pile-label').forEach(el=>el.remove());
   ghost.setAttribute('aria-hidden','true');ghost.setAttribute('tabindex','-1');
   ghost.classList.add('tt8-flying-card');
-  Object.assign(ghost.style,{position:'fixed',left:`${to.left}px`,top:`${to.top}px`,width:`${to.width}px`,height:`${to.height}px`,margin:'0',zIndex:'2147483600',pointerEvents:'none'});
+  Object.assign(ghost.style,{position:'fixed',left:`${destination.left}px`,top:`${destination.top}px`,width:`${destination.width}px`,height:`${destination.height}px`,margin:'0',zIndex:'2147483600',pointerEvents:'none'});
   // The card's CSS remains live inside this scope, even while the whole card
   // translates/scales. Never freeze individual icon coordinates in pixels.
-  ghost.style.setProperty('--tt15-mini',`${to.width}px`);
-  ghost.style.setProperty('--tt4-mini',`${to.width}px`);
+  ghost.style.setProperty('--tt15-mini',`${destination.width}px`);
+  ghost.style.setProperty('--tt4-mini',`${destination.width}px`);
   scope.appendChild(ghost);
-  const source=center(from),dest=center(to),sx=Math.max(.15,from.width/to.width),sy=Math.max(.15,from.height/to.height);
+  const {dx,dy,scale}=flightGeometry(start,destination);
   if(target)target.style.visibility='hidden';
   let finished=false;
   const cleanup=()=>{if(finished)return;finished=true;ghost.remove();if(target)target.style.removeProperty('visibility');const i=active.indexOf(cleanup);if(i!==-1)active.splice(i,1);};
   active.push(cleanup);
   if(typeof ghost.animate!=='function'){cleanup();return;}
   const motion=ghost.animate([
-    {transform:`translate(${source.x-dest.x}px,${source.y-dest.y}px) scale(${sx},${sy}) rotate(-4deg)`,opacity:.85},
-    {transform:'translate(0,0) scale(1,1) rotate(0)',opacity:1}
+    {transform:`translate(${dx}px,${dy}px) scale(${scale})`,opacity:.85},
+    {transform:'translate(0,0) scale(1)',opacity:1}
   ],{duration:CARD_MOTION.move,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
   motion.finished.catch(()=>{}).then(cleanup);
 }
@@ -189,12 +241,20 @@ export function createTabletopAnimator({root}){
       if(page!=='#/game'||!game){last=null;key=null;pending=null;return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const event=pending,previous=last;pending=null;last=game;key=nextKey;
-      if(!event||!enabled())return;
+      if(!event||!enabled()){drop=null;return;}
       const {plan,old}=event,now=capture(root),released=drop;drop=null;
       const deck=rect(pile(root,'deck')),discard=rect(pile(root,'discard')),limbo=rect(pile(root,'limbo'));
       activeStage=motionStage(root);
       const flightScope=activeStage.scope;
       const flies=[];
+      const scheduled=new Set();
+      const queue=(id,template,from,to,target,front=false)=>{
+        if(id&&scheduled.has(id))return;
+        if(!template||!rectOK(from)||!rectOK(to))return;
+        if(id)scheduled.add(id);
+        const item=[template,from,to,target,id];
+        if(front)flies.unshift(item);else flies.push(item);
+      };
       // Shared visible cards: the same card moves between hand, draft,
       // Labyrinth, Doors, and expansion zones without inventing engine steps.
       for(const id of plan.moved){
@@ -202,7 +262,7 @@ export function createTabletopAnimator({root}){
         if(!a||!b||plan.drawn.includes(id))continue;
         const ca=center(a.r),cb=center(b.r);
         const origin=released?.id===id?released.from:a.r;
-        if(Math.hypot(center(origin).x-cb.x,center(origin).y-cb.y)>14)flies.push([b.template,origin,b.r,b.el]);
+        if(Math.hypot(center(origin).x-cb.x,center(origin).y-cb.y)>14)queue(id,b.template,origin,b.r,b.el);
       }
       // Flip each newly public card in the screen center, then send it to its
       // actual zone (hand, Limbo, Discard or the fixed decision dock).
@@ -238,15 +298,14 @@ export function createTabletopAnimator({root}){
       const oldBack=old.backs.at(-1),newBack=now.backs.at(-1);
       // Public draft cards can visibly enter a concealed hand without
       // storing the concealed card's ID (which can disclose its face).
-      for(const id of plan.draftToHand||[]){const a=old.get(id);if(a&&newBack)flies.unshift([newBack.template,a.r,newBack.r,null]);}
-      for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)flies.unshift([a.template,a.r,newBack.r,null]);}
-      for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)flies.unshift([oldBack.template,oldBack.r,b.r,b.el]);}
+      for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)queue(id,newBack.template,a.r,newBack.r,null,true);}
+      for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)queue(id,oldBack.template,oldBack.r,b.r,b.el,true);}
       if(plan.draw&&plan.hiddenDraw&&rectOK(deck)&&newBack){
-        for(let i=0;i<Math.min(plan.hiddenDraw,2);i++)flies.unshift([newBack.template,deck,newBack.r,newBack.el]);
+        for(let i=0;i<Math.min(plan.hiddenDraw,2);i++)queue(null,newBack.template,deck,newBack.r,null,true);
       }
       for(const [list,dest] of [[plan.toDiscard,discard],[plan.toLimbo,limbo]]){
         if(!rectOK(dest))continue;
-        for(const id of list){const a=old.get(id);if(a)flies.push([a.template,released?.id===id?released.from:a.r,dest,null]);}
+        for(const id of list){const a=old.get(id);if(a)queue(id,a.template,released?.id===id?released.from:a.r,dest,null);}
       }
       // Some Limbo cards are not individually rendered in the compact fan.
       // Still show their capture using a generic, face-down card: no hidden
@@ -261,14 +320,14 @@ export function createTabletopAnimator({root}){
           // Explicit movement already animates a recognizable, visible card;
           // avoid an extra generic duplicate for that specific transfer.
           const movedIds=transfer.ids;
-          const alreadyFlying=movedIds.filter(id=>flies.some(([template])=>template?.dataset?.ttMotionId===id)).length;
+          const alreadyFlying=movedIds.filter(id=>scheduled.has(id)).length;
           for(let i=0;i<Math.min(3,Math.max(0,transfer.count-alreadyFlying));i++)
-            flies.push([genericBack,captureSource,destination,null]);
+            queue(null,genericBack,captureSource,destination,null);
         }
       }
       // A single accepted engine action can change many zones. Bound the
       // animation workload so dense expansion combinations stay responsive.
-      (released?flies.filter(([template])=>template?.dataset?.ttMotionId===released.id).slice(0,1):flies.slice(0,9)).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups,flightScope));
+      (released?flies.filter(([, , , ,id])=>id===released.id).slice(0,1):flies.slice(0,9)).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups,flightScope));
       const flash=(el,cls,ms=CARD_MOTION.highlight)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
       if(plan.draw&&!released)flash(pile(root,'deck'),'tt8-draw-cue');
       if(plan.shuffle){
