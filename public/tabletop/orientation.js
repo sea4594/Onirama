@@ -1,6 +1,6 @@
 /* Move the original hand DOM, not a clone, so selection/dragging and private
    multiplayer card backs retain their existing identities across rotation. */
-let handAnchor = null;
+const handAnchors = new WeakMap();
 
 export function landscapeCardWidth(width, height, count, {gap=3, heading=17, padding=10}={}) {
   if (count < 1 || width <= 0 || height <= 0) return 0;
@@ -53,12 +53,14 @@ export function arrangeGameplayHand(root, landscape) {
   const board = shell?.querySelector?.('.tt2-root');
   const shelf = shell?.querySelector?.('.tt6-hand-shelf');
   if (!board || !shelf) return;
-  if (handAnchor && !handAnchor.isConnected) handAnchor = null;
+  let handAnchor = handAnchors.get(shelf);
+  if (handAnchor && !handAnchor.isConnected) { handAnchors.delete(shelf); handAnchor = null; }
   const hand = shelf.firstElementChild || board.querySelector('.tt17-coop-hands,.tt2-hand');
   if (!hand) return;
   if (landscape) {
     if (hand.parentElement !== shelf) {
       handAnchor = document.createComment('restore original tabletop hand');
+      handAnchors.set(shelf, handAnchor);
       hand.parentNode.insertBefore(handAnchor, hand);
       shelf.appendChild(hand);
     }
@@ -66,7 +68,7 @@ export function arrangeGameplayHand(root, landscape) {
   } else if (hand.parentElement === shelf && handAnchor?.isConnected) {
     handAnchor.parentNode.insertBefore(hand, handAnchor);
     handAnchor.remove();
-    handAnchor = null;
+    handAnchors.delete(shelf);
     hand.style?.removeProperty?.('--landscape-hand-card');
     for (const part of hand.children) part.style?.removeProperty?.('--landscape-hand-card');
   }

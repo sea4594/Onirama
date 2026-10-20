@@ -1,18 +1,39 @@
-/* Replay is a separate read-only tabletop. It never resizes or rearranges the live game. */
-.tt9-replay-layer{position:fixed;inset:0;z-index:1150;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);color:var(--ui-text,#f5e8c8)}
-.tt9-replay-scrim{position:absolute;inset:0;background:rgba(4,14,11,.86)}
-.tt9-replay-dialog{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:100%;height:100%;max-width:1500px;max-height:1000px;min-width:0;min-height:0;overflow:hidden;background:var(--ui-bg,#15392f);border:1px solid var(--ui-border,#637c66);border-radius:12px}
-.tt9-replay-head,.tt9-replay-controls{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.45rem .65rem;min-height:45px}
-.tt9-replay-head{justify-content:space-between;border-bottom:1px solid var(--ui-border,#637c66)}
-.tt9-replay-count{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tt9-replay-head button{font-size:1.35rem;line-height:1;min-width:35px}
-.tt9-replay-stage{position:relative;overflow:hidden;min-width:0;min-height:0;width:100%;height:100%;pointer-events:none}
-.tt9-replay-controls{border-top:1px solid var(--ui-border,#637c66);flex-wrap:nowrap}
-.tt9-replay-controls button{min-height:37px;min-width:72px}
-.tt9-replay-launch{position:absolute;right:.55rem;top:.3rem;z-index:3;font-size:.8rem;min-height:27px;padding:.1rem .4rem}
+/* Replay is a non-interactive copy of the ENTIRE live gameplay viewport.
+   Its board, landscape hand shelf and dock use the normal game-viewport rules.
+   Playback controls float above it instead of stealing fitting height. */
+.tt9-replay-layer{position:fixed;inset:0;z-index:1150;color:var(--ui-text,#f5e8c8)}
+.tt9-replay-dialog{position:absolute;inset:0;min-width:0;min-height:0;overflow:hidden;background:var(--ui-bg,#15392f)}
+.tt9-replay-stage.page.game-viewport{--tt6-dock-height:188px;position:absolute;inset:0;width:100%;height:100%;max-width:none;min-width:0;min-height:0;margin:0;padding:0;box-sizing:border-box;display:block;background:var(--table-background);overflow:hidden;pointer-events:none}
 .tt9-replay-stage .tt2-root{pointer-events:none}
-@media (max-height:420px){.tt9-replay-head,.tt9-replay-controls{min-height:32px;padding:.15rem .5rem}.tt9-replay-controls button{min-height:30px}}
-
+.tt9-replay-toolbar{position:absolute;z-index:10;top:max(4px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;flex-direction:row;align-items:center;max-width:calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right) - 12px);width:max-content;min-width:0;overflow:hidden;border:1px solid var(--ui-border,#637c66);border-radius:10px;background:var(--ui-bg,#15392f);box-shadow:0 3px 18px rgba(0,0,0,.45)}
+.tt9-replay-head,.tt9-replay-controls{display:flex;align-items:center;justify-content:center;gap:6px;padding:3px 7px;min-height:32px;min-width:0}
+.tt9-replay-head{justify-content:space-between;gap:9px}
+.tt9-replay-head strong{white-space:nowrap;font-size:.85rem}
+.tt9-replay-count{font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tt9-replay-head button{flex:none;font-size:1.25rem;line-height:1;min-width:28px;min-height:27px}
+.tt9-replay-controls{border-left:1px solid var(--ui-border,#637c66);flex-wrap:nowrap}
+.tt9-replay-controls button{min-height:30px;min-width:37px;font-size:.76rem;padding:2px 4px}
+.tt9-replay-launch{position:absolute;right:.55rem;top:.3rem;z-index:3;font-size:.8rem;min-height:27px;padding:.1rem .4rem}
 .tt6-workspace{position:relative}
 .tt6-workspace .tt9-replay-launch{right:.4rem;top:.25rem}
 .tt6-workspace:has(.tt9-replay-launch) .tt6-dock-status{padding-right:3.8rem}
+@media (orientation:landscape) and (max-height:420px){
+ .tt9-replay-toolbar{left:auto;right:max(4px,env(safe-area-inset-right));transform:none;flex-direction:row}
+ .tt9-replay-head,.tt9-replay-controls{min-height:29px;padding:2px 5px}
+ .tt9-replay-count{max-width:125px}
+ .tt9-replay-controls{border-left:1px solid var(--ui-border,#637c66)}
+ .tt9-replay-controls button{min-height:29px;min-width:36px;padding:1px 3px}
+}
+@media (max-width:430px){
+ .tt9-replay-head strong{display:none}
+ .tt9-replay-head{gap:4px}
+ .tt9-replay-count{max-width:90px;font-size:.7rem}
+ .tt9-replay-controls{gap:2px}
+ .tt9-replay-controls button{min-width:37px;padding:2px 3px}
+}
+@media (max-width:359px){
+ .tt9-replay-head{gap:4px}
+ .tt9-replay-count{max-width:120px;font-size:.69rem}
+ .tt9-replay-controls{gap:3px}
+ .tt9-replay-controls button{min-width:50px}
+}
