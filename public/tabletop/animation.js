@@ -90,10 +90,24 @@ export function planGameTransitions(previous,next){
   const fromHidden=[...after].filter(id=>hiddenBefore.has(id));
   const drawn=[...after].filter(id=>!before.has(id)&&!hiddenBefore.has(id));
   const removed=[...before].filter(id=>!after.has(id)&&!hiddenAfter.has(id));
+  // Replay deliberately strips private hand IDs. If a public draft card
+  // disappears while an anonymous hand gains a back, its public source is
+  // still known. Animate that single public-to-face-down transfer without
+  // inventing or retaining a concealed identifier.
+  const anonHandGain=(next.players||[]).reduce((count,p,i)=>{
+    const hand=p.hand||[],prior=previous.players?.[i]?.hand||[];
+    return count+(hand.every(c=>c?.kind==='hidden'&&typeof c?.id!=='string')?
+      Math.max(0,hand.length-prior.length):0);
+  },0);
+  const anonymousDraftToHand=(previous.phase==='draft'?cards(previous.draft):[]).filter(c=>
+    !ids(next.draft).has(c.id)&&!hiddenAfter.has(c.id)
+  ).slice(0,anonHandGain).map(c=>c.id);
+  const anonymousDraw=Math.min(Math.max(0,(previous.deckCount||0)-(next.deckCount||0)),
+    Math.max(0,anonHandGain-anonymousDraftToHand.length));
   const previousDiscard=membership(previous,'discard'), previousLimbo=membership(previous,'limbo');
   const destinations={discard:membership(next,'discard'),limbo:membership(next,'limbo')};
   return {
-    moved,drawn,removed,toHidden,fromHidden,
+    moved,drawn,removed,toHidden,fromHidden,anonymousDraftToHand,anonymousDraw,
     // Concealment owns the transfer; do not schedule the same draft card twice.
     draftToHand: cards(previous.draft).filter(c=>!ids(next.draft).has(c.id)&&hiddenAfter.has(c.id)).map(c=>c.id),
     hiddenDraw:[...hiddenAfter].filter(id=>!hiddenBefore.has(id)).length,
@@ -407,6 +421,10 @@ export function createTabletopAnimator({root}){
       // Public draft cards can visibly enter a concealed hand without
       // storing the concealed card's ID (which can disclose its face).
       for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)queue(id,newBack.template,released?.id===id?released.from:a.r,newBack.r,null,true);}
+      for(const id of plan.anonymousDraftToHand||[]){const a=old.get(id);if(a&&newBack)queue(id,newBack.template,a.r,newBack.r,null,true);}
+      if(plan.anonymousDraw&&newBack&&rectOK(deck)){
+        for(const bundle of stackMotionCounts(plan.anonymousDraw))queue(null,newBack.template,deck,newBack.r,null,true,bundle);
+      }
       for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)queue(id,oldBack.template,oldBack.r,b.r,b.el,true);}
       if(plan.draw&&plan.hiddenDraw&&rectOK(deck)&&newBack){
         // Draft-to-hand already has a public source and a single face-down flight.

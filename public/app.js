@@ -16,6 +16,7 @@ import {createTabletopAnimator} from './tabletop/animation.js';
 import {renderOverlay,renderSettingsContents} from './game-overlay.js';
 import {GUIDE_CHAPTERS,renderRulesReference,renderGuideTutorial,filterGuide} from './rules-guide.js';
 import {opponentReplay,replayOverlay,fitReplay,replayStage,replayCaption} from './multiplayer-replay.js';
+import {createReplayPlaybackClock,replayFrameDelay} from './replay-playback.js';
 import {readHotseatReplay,resetHotseatReplay,advanceHotseatReplay} from './engine/hotseat-replay.js';
 const app=document.querySelector('#app');
 const STATIC_SITE=location.hostname.endsWith('.github.io')||(typeof window!=='undefined'&&window.ONIRAMA_STATIC_BUILD===true);
@@ -51,7 +52,7 @@ const SESSION_META_KEY='onirama.guest.current.v1';
 let tutorialStep=0,tutorialChapter=0,lastAnnouncement='';
 let gameOverlay=null,gameMenuTab='log',gameRulesFromPause=false,overlayReturnAction=null,pileOpen=null,doorSearchIntent=null,doorSearchChromatic=false,failsafeChoosing=false;
 let searchFreeIntent=null,happyFetchSelection=null,lastInputWasKeyboard=false;
-let replayFrames=[],replayIndex=0,replayPlaying=false,replayTimer=null,replayAnimator=null;
+let replayFrames=[],replayIndex=0,replayAnimator=null;
 let spectatorFlash=null,spectatorFlashTimer=null,previewInFlight=null;
 function captureSpectatorChoice(next){
  if(next?.version<=version||!state?.game?.spectatorDecision||!next?.spectatorEvent||page!=='#/game')return;
@@ -76,11 +77,37 @@ let setupPending=null;
 const roomCodeFromHash=()=>{const match=location.hash.match(/^#\/join\?code=([A-Za-z]{4}|[a-fA-F0-9]{8})$/);return match?match[1].toUpperCase():'';};
 const inviteLink=code=>`${location.origin}${location.pathname}${location.search}#/join?code=${encodeURIComponent(code)}`;
 function cancelStream(){streamAbort?.abort();streamAbort=null;if(streamRetry!==null){clearTimeout(streamRetry);streamRetry=null;}}
-function stopReplay(){if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayFrames=[];replayIndex=0;replayPlaying=false;replayAnimator?.reset?.();replayAnimator=null;}
+const replayClock=typeof createReplayPlaybackClock==='function'?createReplayPlaybackClock({
+  getIndex:()=>replayIndex,
+  getLength:()=>replayFrames.length,
+  delay:index=>replayFrameDelay(replayFrames[index-1]?.frame,replayFrames[index]?.frame,{
+    reduced:uiSettings.motion==='reduced'||(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches)
+  }),
+  onStep:index=>{replayIndex=index;updateReplayStage();},
+  onComplete:()=>updateReplayControls()
+}):{playing:false,start(){},pause(){},reset(){}};
+function stopReplay(){replayClock.reset();replayFrames=[];replayIndex=0;replayAnimator?.reset?.();replayAnimator=null;}
 function retryStream(){if(!session||IS_LOCAL_GAME()||streamRetry!==null)return;tabletopAnimator?.resync?.();streamAbort?.abort();streamAbort=null;const wait=Math.min(18000,1250*2**Math.min(4,reconnectAttempts++));streamRetry=setTimeout(()=>{streamRetry=null;if(session)startStream();},wait);}
-function nextReplay(){if(!replayFrames.length)return;replayIndex=Math.min(replayIndex+1,replayFrames.length-1);updateReplayStage();}
-function scheduleReplay(){if(!replayPlaying)return;if(replayTimer!==null)clearTimeout(replayTimer);if(replayIndex===replayFrames.length-1){replayPlaying=false;updateReplayStage();return;}replayTimer=setTimeout(()=>{replayTimer=null;nextReplay();scheduleReplay();},850);}
-function updateReplayStage(){const layer=app.querySelector?.('[data-replay-layer]'),entry=replayFrames[replayIndex];if(!layer||!entry)return;replayAnimator?.before?.(entry.frame,'replay','#/game');const stage=layer.querySelector('[data-replay-stage]');if(!stage)return;stage.innerHTML=replayStage(entry,state?.room?.seat??0);fitReplay(layer,entry);replayAnimator?.after?.(entry.frame,'replay','#/game');const count=layer.querySelector('.tt9-replay-count');if(count)count.textContent=`${replayIndex+1}/${replayFrames.length} · ${replayCaption(entry)}`;const buttons=['replayPrev','replayNext','replayPlay'].map(key=>layer.querySelector(`[data-action="${key}"]`));if(buttons[0])buttons[0].disabled=replayIndex===0;if(buttons[1])buttons[1].disabled=replayIndex===replayFrames.length-1;if(buttons[2])buttons[2].textContent=replayPlaying?'Pause':'Play';}
+function updateReplayControls(){
+ const layer=app.querySelector?.('[data-replay-layer]');if(!layer||!replayFrames.length)return;
+ const count=layer.querySelector('.tt9-replay-count'),entry=replayFrames[replayIndex];
+ if(count)count.textContent=`${replayIndex+1}/${replayFrames.length} · ${replayCaption(entry)}`;
+ const controls=['replayPrev','replayNext','replayPlay','replayRestart'].map(key=>layer.querySelector(`[data-action="${key}"]`));
+ if(controls[0])controls[0].disabled=replayIndex===0;
+ if(controls[1])controls[1].disabled=replayIndex===replayFrames.length-1;
+ if(controls[2]){controls[2].textContent=replayClock.playing?'Pause':'Play';controls[2].setAttribute('aria-pressed',String(replayClock.playing));}
+ if(controls[3])controls[3].disabled=replayIndex===0;
+}
+function updateReplayStage(){
+ const layer=app.querySelector?.('[data-replay-layer]'),entry=replayFrames[replayIndex];if(!layer||!entry)return;
+ replayAnimator?.before?.(entry.frame,'replay','#/game');
+ const stage=layer.querySelector('[data-replay-stage]');if(!stage)return;
+ stage.innerHTML=replayStage(entry,state?.room?.seat??0);
+ // Fit BEFORE capturing destinations; fitted coordinates are authoritative.
+ fitReplay(layer,entry);
+ replayAnimator?.after?.(entry.frame,'replay','#/game');
+ updateReplayControls();
+}
 
 const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 function sessionMeta(){if(!session)return null;try{const meta=JSON.parse(localStorage.getItem(SESSION_META_KEY)||'null');if(meta?.roomId===session.id&&typeof meta.gameId==='string')return meta;}catch{}const meta={roomId:session.id,gameId:newId(),startedAt:Date.now()};localStorage.setItem(SESSION_META_KEY,JSON.stringify(meta));return meta;}
@@ -527,7 +554,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   const waitingForPartner=inGame&&!IS_LOCAL_GAME()&&state.room.mode==='coop'&&!state.room.paused&&state.game?.status==='active'&&state.room.seat!==state.game.active;
   const waitingIndicator=waitingForPartner?`<div class="tt34-wait-turn" role="status" aria-live="polite"><span class="tt34-wait-label"><span aria-hidden="true" class="tt34-wait-star">✦</span>${escape(state.game.players?.[state.game.active]?.name||'Your partner')}'s turn</span></div>`:'';
   const pile=inGame&&pileOpen&&typeof renderPileInspector==='function'?renderPileInspector(state.game,pileOpen,state.room?.seat):'';
-  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}${waitingIndicator}</div><div class="tt6-hand-shelf" aria-label="Your hand"></div>${actionPanel}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),hotseat:IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayPlaying):'');
+  const markup=(inGame?'':nav())+`<main class="page${inGame?' game-viewport':''}" id="main-content" tabindex="-1">${inGame?`<div class="tt6-table-slot">${content}${waitingIndicator}</div><div class="tt6-hand-shelf" aria-label="Your hand"></div>${actionPanel}${pile}`:`<div class="shell-viewport-window" data-page-route="${escape(page)}" role="region" aria-label="Page content" tabindex="0">${content}</div>`}${inGame?'':pinnedSetupAction()}</main>${errorMessage}`+(inGame?'':bottomNav())+(inGame&&typeof renderOverlay==='function'?renderOverlay(gameOverlay,state.game?.config?.expansions,state.game?.mode==='coop',{...uiSettings,fromPause:gameRulesFromPause,tab:gameMenuTab,themes:THEME_PRESETS,commit:BUILD_COMMIT,log:state.game?.log||[],multiplayer:state.room?.mode==='coop'&&!IS_HOTSEAT(),hotseat:IS_HOTSEAT(),host:state.room?.host,paused:state.room?.paused}):'')+(inGame&&replayFrames.length?replayOverlay(replayFrames,replayIndex,state.room.seat,replayClock.playing):'');
   if(markup!==lastRenderedMarkup){app.innerHTML=markup;lastRenderedMarkup=markup;}
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
@@ -561,7 +588,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
     for(const lane of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){const old=previousLabyrinths.get(lane.dataset.tabletopScroll);if(old&&old.count===lane.querySelectorAll('.card.tiny').length)lane.scrollLeft=old.left;}
   }
   tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page,{online:!IS_LOCAL_GAME()&&state?.room?.mode==='coop',version:state?.version});
-  if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator=createTabletopAnimator({root:replayLayer});replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');fitReplay(replayLayer,replayFrames[replayIndex]);}}
+  if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator?.reset?.();replayAnimator=createTabletopAnimator({root:replayLayer});fitReplay(replayLayer,replayFrames[replayIndex]);replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');}}
   const nextDock=app.querySelector?.('.tt6-dock-scroll');if(nextDock){nextDock.scrollTop=dockScroll;nextDock.scrollLeft=dockX;}
   const nextPile=app.querySelector?.('.tt6-pile-scroll');if(nextPile)nextPile.scrollTop=pileScroll;
   const newDiscardStrip=app.querySelector?.('.tt8-discard-history');if(newDiscardStrip)newDiscardStrip.scrollLeft=discardWasAtEnd?newDiscardStrip.scrollWidth:discardX;
@@ -607,8 +634,11 @@ function pick(id){
 async function handle(actionName){
   if(actionName==='replayOpen'){if(page!=='#/game'||state?.room?.mode!=='coop')return;const frames=opponentReplay(state.replay,state.room.seat);if(frames.length<2)return;stopReplay();gameOverlay=null;pileOpen=null;replayFrames=frames;replayIndex=0;render();app.querySelector?.('[data-replay-layer] .tt9-replay-dialog')?.focus?.();return;}
   if(actionName==='replayClose'){stopReplay();render();app.querySelector?.('[data-action="replayOpen"]')?.focus?.({preventScroll:true});return;}
-  if(actionName==='replayPrev'||actionName==='replayNext'){replayPlaying=false;if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayIndex=Math.max(0,Math.min(replayFrames.length-1,replayIndex+(actionName==='replayNext'?1:-1)));return updateReplayStage();}
-  if(actionName==='replayPlay'){replayPlaying=!replayPlaying;updateReplayStage();scheduleReplay();return;}
+  if(actionName==='replayPrev'||actionName==='replayNext'||actionName==='replayRestart'){
+    replayClock.pause();replayIndex=actionName==='replayRestart'?0:Math.max(0,Math.min(replayFrames.length-1,replayIndex+(actionName==='replayNext'?1:-1)));
+    return updateReplayStage();
+  }
+  if(actionName==='replayPlay'){if(replayClock.playing)replayClock.pause();else if(replayIndex===replayFrames.length-1){replayIndex=0;updateReplayStage();replayClock.start();}else replayClock.start();updateReplayControls();return;}
   if(replayFrames.length)return;
   if(actionName==='openGamePause'||actionName==='openGameRules'){
     if(page!=='#/game'||!state?.room?.started)return;
@@ -925,6 +955,9 @@ app.addEventListener('keydown',e=>{
   if(error&&e.key==='Escape'){e.preventDefault();handle('clearError');return;}
   if(page==='#/game'&&IS_HOTSEAT()&&passDevice&&e.key==='Escape'){e.preventDefault();return;}
   if(replayFrames.length){
+    if(!e.altKey&&!e.ctrlKey&&!e.metaKey&&['ArrowLeft','ArrowRight','Home',' '].includes(e.key)&&!e.target?.matches?.('input,textarea,select')){
+      e.preventDefault();handle(e.key==='ArrowLeft'?'replayPrev':e.key==='ArrowRight'?'replayNext':e.key==='Home'?'replayRestart':'replayPlay');return;
+    }
     if(e.key==='Escape'){e.preventDefault();handle('replayClose');return;}
     if(e.key==='Tab'){
       const dialog=app.querySelector?.('[data-replay-layer] .tt9-replay-dialog');
