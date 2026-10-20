@@ -90,14 +90,14 @@ test('Online quit and host end both exit to multiplayer, even if a snapshot wins
  assert.doesNotMatch(racy.app.innerHTML,/The host ended the game/);
 });
 
-test('Online, hotseat, and solo menus maintain distinct exit destinations',()=>{
+test('Online, hotseat, and solo menus share the Exit game label while keeping distinct exit destinations',()=>{
  const host=renderOverlay('pause',[],true,{multiplayer:true,host:true});
- assert.match(host,/Exit to multiplayer/);assert.match(host,/End game for both/);
+ assert.match(host,/data-action="gameGoHome" class="primary">Exit game<\/button>/);assert.match(host,/End game for both/);
  assert.doesNotMatch(host,/data-action="leaveRoom"/);
  const guest=renderOverlay('pause',[],true,{multiplayer:true,host:false});
- assert.match(guest,/Exit to multiplayer/);assert.doesNotMatch(guest,/End game for both/);
- assert.match(renderOverlay('pause',[],true,{hotseat:true}),/Exit to multiplayer/);
- assert.match(renderOverlay('pause',[],false,{}),/Exit game/);
+ assert.match(guest,/data-action="gameGoHome" class="primary">Exit game<\/button>/);assert.doesNotMatch(guest,/End game for both/);
+ assert.match(renderOverlay('pause',[],true,{hotseat:true}),/data-action="gameGoHome" class="primary">Exit game<\/button>/);
+ assert.match(renderOverlay('pause',[],false,{}),/data-action="gameGoHome" class="primary">Exit game<\/button>/);
  const src=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
  assert.match(src,/state\.room\.seat!==state\.game\.active/);
  assert.match(src,/state\.room\.mode==='coop'&&!state\.room\.paused/);
