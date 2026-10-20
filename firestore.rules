@@ -24,6 +24,8 @@ service cloud.firestore {
           request.resource.data.guestName.size() > 0 && request.resource.data.guestName.size() <= 40 &&
           changedOnly(['guestUid','guestName','updatedAt','version']);
       }
+      // Host setup and first game start must be valid for old lobbies too:
+      // legacy rooms may lack hostSeat, so use the same defaulted accessor as host().
       function setupChange() {
         return host() && !ended() && resource.data.game == null &&
           changedOnly(['config','ready','updatedAt','version']) &&
@@ -37,7 +39,7 @@ service cloud.firestore {
       function starting() {
         return host() && !ended() && resource.data.game == null &&
           resource.data.hostUid != null && resource.data.guestUid != null &&
-          resource.data.ready[1-resource.data.hostSeat] == true && request.resource.data.game is map &&
+          resource.data.ready[1-hostSeat()] == true && request.resource.data.game is map &&
           request.resource.data.game.mode == 'coop' && request.resource.data.replay is list && changedOnly(['game','replay','updatedAt','version']);
       }
       function restarting() {
