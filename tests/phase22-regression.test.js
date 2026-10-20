@@ -48,7 +48,7 @@ test('only actually moved Limbo cards receive catcher movement cues',()=>{
  assert.deepEqual(catcherTransferCounts(before,{...after,limbo:[c],expansion:{dreamcatchers:{stacks:[[n],[],[],[]]}}}),[]);
 });
 test('motion timing has a consistent, readable tempo and reduced-motion override',()=>{
- assert(CARD_MOTION.move>=800&&CARD_MOTION.reveal>CARD_MOTION.move);
+ assert(CARD_MOTION.move>=400&&CARD_MOTION.move<=650&&CARD_MOTION.reveal>CARD_MOTION.move);
  assert.match(source('public/tabletop/animation.js'),/CARD_MOTION\.move/);
  assert.match(source('public/tabletop/animation.js'),/tt5-catcher\[data-action=/);
  assert.match(source('public/tabletop/animation.css'),/prefers-reduced-motion:reduce/);

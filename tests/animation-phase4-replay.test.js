@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {replayFrameDelay,createReplayPlaybackClock} from '../public/replay-playback.js';
+import {CARD_MOTION} from '../public/tabletop/animation-timing.js';
 import {planGameTransitions} from '../public/tabletop/animation.js';
 import {publicFrame,opponentReplay} from '../engine/replay.js';
 import {resetHotseatReplay,advanceHotseatReplay,readHotseatReplay} from '../engine/hotseat-replay.js';
@@ -22,11 +23,11 @@ const view=(o={})=>({mode:'coop',status:'active',phase:'action',turn:1,active:0,
 
 test('replay clock waits for complete reveals, staggered draws, and shuffle overlays',()=>{
  const previous=view(),oneDraw=view({deckCount:24,players:[{hand:[card('drawn')],labyrinth:[],doors:[]},{hand:[],labyrinth:[],doors:[]}]});
- assert(replayFrameDelay(previous,oneDraw)>=1550,'reveals last longer than old fixed 850 ms');
+ assert(replayFrameDelay(previous,oneDraw)>=CARD_MOTION.reveal,'replay must wait for the current reveal');
  const bigDraw=view({deckCount:20,players:[{hand:Array.from({length:5},(_,i)=>card(`draw-${i}`)),labyrinth:[],doors:[]},{hand:[],labyrinth:[],doors:[]}]});
  assert(replayFrameDelay(previous,bigDraw)>replayFrameDelay(previous,oneDraw),'staggered multi-card reveal must finish');
  const shuffled=view({deckCount:27,shuffleSerial:1});
- assert(replayFrameDelay(previous,shuffled)>1050,'shuffle overlays must finish');
+ assert(replayFrameDelay(previous,shuffled)>CARD_MOTION.shuffle,'shuffle overlays must finish');
  assert.equal(replayFrameDelay(previous,oneDraw,{reduced:true}),480);
 });
 
@@ -60,7 +61,7 @@ test('replay public draft travels into anonymous face-down hand exactly once',()
  assert.deepEqual(plan.anonymousDraftToHand,['public-a']);
  assert.deepEqual(plan.toHidden,[]);
  assert.deepEqual(plan.fromHidden,[]);
- assert(replayFrameDelay(prior,later)>850);
+ assert(replayFrameDelay(prior,later)>CARD_MOTION.move);
  assert.equal(plan.anonymousDraftToHand.filter(id=>id==='public-a').length,1);
 });
 
@@ -71,7 +72,7 @@ test('an anonymous replay hand can gain a face-down deck card without learning i
  assert.equal(plan.anonymousDraw,1);
  assert.deepEqual(plan.anonymousDraftToHand,[]);
  assert.equal(plan.drawn.length,0);
- assert(replayFrameDelay(previous,next)>850);
+ assert(replayFrameDelay(previous,next)>CARD_MOTION.move);
 });
 
 test('a live identified draft does not also schedule anonymous replay flight',()=>{

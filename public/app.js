@@ -1006,7 +1006,21 @@ function resizeGameplay(){
  }
 }
 let viewportRefits=[];
-function fitAfterViewportSettles(){
+// Only material geometry changes interrupt an active card transfer. Safari's
+// browser-toolbar scroll/resize events should not repeatedly cancel motion.
+let lastMotionViewport={width:typeof innerWidth==='number'?innerWidth:0,height:typeof innerHeight==='number'?innerHeight:0};
+function fitAfterViewportSettles(event){
+ // A user's deliberate pinch zoom is not an orientation change. Do not
+ // repeatedly alter board sizing while Safari is magnifying the viewport.
+ if(window?.visualViewport?.scale>1.01&&event?.type!=='orientationchange'&&event?.type!=='pageshow')return;
+ const width=typeof innerWidth==='number'?innerWidth:0,height=typeof innerHeight==='number'?innerHeight:0;
+ const previous=lastMotionViewport;
+ const force=event?.type==='orientationchange'||event?.type==='pageshow';
+ if(force||(width&&height&&previous.width&&previous.height&&(
+   (width>height)!==(previous.width>previous.height)||
+   Math.abs(width-previous.width)>32||Math.abs(height-previous.height)>110
+ )))tabletopAnimator?.viewportChanged?.();
+ lastMotionViewport={width,height};
  for(const id of viewportRefits)clearTimeout(id);
  viewportRefits=[];
  const fit=()=>{if(typeof requestAnimationFrame==='function')requestAnimationFrame(resizeGameplay);else resizeGameplay();};

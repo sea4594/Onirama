@@ -33,3 +33,14 @@ html[data-motion="reduced"] :is(.tt8-draw-cue,.tt8-shuffle-cue,.tt8-progress-cue
 @keyframes tt8-expansion-fade{0%,100%{box-shadow:none;filter:none}45%{box-shadow:inset 0 0 0 2px #cb837c;filter:brightness(.84)}}
 html[data-motion="reduced"] :is(.tt8-expansion-cue,.tt8-expansion-loss){animation:none!important}
 @media (prefers-reduced-motion:reduce){.tt8-expansion-cue,.tt8-expansion-loss{animation:none!important}}
+/* Phase 6: one restrained movement language across screen sizes.
+   Override durations without altering the established tabletop geometry. */
+.tt8-draw-cue{animation-duration:.62s}
+.tt8-shuffle-cue{animation-duration:.78s}
+.tt8-progress-cue{animation-duration:.46s}
+.tt8-turn-cue{animation-duration:.36s}
+.tt8-decision-cue{animation-duration:.46s}
+.tt8-expansion-cue,.tt8-expansion-loss{animation-duration:.46s!important}
+@keyframes tt8-turn{0%,100%{box-shadow:none;filter:none}45%{box-shadow:inset 0 0 0 2px var(--table-gold);filter:brightness(1.10)}}
+html[data-motion="reduced"] :is(.tt8-motion-stage,.tt8-expansion-cue,.tt8-expansion-loss){animation:none!important}
+@media (prefers-reduced-motion:reduce){.tt8-motion-stage,.tt8-expansion-cue,.tt8-expansion-loss{animation:none!important}}

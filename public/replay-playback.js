@@ -10,18 +10,20 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 // interrupted by the next snapshot. Times include stagger and cleanup slack.
 export function replayFrameDelay(previous,current,{reduced=false}={}){
   if(reduced)return 480;
-  if(!previous||!current)return 620;
+  if(!previous||!current)return 560;
   const plan=planGameTransitions(previous,current);
-  if(!plan)return 620;
+  if(!plan)return 560;
   const travel=plan.moved.length+plan.toHidden.length+plan.fromHidden.length+
     plan.toDiscard.length+plan.toLimbo.length+(plan.anonymousDraftToHand?.length||0)+(plan.anonymousDraw||0);
+  // Use the maximum possible CSS-pixel transfer time: replay frames can
+  // contain long monitor-spanning moves without knowing rendered geometry.
   const moveTime=travel?CARD_MOTION.move+Math.min(8,travel-1)*CARD_MOTION.stagger:0;
   const reveals=plan.draw&&plan.drawn.length?CARD_MOTION.reveal+Math.min(7,plan.drawn.length-1)*250:0;
   const premonitions=plan.premRevealed.length?CARD_MOTION.reveal+Math.min(4,plan.premRevealed.length-1)*180:0;
   const returns=plan.shuffle?(plan.overload?CARD_MOTION.move+650:plan.catcherFreed.length?CARD_MOTION.move+220:320)+CARD_MOTION.shuffle:0;
   const nonCard=plan.turn||plan.phase||plan.finished?CARD_MOTION.highlight:0;
   // A public hand-back draft requires one transfer even with anonymized hands.
-  return clamp(Math.max(620,moveTime,reveals,premonitions,returns,nonCard)+140,620,4300);
+  return clamp(Math.max(520,moveTime,reveals,premonitions,returns,nonCard)+140,560,3600);
 }
 
 // One owned timer; pausing, scrubbing, closing, and replay replacement cannot

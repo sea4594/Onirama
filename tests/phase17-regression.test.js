@@ -58,6 +58,6 @@ test('online replay preserves exact setup and player names in an already finishe
  assert.equal(again.version,r.version+1);assert.equal(again.game.status,'active');assert.deepEqual(again.game.config,r.game.config);assert.deepEqual(again.game.players.map(p=>p.name),['Alice','Bob']);assertConserved(again.game);
 });
 test('transition animation never deliberately shows newly drawn hand card before the reveal ends',()=>{
- const source=readFileSync('public/tabletop/animation.js','utf8');assert.match(source,/target\.style\.visibility='hidden'/);assert.match(source,/motion\.finished\.catch\(\(\)=>\{\}\)\.then\(cleanup\)/);assert.match(source,/duration:CARD_MOTION.reveal/);assert.match(readFileSync('public/tabletop/animation-timing.js','utf8'),/reveal:1550/);
+ const source=readFileSync('public/tabletop/animation.js','utf8');assert.match(source,/target\.style\.visibility='hidden'/);assert.match(source,/motion\.finished\.catch\(\(\)=>\{\}\)\.then\(cleanup\)/);assert.match(source,/duration:CARD_MOTION.reveal/);assert.match(readFileSync('public/tabletop/animation-timing.js','utf8'),/reveal:1180/);
  assert.match(readFileSync('public/index.html','utf8'),/tabletop\/phase17.css/);
 });

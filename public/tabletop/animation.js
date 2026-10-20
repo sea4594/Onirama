@@ -1,4 +1,4 @@
-import {CARD_MOTION,catcherTransferCounts} from './animation-timing.js';
+import {CARD_MOTION,cardTransferDuration,catcherTransferCounts} from './animation-timing.js';
 import {renderCard} from './cards.js';
 import {planExpansionMotion,expansionMotionSignature,expansionDestinationRect} from './animation-expansions.js';
 /* Phase 7: presentation-only transitions from successive *public game views*.
@@ -209,15 +209,28 @@ function animateFlight(template,from,to,target,delay,active,scope,count=1){
   scope.appendChild(ghost);
   const {dx,dy,scale}=flightGeometry(start,destination);
   if(target)target.style.visibility='hidden';
-  let finished=false;
-  const cleanup=()=>{if(finished)return;finished=true;ghost.remove();if(target)target.style.removeProperty('visibility');const i=active.indexOf(cleanup);if(i!==-1)active.splice(i,1);};
+  let finished=false,motion=null;
+  const cleanup=()=>{if(finished)return;finished=true;motion?.cancel();ghost.remove();if(target)target.style.removeProperty('visibility');const i=active.indexOf(cleanup);if(i!==-1)active.splice(i,1);};
   active.push(cleanup);
   if(typeof ghost.animate!=='function'){cleanup();return;}
-  const motion=ghost.animate([
+  motion=ghost.animate([
     {transform:`translate(${dx}px,${dy}px) scale(${scale})`,opacity:.85},
     {transform:'translate(0,0) scale(1)',opacity:1}
-  ],{duration:CARD_MOTION.move,delay,easing:'cubic-bezier(.22,.75,.32,1)',fill:'both'});
+  ],{duration:cardTransferDuration(start,destination),delay,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
   motion.finished.catch(()=>{}).then(cleanup);
+}
+
+// In wide landscape, the reveal should stay near the actual transfer path,
+// rather than teleporting to the middle of a large monitor. Keep the familiar
+// centered presentation on portrait and small screens.
+export function revealCenter(from,to,{screenWidth,screenHeight,cardWidth,cardHeight}={}){
+  const sw=screenWidth||1,sh=screenHeight||1;
+  if(sw<900||sw<=sh||!rectOK(from)||!rectOK(to))return {x:sw/2,y:sh/2};
+  const start=center(from),end=center(to);
+  const halfWidth=(cardWidth||148)/2+12,halfHeight=(cardHeight||210)/2+12;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  return {x:clamp((start.x+end.x)/2,halfWidth,Math.max(halfWidth,sw-halfWidth)),
+    y:clamp((start.y+end.y)/2,halfHeight,Math.max(halfHeight,sh-halfHeight))};
 }
 
 // Reveal only faces that are already part of the authorized next public view.
@@ -226,7 +239,7 @@ const publicCardMap=game=>new Map(arrays(game).flatMap(a=>cards(a).map(c=>[c.id,
 function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null,scope=null}={}){
  if(!rectOK(from)||!rectOK(to)||typeof document==='undefined')return;
  const width=Math.min(148,Math.max(93,innerWidth*.26)),height=Math.round(width*1.42);
- const cx=innerWidth/2,cy=innerHeight/2;
+ const {x:cx,y:cy}=revealCenter(from,to,{screenWidth:innerWidth,screenHeight:innerHeight,cardWidth:width,cardHeight:height});
  if(target)target.style.visibility='hidden';
  const overlay=document.createElement('div');overlay.className='tt10-reveal-flight';
  Object.assign(overlay.style,{width:`${width}px`,height:`${height}px`,left:`${cx-width/2}px`,top:`${cy-height/2}px`});
@@ -239,11 +252,11 @@ function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null,
  const source=center(from),destination=center(to);
  const move=(pos)=>`translate(${pos.x-cx}px,${pos.y-cy}px) scale(${Math.max(.13,Math.min(2,pos.width/width))})`;
  const src={...source,width:from.width},dst={...destination,width:to.width};
- let finished=false;
- const cleanup=()=>{if(finished)return;finished=true;overlay.remove();if(target)target.style.removeProperty('visibility');const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
+ let finished=false,motion=null;
+ const cleanup=()=>{if(finished)return;finished=true;motion?.cancel();overlay.remove();if(target)target.style.removeProperty('visibility');const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
  cleanups.push(cleanup);
  if(!overlay.animate){cleanup();return;}
- const motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:CARD_MOTION.reveal,delay,easing:'ease-in-out',fill:'both'});
+ motion=overlay.animate([{transform:move(src),opacity:.85,offset:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.3},{transform:'translate(0,0) scale(1)',opacity:1,offset:.65},{transform:move(dst),opacity:1,offset:1}],{duration:CARD_MOTION.reveal,delay,easing:'ease-in-out',fill:'both'});
  motion.finished.catch(()=>{}).then(cleanup);
 }
 function premonitionNode(root,id){
@@ -256,7 +269,7 @@ function shuffleOverlay(back,cleanups,delay=0,scope=null,snapshotRect=null){
  const r=snapshotRect||rect(back);if(!rectOK(r)||typeof document==='undefined')return;
  const ghost=back.cloneNode(true);ghost.removeAttribute('data-action');ghost.removeAttribute('data-tt-drop');
  ghost.classList.add('tt10-shuffle-overlay');ghost.setAttribute('aria-hidden','true');
- Object.assign(ghost.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`,animationDelay:`${delay}ms`});
+ Object.assign(ghost.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`,animationDelay:`${delay}ms`,animationDuration:`${CARD_MOTION.shuffle}ms`});
  (scope||document.body).appendChild(ghost);
  let timer;
  const cleanup=()=>{clearTimeout(timer);ghost.remove();const i=cleanups.indexOf(cleanup);if(i!==-1)cleanups.splice(i,1);};
@@ -315,8 +328,12 @@ export function createTabletopAnimator({root}){
   const reset=()=>{last=null;key=null;lastVersion=null;pending=null;drop=null;clearMotion();};
   return {
     dragRelease(id,from){if(id&&rectOK(from))drop={id,from};},
+    // Rotation, substantial viewport changes, and reduced-motion switches
+    // invalidate coordinates, NOT the authoritative last public game state.
+    viewportChanged(){pending=null;drop=null;clearMotion();},
     before(game,roomKey,page,meta={}){
       pending=null;
+      if(!enabled())clearMotion();
       if(page!=='#/game'||!game){reset();return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const changed=last&&key===nextKey&&signature(last)!==signature(game);
@@ -492,8 +509,16 @@ export function createTabletopAnimator({root}){
       // Dragged and tapped actions use the same transfer plan. A drag changes
       // only that card's start point; it must not suppress legitimate secondary
       // card movements such as draws, discard effects or a partner's transfer.
-      flies.slice(0,9).forEach(([template,from,to,target,,count],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups,flightScope,count));
-      const flash=(el,cls,ms=CARD_MOTION.highlight)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
+      flies.slice(0,9).forEach(([template,from,to,target,,count],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,380),cleanups,flightScope,count));
+      // A canceled or superseded highlight must not leave a timer that later
+      // removes the new transition's style on the same zone.
+      const flash=(el,cls,ms=CARD_MOTION.highlight)=>{
+        if(!el)return;
+        el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
+        let done=false,timer=null;
+        const release=()=>{if(done)return;done=true;clearTimeout(timer);el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};
+        cleanups.push(release);timer=setTimeout(release,ms);
+      };
       if(plan.draw)flash(deckEl,'tt8-draw-cue');
       if(plan.shuffle){
         const back=deckEl,origin=(old?.size||0)>0?limbo:null;
@@ -525,7 +550,7 @@ export function createTabletopAnimator({root}){
       }
       // Expansion state feedback stays localized. Do not make uninvolved
       // equipment fly because one counter, status, or goal changed.
-      const focus=(el,loss=false)=>flash(el,loss?'tt8-expansion-loss':'tt8-expansion-cue',650);
+      const focus=(el,loss=false)=>flash(el,loss?'tt8-expansion-loss':'tt8-expansion-cue',CARD_MOTION.highlight);
       if(expansion.towersPlaced?.length||expansion.towerProtectionChanged||expansion.towersRemoved?.length)focus(towerEl,!!expansion.towersRemoved?.length);
       for(const index of expansion.catcherLost||[])focus(catcherEls.get(index)||root.querySelector?.(`[data-action="inspectCatcher:${index}"]`),true);
       if(expansion.failsafeSpent)focus(root.querySelector?.('.tt5-catchers'));
@@ -539,7 +564,7 @@ export function createTabletopAnimator({root}){
       if(expansion.doorsLost?.length)focus(doorsEl,true);
       if(expansion.nightmareRevealed)focus(workspaceEl,true);
       if(plan.turn||plan.phase||plan.finished)flash(statusEl,'tt8-progress-cue');
-      if(!released&&plan.turn)flash(turnEl,'tt8-turn-cue');
+      if(!released&&plan.turn)flash(turnEl,'tt8-turn-cue',CARD_MOTION.turn);
       if(!released&&plan.phase&&game.phase==='decision')flash(workspaceEl,'tt8-decision-cue');
       };
       if(!meta.online){play();return;}
@@ -547,7 +572,7 @@ export function createTabletopAnimator({root}){
       // transitions while one is running, catch up to the latest view without
       // presenting older movements over newer board positions. The cap below
       // still allows every scheduled reveal to finish before the next job.
-      const delay=Math.min(420,8*CARD_MOTION.stagger);
+      const delay=Math.min(380,8*CARD_MOTION.stagger);
       const duration=Math.min(3700,Math.max(
         CARD_MOTION.move+delay,
         plan.drawn.length&&plan.draw?CARD_MOTION.reveal+Math.min(7,plan.drawn.length-1)*250:0,
