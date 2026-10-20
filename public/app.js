@@ -6,6 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {viewportRefitPlan} from './tabletop/viewport-refit.js';
 import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
@@ -988,7 +989,14 @@ addEventListener('hashchange',()=>{if(location.hash!=='#/multiplayer')hotseatNew
 addEventListener('online',()=>{render();if(session&&!IS_LOCAL_GAME())startStream();});
 addEventListener('offline',()=>{render();});
 addEventListener('pageshow',e=>{if(e.persisted&&session&&!IS_LOCAL_SOLO())startStream();});
-document.addEventListener?.('visibilitychange',()=>{if(!document.hidden&&session&&!IS_LOCAL_SOLO()){if(streamAbort===null)startStream();else if(session.transport==='firebase')startStream();else refresh();}});
+document.addEventListener?.('visibilitychange',()=>{
+ if(document.hidden){
+  // The layout may be different when Safari resumes from background.
+  tabletopAnimator?.viewportChanged?.();replayAnimator?.viewportChanged?.();
+  return;
+ }
+ if(session&&!IS_LOCAL_SOLO()){if(streamAbort===null)startStream();else if(session.transport==='firebase')startStream();else refresh();}
+});
 render();if(typeof createCardInspector==='function')cardInspector=createCardInspector({root:app});installTabletopController();if(typeof createDialogController==='function')dialogController=createDialogController({root:app,onDismiss:closeOptionalDialog});dialogController?.sync();if(STATIC_SITE||IS_HOTSEAT()){import('./engine/game.js').then(async m=>{localEngine=m;if(IS_LOCAL_GAME()){if(IS_HOTSEAT())passDevice=true;return refresh();}if(session&&CAN_MULTIPLAYER){await refresh();if((location.hash||'#/')==='#/game')startStream();}}).catch(e=>setError('Unable to load rules engine: '+e.message));}else if(session){refresh().then(()=>{if((location.hash||'#/')==='#/game'||page==='#/multiplayer')startStream();});}
 
 // iOS updates layout/visual viewports over several frames after rotation.
@@ -1006,37 +1014,52 @@ function resizeGameplay(){
  }
 }
 let viewportRefits=[];
-// Only material geometry changes interrupt an active card transfer. Safari's
-// browser-toolbar scroll/resize events should not repeatedly cancel motion.
-let lastMotionViewport={width:typeof innerWidth==='number'?innerWidth:0,height:typeof innerHeight==='number'?innerHeight:0};
+// Do not rewrite the viewport meta tag during rotation; preserve pinch zoom.
+// A visualViewport scroll may only move Safari's browser chrome. Size the
+// board for actual geometry changes, not every browser-toolbar animation.
+const motionViewport=()=>{
+ const width=typeof innerWidth==='number'?innerWidth:0;
+ const height=typeof innerHeight==='number'?innerHeight:0;
+ const visual=typeof window==='undefined'?null:window.visualViewport;
+ return {width,height,visualWidth:visual?.width||width,visualHeight:visual?.height||height};
+};
+let lastMotionViewport=motionViewport();
+let viewportFitGeneration=0;
 function fitAfterViewportSettles(event){
- // A user's deliberate pinch zoom is not an orientation change. Do not
- // repeatedly alter board sizing while Safari is magnifying the viewport.
+ // Pinch zoom is user controlled; never try to fit to the magnified viewport.
  if(window?.visualViewport?.scale>1.01&&event?.type!=='orientationchange'&&event?.type!=='pageshow')return;
- const width=typeof innerWidth==='number'?innerWidth:0,height=typeof innerHeight==='number'?innerHeight:0;
- const previous=lastMotionViewport;
- const force=event?.type==='orientationchange'||event?.type==='pageshow';
- if(force||(width&&height&&previous.width&&previous.height&&(
-   (width>height)!==(previous.width>previous.height)||
-   Math.abs(width-previous.width)>32||Math.abs(height-previous.height)>110
- )))tabletopAnimator?.viewportChanged?.();
- lastMotionViewport={width,height};
+ const next=motionViewport();
+ const plan=viewportRefitPlan(lastMotionViewport,next,{type:event?.type});
+ if(!plan.fit)return;
+ lastMotionViewport=next;
+ if(plan.cancelMotion){
+  tabletopAnimator?.viewportChanged?.();replayAnimator?.viewportChanged?.();
+ }
+ // Cancel not only scheduled timeouts but previously queued animation-frame
+ // callbacks. A late measurement must not restore stale pre-rotation geometry.
+ const generation=++viewportFitGeneration;
  for(const id of viewportRefits)clearTimeout(id);
  viewportRefits=[];
- const fit=()=>{if(typeof requestAnimationFrame==='function')requestAnimationFrame(resizeGameplay);else resizeGameplay();};
+ const fit=()=>{
+  const current=()=>{if(generation===viewportFitGeneration)resizeGameplay();};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(current);else current();
+ };
  fit();
- for(const ms of [80,200,400,750,1200])viewportRefits.push(setTimeout(fit,ms));
+ const passes=plan.settle?[80,200,400,750,1200]:[120];
+ for(const ms of passes)viewportRefits.push(setTimeout(fit,ms));
 }
 addEventListener('resize',fitAfterViewportSettles);
 if(typeof window!=='undefined'){
  window.visualViewport?.addEventListener?.('resize',fitAfterViewportSettles);
  window.addEventListener?.('orientationchange',fitAfterViewportSettles);
- // Do not rewrite the viewport meta tag during rotation. Toggling a temporary
- // maximum-scale and immediately undoing it causes lasting iOS Safari zoom.
- window.visualViewport?.addEventListener?.('scroll',()=>{
-  if(window.visualViewport?.scale===1)fitAfterViewportSettles();
- });
+ window.visualViewport?.addEventListener?.('scroll',fitAfterViewportSettles);
  window.addEventListener?.('pageshow',fitAfterViewportSettles);
+ window.addEventListener?.('pagehide',()=>{
+  ++viewportFitGeneration;
+  for(const id of viewportRefits)clearTimeout(id);
+  viewportRefits=[];
+  tabletopAnimator?.viewportChanged?.();replayAnimator?.viewportChanged?.();
+ });
 }
 // Suppress iOS double-tap text magnification on game controls; preserve pinch zoom.
 app.addEventListener('dblclick',e=>{if(e.target.closest?.('.tt2-root,.tt6-workspace,.shell-primary-actions'))e.preventDefault();});

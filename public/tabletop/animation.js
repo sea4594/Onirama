@@ -289,17 +289,23 @@ export function networkMotionContinuity(previousVersion,nextVersion){
 // deliberately short: a burst catches up to the authoritative view rather than
 // making players sit through stale animations (or inventing missing actions).
 export function createOrderedMotionQueue({onFinish=()=>{},schedule=setTimeout,cancel=clearTimeout,maxPending=2}={}){
-  let queued=[],running=false,timer=null;
+  let queued=[],running=false,timer=null,epoch=0;
   const clear=()=>{
+    // Canceling a timer is not enough if its callback is already dispatched.
+    // Also prevent a job which synchronously cleared/replaced the queue from
+    // installing an obsolete timer after its run() returns.
+    epoch++;
     if(timer!==null)cancel(timer);
     timer=null;queued=[];running=false;onFinish();
   };
   const next=()=>{
     if(running||!queued.length)return;
     running=true;
-    const job=queued.shift();
+    const job=queued.shift(),stamp=epoch;
     try{job.run();}catch(error){clear();throw error;}
+    if(stamp!==epoch||!running)return;
     timer=schedule(()=>{
+      if(stamp!==epoch)return;
       timer=null;onFinish();running=false;next();
     },job.duration);
   };

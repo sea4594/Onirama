@@ -65,7 +65,7 @@ test('rotation and reduced motion clean up effects rather than replaying actions
  assert.match(source,/motion\?\.cancel\(\)/,'animations are canceled when clones are removed');
  assert.match(source,/clearTimeout\(timer\);el\.classList\.remove\(cls\)/,'superseded flashes release timers');
  assert.match(app,/tabletopAnimator\?\.viewportChanged\?\.\(\)/);
- assert.match(app,/event\?\.type==='orientationchange'/);
+ assert.match(app,/viewportRefitPlan\(lastMotionViewport,next,\{type:event\?\.type\}\)/);
  assert.match(app,/visualViewport\?\.scale>1\.01/,'pinch zoom does not trigger repeated refitting');
  assert.doesNotMatch(app,/maximum-scale=/,'the Safari viewport meta tag must not be rewritten');
 });
