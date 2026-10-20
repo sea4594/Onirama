@@ -178,6 +178,40 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
   return {syncTargets,dispose(){clearDrag();root.removeEventListener('pointerdown',onPointerDown);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',onCancel);window.removeEventListener('blur',onCancel);root.removeEventListener('click',onClick,true);root.removeEventListener('keydown',onKey);}};
 }
 
+/** Animate the card explicitly moved into an insertion gap. Neighbors only
+ * slide the short distance necessary to close/open the gap; no flying copies,
+ * fake transfers, or changed aspect ratios. The commit renders synchronously.
+ * Works for marker clicks, mouse/touch dragging and keyboard reordering. */
+export function animateReorderCommit(root,kind,movedId,commit,{releasedRect=null,reduced=false}={}){
+  const rects=()=>{
+    const map=new Map();
+    const list=[...(root?.querySelectorAll?.('[data-tt-order-group]')||[])].find(el=>el.dataset.ttOrderGroup===kind);
+    for(const item of list?.querySelectorAll?.(':scope > [data-tt-order-id]')||[]){
+      const r=item.getBoundingClientRect();
+      if(r.width>0&&r.height>0)map.set(item.dataset.ttOrderId,{rect:r,item});
+    }
+    return map;
+  };
+  const before=rects();
+  // Reducers and rendering are authoritative; motion is purely decorative.
+  const result=commit();
+  if(reduced||typeof document==='undefined'||document.documentElement.dataset.motion==='reduced'||
+    (typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches))return result;
+  const after=rects();
+  for(const [id,entry] of after){
+    const prior=before.get(id);if((!prior&&!(id===movedId&&releasedRect))||typeof entry.item.animate!=='function')continue;
+    const start=id===movedId&&releasedRect?releasedRect:prior.rect;
+    const dx=start.left+start.width/2-(entry.rect.left+entry.rect.width/2);
+    const dy=start.top+start.height/2-(entry.rect.top+entry.rect.height/2);
+    if(Math.hypot(dx,dy)<2)continue;
+    const direct=id===movedId;
+    entry.item.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{
+      duration:direct?260:170,easing:'cubic-bezier(.2,.72,.3,1)'
+    });
+  }
+  return result;
+}
+
 /** Restore a Happy Dream discard into an exact insertion gap, without losing order. */
 export function restoreDiscardedCardToGap(ids,discardedIds,id,gap){
   if(!Array.isArray(ids)||!discardedIds.has(id)||!ids.includes(id))return ids;
@@ -291,13 +325,14 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
   function up(e){
     if(!press||e.pointerId!==press.pointerId)return;
     const {dragging,id}=press,target=dragging?dragGap(e.clientX,e.clientY):null;
+    const releasedRect=dragging?ghost?.getBoundingClientRect?.():null;
     const isHappy=press.kind==='effect'&&root.querySelector('[data-tt-happy-discard]');
     const slot=isHappy|| (press.kind==='prophecy'?root.querySelector('[data-tt-prophecy-discard]'):null);
     const box=slot?.getBoundingClientRect();const discarded=dragging&&box&&e.clientX>=box.left-10&&e.clientX<=box.right+10&&e.clientY>=box.top-10&&e.clientY<=box.bottom+10;
     if(dragging){suppress=true;setTimeout(()=>suppress=false,0);}
     const fromDiscard=press.kind==='happyDiscard';
     clear();if(fromDiscard){if(target?.index!==null&&target?.index!==undefined)onRestore(id,target.index);return;}
-    if(discarded){onDiscard(id,isHappy?'happyPeek':'prophecy');return;}if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index);
+    if(discarded){onDiscard(id,isHappy?'happyPeek':'prophecy');return;}if(target&&target.index!==null)onReorder(target.list.dataset.ttOrderGroup,id,target.index,{releasedRect});
   }
   function activate(item){
     const list=item?.closest('[data-tt-order-group]');if(!list||!canReorder(list.dataset.ttOrderGroup))return;

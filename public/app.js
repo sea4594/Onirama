@@ -9,7 +9,7 @@ import {fitTabletop} from './tabletop/fit.js';
 import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
-import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,isBlankGameTap} from './tabletop/interactions.js';
+import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,animateReorderCommit,isBlankGameTap} from './tabletop/interactions.js';
 import {decisionDialogKey,createDialogController} from './tabletop/dialogs.js';
 import {renderActionDock,renderPileInspector,dockWithReplay} from './tabletop/action-dock.js';
 import {createTabletopAnimator} from './tabletop/animation.js';
@@ -77,7 +77,7 @@ const roomCodeFromHash=()=>{const match=location.hash.match(/^#\/join\?code=([A-
 const inviteLink=code=>`${location.origin}${location.pathname}${location.search}#/join?code=${encodeURIComponent(code)}`;
 function cancelStream(){streamAbort?.abort();streamAbort=null;if(streamRetry!==null){clearTimeout(streamRetry);streamRetry=null;}}
 function stopReplay(){if(replayTimer!==null)clearTimeout(replayTimer);replayTimer=null;replayFrames=[];replayIndex=0;replayPlaying=false;replayAnimator?.reset?.();replayAnimator=null;}
-function retryStream(){if(!session||IS_LOCAL_GAME()||streamRetry!==null)return;streamAbort?.abort();streamAbort=null;const wait=Math.min(18000,1250*2**Math.min(4,reconnectAttempts++));streamRetry=setTimeout(()=>{streamRetry=null;if(session)startStream();},wait);}
+function retryStream(){if(!session||IS_LOCAL_GAME()||streamRetry!==null)return;tabletopAnimator?.resync?.();streamAbort?.abort();streamAbort=null;const wait=Math.min(18000,1250*2**Math.min(4,reconnectAttempts++));streamRetry=setTimeout(()=>{streamRetry=null;if(session)startStream();},wait);}
 function nextReplay(){if(!replayFrames.length)return;replayIndex=Math.min(replayIndex+1,replayFrames.length-1);updateReplayStage();}
 function scheduleReplay(){if(!replayPlaying)return;if(replayTimer!==null)clearTimeout(replayTimer);if(replayIndex===replayFrames.length-1){replayPlaying=false;updateReplayStage();return;}replayTimer=setTimeout(()=>{replayTimer=null;nextReplay();scheduleReplay();},850);}
 function updateReplayStage(){const layer=app.querySelector?.('[data-replay-layer]'),entry=replayFrames[replayIndex];if(!layer||!entry)return;replayAnimator?.before?.(entry.frame,'replay','#/game');const stage=layer.querySelector('[data-replay-stage]');if(!stage)return;stage.innerHTML=replayStage(entry,state?.room?.seat??0);fitReplay(layer,entry);replayAnimator?.after?.(entry.frame,'replay','#/game');const count=layer.querySelector('.tt9-replay-count');if(count)count.textContent=`${replayIndex+1}/${replayFrames.length} · ${replayCaption(entry)}`;const buttons=['replayPrev','replayNext','replayPlay'].map(key=>layer.querySelector(`[data-action="${key}"]`));if(buttons[0])buttons[0].disabled=replayIndex===0;if(buttons[1])buttons[1].disabled=replayIndex===replayFrames.length-1;if(buttons[2])buttons[2].textContent=replayPlaying?'Pause':'Play';}
@@ -191,8 +191,13 @@ async function action(command){if(busy||state?.room?.paused||state?.room?.ended)
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
-    cancelStream();const controller=new AbortController(),roomId=session.id,uid=session.uid;streamAbort=controller;online=false;render();
-    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,data=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;if(data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';online=true;reconnectAttempts=0;if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;console.warn('Realtime Firebase connection lost',e);render();retryStream();});
+    tabletopAnimator?.resync?.();cancelStream();const controller=new AbortController(),roomId=session.id,uid=session.uid;let verifiedSnapshot=false;streamAbort=controller;online=false;render();
+    try{const unsubscribe=await firebase.watchFirebaseRoom(roomId,(data,snapshotMeta)=>{if(controller.signal.aborted||session?.id!==roomId||session?.uid!==uid)return;
+      // Cached data and the first server snapshot are baselines, not actions
+      // observed live on this connection. Do not replay missed offline steps.
+      if(snapshotMeta?.fromCache||!verifiedSnapshot)tabletopAnimator?.resync?.();
+      if(!snapshotMeta?.fromCache)verifiedSnapshot=true;
+      if(Number.isSafeInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';online=!snapshotMeta?.fromCache;if(online)reconnectAttempts=0;if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}},e=>{if(controller.signal.aborted)return;online=false;console.warn('Realtime Firebase connection lost',e);render();retryStream();});
       if(controller.signal.aborted){unsubscribe();return;}controller.signal.addEventListener('abort',unsubscribe,{once:true});
     }catch(e){if(!controller.signal.aborted){online=false;console.warn('Unable to connect to Firebase',e);render();retryStream();}}return;
   }
@@ -496,7 +501,7 @@ function fitGameTabletop(){
   return result;
 }
 let lastRenderedMarkup=null;
-function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='active')failsafeChoosing=false;tabletopAnimator?.before?.(state?.game,session?.id,page);cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=lastInputWasKeyboard?['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]):null;const focusValue=focusKind?focused.dataset[focusKind]:null;
+function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='active')failsafeChoosing=false;tabletopAnimator?.before?.(state?.game,session?.id,page,{online:!IS_LOCAL_GAME()&&state?.room?.mode==='coop',version:state?.version});cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=lastInputWasKeyboard?['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]):null;const focusValue=focusKind?focused.dataset[focusKind]:null;
   const previousLabyrinths=new Map([...(app.querySelectorAll?.('[data-tabletop-scroll]')||[])].map(el=>[el.dataset.tabletopScroll,{count:el.querySelectorAll('.card.tiny').length,left:el.scrollLeft}]));
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
   const previousPile=app.querySelector?.('.tt6-pile-scroll'),pileScroll=previousPile?.scrollTop||0;
@@ -555,7 +560,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
     // Preserve deliberate horizontal inspection; newly played cards remain visible.
     for(const lane of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){const old=previousLabyrinths.get(lane.dataset.tabletopScroll);if(old&&old.count===lane.querySelectorAll('.card.tiny').length)lane.scrollLeft=old.left;}
   }
-  tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page);
+  tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page,{online:!IS_LOCAL_GAME()&&state?.room?.mode==='coop',version:state?.version});
   if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator=createTabletopAnimator({root:replayLayer});replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');fitReplay(replayLayer,replayFrames[replayIndex]);}}
   const nextDock=app.querySelector?.('.tt6-dock-scroll');if(nextDock){nextDock.scrollTop=dockScroll;nextDock.scrollLeft=dockX;}
   const nextPile=app.querySelector?.('.tt6-pile-scroll');if(nextPile)nextPile.scrollTop=pileScroll;
@@ -875,16 +880,21 @@ function installTabletopController(){
     onUndiscard:()=>{if(state?.game?.pending?.type!=='prophecy'||!prophecyDiscard)return;prophecyDiscard=null;render();},
     onDiscard:id=>{if(state?.game?.pending?.type==='happyPeek'){effectDiscards.add(id);render();return;}if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
     onRestore:(id,gap)=>{if(state?.game?.pending?.type!=='happyPeek'||!effectDiscards.has(id))return;
-      effectOrder=restoreDiscardedCardToGap(effectOrder,effectDiscards,id,gap);
-      effectDiscards.delete(id);render();
+      const source=[...app.querySelectorAll('[data-tt-happy-restore]')].find(el=>el.dataset.ttHappyRestore===id);
+      return animateReorderCommit(app,'effect',id,()=>{
+        effectOrder=restoreDiscardedCardToGap(effectOrder,effectDiscards,id,gap);
+        effectDiscards.delete(id);render();
+      },{releasedRect:source?.getBoundingClientRect()});
     },
-    onReorder:(kind,from,gap)=>{
+    onReorder:(kind,from,gap,options)=>{
       if(busy||state?.game?.phase!=='decision'||state.room?.seat!==state.game.active)return;
+      return animateReorderCommit(app,kind,from,()=>{
       if(kind==='prophecy'&&state.game.pending?.type==='prophecy'){const originalDiscardIndex=prophecyOrder.indexOf(prophecyDiscard),ids=prophecyOrder.filter(id=>id!==prophecyDiscard);const moved=moveOrderedCardToGap(ids,from,gap);if(prophecyDiscard)moved.splice(Math.min(originalDiscardIndex,moved.length),0,prophecyDiscard);prophecyOrder=[...moved];}
       else if(kind==='effect'&&state.game.pending?.type==='happyPeek'){const kept=effectOrder.filter(id=>!effectDiscards.has(id)),discarded=effectOrder.filter(id=>effectDiscards.has(id));effectOrder=[...moveOrderedCardToGap(kept,from,gap),...discarded];}
       else if(kind==='effect'&&state.game.pending?.type!=='prophecy')effectOrder=moveOrderedCardToGap(effectOrder,from,(state.game.pending?.type==='confusion'?orderSlice(effectOrder).offset:0)+gap);
       else return;
       render();
+      },options);
     }
   });
 }

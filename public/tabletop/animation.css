@@ -18,3 +18,10 @@ html[data-motion="reduced"] :is(.tt8-draw-cue,.tt8-shuffle-cue,.tt8-progress-cue
 .tt8-motion-stage{position:fixed!important;inset:0!important;overflow:visible!important;z-index:2147483500!important;background:transparent!important;pointer-events:none!important;display:block!important;padding:0!important;margin:0!important}
 .tt8-motion-stage>.tt8-motion-scope{position:static!important;transform:none!important;overflow:visible!important;width:100%!important;height:100%!important;max-width:none!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none!important}
 .tt8-motion-stage .tt8-flying-card,.tt8-motion-stage .tt10-reveal-flight,.tt8-motion-stage .tt10-shuffle-overlay{pointer-events:none!important}
+
+/* Represent a large physical return as a single quantified stack, not
+   an arbitrary number of identical flying cards. */
+.tt8-motion-stage .tt8-stack-count{position:absolute;z-index:2;right:3px;top:3px;
+ display:grid;place-items:center;min-width:21px;height:21px;padding:0 4px;
+ border-radius:20px;border:1px solid #f7e7bb;background:#21352ef2;color:#fff4cf;
+ font:800 12px/1 system-ui,sans-serif;box-shadow:0 2px 6px #0006;pointer-events:none}

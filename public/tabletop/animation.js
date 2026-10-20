@@ -50,11 +50,34 @@ const locations = game => {
   return out;
 };
 const membership = (game,field) => ids(game?.[field]);
+// A rendered card in a compact fan is NOT the destination for an action that
+// moves a card into a pile. Those actions must land on the pile anchor.
+export function transferDestinationZone(id,previous,next){
+  if(!previous||!next||typeof id!=='string')return null;
+  const before=locations(previous),after=locations(next);
+  const oldZone=before.get(id),newZone=after.get(id);
+  return oldZone&&newZone&&oldZone!==newZone?newZone:null;
+}
+// One physical destination per transfer. Piles and catchers own their own
+// landing positions, including when individual card faces aren't in the DOM.
+export function transferTargetRect(zone,visibleRect,anchors){
+  if(zone==='discard'||zone==='limbo')return anchors?.[zone]||null;
+  if(zone?.startsWith('catcher:'))return anchors?.catchers?.[Number(zone.slice(8))]||null;
+  return visibleRect||null;
+}
+// A group of returned cards either animates individually or as one clearly
+// counted stack. Never invent a fixed number of representative cards.
+export function stackMotionCounts(count,limit=3){
+  if(!Number.isInteger(count)||count<=0)return [];
+  return count<=limit?Array(count).fill(1):[count];
+}
+
 const concealed = game => new Set((game?.players||[]).flatMap(p=>(p.hand||[]).filter(c=>c?.kind==='hidden'&&typeof c.id==='string').map(c=>c.id)));
 function signature(game){
   if (!game) return '';
   return JSON.stringify([game.phase,game.status,game.turn,game.active,game.pending?.type,
     game.deckCount,game.shuffleSerial||0,(game.discard||[]).length,(game.limbo||[]).length,
+    (game.players||[]).map(p=>(p.hand||[]).filter(c=>c?.kind==='hidden').length),
     arrays(game).map(a=>cards(a).map(c=>c.id))]);
 }
 export function planGameTransitions(previous,next){
@@ -73,7 +96,7 @@ export function planGameTransitions(previous,next){
     moved,drawn,removed,toHidden,fromHidden,
     // Concealment owns the transfer; do not schedule the same draft card twice.
     draftToHand: cards(previous.draft).filter(c=>!ids(next.draft).has(c.id)&&hiddenAfter.has(c.id)).map(c=>c.id),
-    hiddenDraw:Math.max(0,hiddenAfter.size-hiddenBefore.size),
+    hiddenDraw:[...hiddenAfter].filter(id=>!hiddenBefore.has(id)).length,
     // Destination membership, not disappearance from all public arrays: a
     // discarded card is still visible and therefore cannot be `removed`.
     toDiscard:[...destinations.discard].filter(id=>!previousDiscard.has(id)&&before.has(id)),
@@ -88,7 +111,9 @@ export function planGameTransitions(previous,next){
     overloadLimbo:(previous.limbo||[]).length,
     catcherCaptured:catcherTransferCounts(previous,next),
     catcherFreed:(previous.expansion?.dreamcatchers?.stacks||[]).map((stack,index)=>({index,removed:(stack||[]).filter(c=>!(next.expansion?.dreamcatchers?.stacks?.[index]||[]).some(d=>d.id===c.id)&&!after.has(c.id))})).filter(x=>x.removed.length&&(next.shuffleSerial||0)>(previous.shuffleSerial||0)),
-    draft:previous.phase==='draft'||next.phase==='draft'
+    draft:previous.phase==='draft'||next.phase==='draft',
+    // Cards no longer visible anywhere after leaving Limbo returned to the deck.
+    returnedLimbo:cards(previous.limbo).filter(c=>!after.has(c.id)).map(c=>c.id)
   };
 }
 const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
@@ -148,7 +173,7 @@ export function cardFlightRects(from,to,card=true){
   };
   return {from:fit(from),to:fit(to)};
 }
-function animateFlight(template,from,to,target,delay,active,scope){
+function animateFlight(template,from,to,target,delay,active,scope,count=1){
   if(!rectOK(from)||!rectOK(to))return;
   const isCard=template.matches?.('.card,.tt6-card-back,.tt2-deck-back,.tt6-pile-face');
   const geometry=cardFlightRects(from,to,isCard);
@@ -156,6 +181,10 @@ function animateFlight(template,from,to,target,delay,active,scope){
   const ghost=template.cloneNode(true);ghost.removeAttribute('id');ghost.removeAttribute('data-pick');ghost.removeAttribute('data-action');ghost.querySelectorAll?.('.tt10-draw-count,.tt2-pile-label,.tt6-pile-label').forEach(el=>el.remove());
   ghost.setAttribute('aria-hidden','true');ghost.setAttribute('tabindex','-1');
   ghost.classList.add('tt8-flying-card');
+  if(count>1){
+    const label=document.createElement('span');label.className='tt8-stack-count';label.textContent=`×${count}`;
+    ghost.appendChild(label);
+  }
   Object.assign(ghost.style,{position:'fixed',left:`${destination.left}px`,top:`${destination.top}px`,width:`${destination.width}px`,height:`${destination.height}px`,margin:'0',zIndex:'2147483600',pointerEvents:'none'});
   // The card's CSS remains live inside this scope, even while the whole card
   // translates/scales. Never freeze individual icon coordinates in pixels.
@@ -207,8 +236,8 @@ function premonitionNode(root,id){
  }
  return null;
 }
-function shuffleOverlay(back,cleanups,delay=0,scope=null){
- const r=rect(back);if(!rectOK(r)||typeof document==='undefined')return;
+function shuffleOverlay(back,cleanups,delay=0,scope=null,snapshotRect=null){
+ const r=snapshotRect||rect(back);if(!rectOK(r)||typeof document==='undefined')return;
  const ghost=back.cloneNode(true);ghost.removeAttribute('data-action');ghost.removeAttribute('data-tt-drop');
  ghost.classList.add('tt10-shuffle-overlay');ghost.setAttribute('aria-hidden','true');
  Object.assign(ghost.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`,animationDelay:`${delay}ms`});
@@ -218,61 +247,140 @@ function shuffleOverlay(back,cleanups,delay=0,scope=null){
  cleanups.push(cleanup);timer=setTimeout(cleanup,delay+CARD_MOTION.shuffle);
 }
 
+// A room version covers both game actions and lobby/choice updates. Only
+// consecutive observed versions can be interpreted as one physical transition.
+// Never synthesize flights from an unknown number of skipped remote actions.
+export function networkMotionContinuity(previousVersion,nextVersion){
+  if(!Number.isSafeInteger(previousVersion)||!Number.isSafeInteger(nextVersion))return 'baseline';
+  if(nextVersion<=previousVersion)return 'duplicate';
+  return nextVersion===previousVersion+1?'continuous':'resync';
+}
+
+// Jobs are visual-only copies of already authorized public views. The queue is
+// deliberately short: a burst catches up to the authoritative view rather than
+// making players sit through stale animations (or inventing missing actions).
+export function createOrderedMotionQueue({onFinish=()=>{},schedule=setTimeout,cancel=clearTimeout,maxPending=2}={}){
+  let queued=[],running=false,timer=null;
+  const clear=()=>{
+    if(timer!==null)cancel(timer);
+    timer=null;queued=[];running=false;onFinish();
+  };
+  const next=()=>{
+    if(running||!queued.length)return;
+    running=true;
+    const job=queued.shift();
+    try{job.run();}catch(error){clear();throw error;}
+    timer=schedule(()=>{
+      timer=null;onFinish();running=false;next();
+    },job.duration);
+  };
+  return {
+    enqueue(run,duration){
+      if(queued.length>=maxPending){clear();return false;}
+      queued.push({run,duration});next();return true;
+    },
+    clear,
+    get length(){return queued.length+(running?1:0);}
+  };
+}
+
 export function createTabletopAnimator({root}){
-  let last=null,key=null,pending=null,cleanups=[],drop=null;
-  let activeStage=null;
-  const stop=()=>{for(const fn of cleanups.splice(0))fn();activeStage?.stage.remove();activeStage=null;};
+  let last=null,key=null,pending=null,drop=null,lastVersion=null;
+  let cleanups=[],activeStage=null;
+  const finishMotion=()=>{
+    for(const fn of cleanups.splice(0))fn();
+    activeStage?.stage.remove();activeStage=null;
+  };
+  const motionQueue=createOrderedMotionQueue({onFinish:finishMotion});
+  const clearMotion=()=>motionQueue.clear();
   const enabled=()=>typeof document!=='undefined' && !document.hidden &&
     document.documentElement.dataset.motion!=='reduced' &&
     !(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const reset=()=>{last=null;key=null;lastVersion=null;pending=null;drop=null;clearMotion();};
   return {
     dragRelease(id,from){if(id&&rectOK(from))drop={id,from};},
-    before(game,roomKey,page){
+    before(game,roomKey,page,meta={}){
       pending=null;
-      if(page!=='#/game'||!game){last=null;key=null;drop=null;stop();return;}
+      if(page!=='#/game'||!game){reset();return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const changed=last&&key===nextKey&&signature(last)!==signature(game);
-      if(!changed){if(key!==nextKey)stop();return;}
-      const plan=planGameTransitions(last,game);
-      pending={plan,old:capture(root)};
-      stop();
+      if(key!==nextKey){clearMotion();return;}
+      const continuity=meta.online?networkMotionContinuity(lastVersion,meta.version):'continuous';
+      if(continuity==='resync'){
+        // Even if the visible game coincidentally matches, drop old movement
+        // after an unobserved version gap.
+        clearMotion();drop=null;return;
+      }
+      if(!changed)return;
+      if(continuity!=='continuous'){
+        // A missed snapshot is a resynchronization, NOT a single card action.
+        // Keep the new authoritative game view; omit all speculative flights.
+        clearMotion();drop=null;return;
+      }
+      pending={plan:planGameTransitions(last,game),old:capture(root)};
+      if(!meta.online)clearMotion();
     },
-    after(game,roomKey,page){
-      if(page!=='#/game'||!game){last=null;key=null;pending=null;return;}
+    after(game,roomKey,page,meta={}){
+      if(page!=='#/game'||!game){reset();return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const event=pending,previous=last;pending=null;last=game;key=nextKey;
+      lastVersion=meta.online&&Number.isSafeInteger(meta.version)?meta.version:null;
       if(!event||!enabled()){drop=null;return;}
       const {plan,old}=event,now=capture(root),released=drop;drop=null;
-      const deck=rect(pile(root,'deck')),discard=rect(pile(root,'discard')),limbo=rect(pile(root,'limbo'));
+      // Snapshot DOM anchors at the same instant as the state transition;
+      // a later Firebase render must not retarget an earlier animation.
+      const deckEl=pile(root,'deck'),discardEl=pile(root,'discard'),limboEl=pile(root,'limbo');
+      const deck=rect(deckEl),discard=rect(discardEl),limbo=rect(limboEl);
+      const catcherEls=new Map((plan.catcherCaptured||[]).concat(plan.catcherFreed||[]).map(t=>[t.index,root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${t.index}"]`)]));
+      const catcherRects=new Map([...catcherEls].map(([index,el])=>[index,rect(el)]));
+      const premonitionEls=new Map((plan.premRevealed||[]).map(id=>[id,premonitionNode(root,id)]));
+      const premonitionRects=new Map([...premonitionEls].map(([id,el])=>[id,rect(el)]));
+      const premonitionReserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;
+      const statusEl=root.querySelector?.('.tt6-dock-status');
+      const turnEl=root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top');
+      const workspaceEl=root.querySelector?.('.tt6-workspace');
+      const play=()=>{
       activeStage=motionStage(root);
       const flightScope=activeStage.scope;
       const flies=[];
       const scheduled=new Set();
-      const queue=(id,template,from,to,target,front=false)=>{
+      const catchers={};
+      for(const transfer of [...(plan.catcherCaptured||[]),...(plan.catcherFreed||[])]){
+        catchers[transfer.index]=catcherRects.get(transfer.index);
+      }
+      const anchors={discard,limbo,catchers};
+      const queue=(id,template,from,to,target,front=false,count=1)=>{
         if(id&&scheduled.has(id))return;
         if(!template||!rectOK(from)||!rectOK(to))return;
         if(id)scheduled.add(id);
-        const item=[template,from,to,target,id];
+        const item=[template,from,to,target,id,count];
         if(front)flies.unshift(item);else flies.push(item);
       };
       // Shared visible cards: the same card moves between hand, draft,
       // Labyrinth, Doors, and expansion zones without inventing engine steps.
       for(const id of plan.moved){
         const a=old.get(id),b=now.get(id);
-        if(!a||!b||plan.drawn.includes(id))continue;
-        const ca=center(a.r),cb=center(b.r);
+        if(!a||plan.drawn.includes(id))continue;
+        const zone=transferDestinationZone(id,previous,game);
+        const dest=transferTargetRect(zone,b?.r,anchors);
         const origin=released?.id===id?released.from:a.r;
-        if(Math.hypot(center(origin).x-cb.x,center(origin).y-cb.y)>14)queue(id,b.template,origin,b.r,b.el);
+        if(!rectOK(dest))continue;
+        const target=(zone==='discard'||zone==='limbo'||zone?.startsWith('catcher:'))?null:b?.el;
+        if(Math.hypot(center(origin).x-center(dest).x,center(origin).y-center(dest).y)>14)
+          queue(id,zone==='discard'||zone==='limbo'?a.template:(b?.template||a.template),origin,dest,target);
       }
-      // Flip each newly public card in the screen center, then send it to its
-      // actual zone (hand, Limbo, Discard or the fixed decision dock).
-      if(!released&&(plan.draw||plan.drawn?.some(id=>now.has(id)&&((game.players||[]).some(p=>cards(p.hand).some(c=>c.id===id))||(game.shared||[]).some(c=>c.id===id))))&&rectOK(deck)){
+      // Newly revealed deck cards animate independently of how the previous
+      // action was triggered. Dragging one card must not hide its draw/refill.
+      if(plan.draw&&rectOK(deck)){
         const known=publicCardMap(game);
         plan.drawn.slice(0,8).forEach((id,i)=>{
           const c=known.get(id);if(!c)return;
-          const target=now.get(id),destination=target?.r||(membership(game,'discard').has(id)?discard:membership(game,'limbo').has(id)?limbo:null);
-          if(!rectOK(destination))return;
-          revealGhost(c,deck,destination,i*250,cleanups,{target:target?.el||null,scope:flightScope});
+          const target=now.get(id);
+          const zone=locations(game).get(id);
+          const destination=transferTargetRect(zone,target?.r,anchors);
+          if(!rectOK(destination)||scheduled.has(id))return;
+          scheduled.add(id);
+          revealGhost(c,deck,destination,i*250,cleanups,{target:zone==='discard'||zone==='limbo'?null:target?.el||null,scope:flightScope});
         });
       }
       // A private inspection becomes public only when a card actually leaves
@@ -282,14 +390,14 @@ export function createTabletopAnimator({root}){
         const beforeDiscard=membership(previous,'discard'),afterDiscard=membership(game,'discard'),known=publicCardMap(game);
         let revealIndex=0;
         for(const id of afterDiscard){
-          if(beforeDiscard.has(id)||old.has(id)||revealIndex>=8)continue;
-          const c=known.get(id);if(c)revealGhost(c,deck,discard,revealIndex++*180,cleanups,{scope:flightScope});
+          if(beforeDiscard.has(id)||old.has(id)||scheduled.has(id)||revealIndex>=8)continue;
+          const c=known.get(id);if(c){scheduled.add(id);revealGhost(c,deck,discard,revealIndex++*180,cleanups,{scope:flightScope});}
         }
       }
       if(plan.premRevealed?.length){
-        const reserve=rect(root.querySelector?.('.tt5-premonitions .tt5-tile:not(.tt5-premonition)'))||deck;
+        const reserve=premonitionReserve;
         for(const [i,id] of plan.premRevealed.slice(0,5).entries()){
-          const target=premonitionNode(root,id),dest=rect(target);
+          const target=premonitionEls.get(id),dest=premonitionRects.get(id);
           if(target&&rectOK(reserve)&&rectOK(dest))revealGhost(target,reserve,dest,i*180,cleanups,{premonition:true,target,scope:flightScope});
         }
       }
@@ -298,10 +406,12 @@ export function createTabletopAnimator({root}){
       const oldBack=old.backs.at(-1),newBack=now.backs.at(-1);
       // Public draft cards can visibly enter a concealed hand without
       // storing the concealed card's ID (which can disclose its face).
-      for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)queue(id,newBack.template,a.r,newBack.r,null,true);}
+      for(const id of plan.toHidden){const a=old.get(id);if(a&&newBack)queue(id,newBack.template,released?.id===id?released.from:a.r,newBack.r,null,true);}
       for(const id of plan.fromHidden){const b=now.get(id);if(b&&oldBack)queue(id,oldBack.template,oldBack.r,b.r,b.el,true);}
       if(plan.draw&&plan.hiddenDraw&&rectOK(deck)&&newBack){
-        for(let i=0;i<Math.min(plan.hiddenDraw,2);i++)queue(null,newBack.template,deck,newBack.r,null,true);
+        // Draft-to-hand already has a public source and a single face-down flight.
+        const count=Math.max(0,plan.hiddenDraw-plan.toHidden.length);
+        for(const bundle of stackMotionCounts(count))queue(null,newBack.template,deck,newBack.r,null,true,bundle);
       }
       for(const [list,dest] of [[plan.toDiscard,discard],[plan.toLimbo,limbo]]){
         if(!rectOK(dest))continue;
@@ -310,58 +420,75 @@ export function createTabletopAnimator({root}){
       // Some Limbo cards are not individually rendered in the compact fan.
       // Still show their capture using a generic, face-down card: no hidden
       // identity or deck information may be inferred from this animation.
-      const captureSource=rect(pile(root,'limbo'))||rect(pile(root,'deck'));
-      const genericBack=pile(root,'deck');
+      const captureSource=limbo||deck;
+      const genericBack=deckEl;
       if(rectOK(captureSource)&&genericBack){
         for(const transfer of (plan.catcherCaptured||[])){
-          const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
-          const destination=rect(catcher);
+          const destination=catcherRects.get(transfer.index);
           if(!rectOK(destination))continue;
           // Explicit movement already animates a recognizable, visible card;
           // avoid an extra generic duplicate for that specific transfer.
           const movedIds=transfer.ids;
           const alreadyFlying=movedIds.filter(id=>scheduled.has(id)).length;
-          for(let i=0;i<Math.min(3,Math.max(0,transfer.count-alreadyFlying));i++)
-            queue(null,genericBack,captureSource,destination,null);
+          for(const count of stackMotionCounts(Math.max(0,transfer.count-alreadyFlying)))
+            queue(null,genericBack,captureSource,destination,null,false,count);
         }
       }
       // A single accepted engine action can change many zones. Bound the
       // animation workload so dense expansion combinations stay responsive.
-      (released?flies.filter(([, , , ,id])=>id===released.id).slice(0,1):flies.slice(0,9)).forEach(([template,from,to,target],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups,flightScope));
+      // Dragged and tapped actions use the same transfer plan. A drag changes
+      // only that card's start point; it must not suppress legitimate secondary
+      // card movements such as draws, discard effects or a partner's transfer.
+      flies.slice(0,9).forEach(([template,from,to,target,,count],i)=>animateFlight(template,from,to,target,Math.min(i*CARD_MOTION.stagger,420),cleanups,flightScope,count));
       const flash=(el,cls,ms=CARD_MOTION.highlight)=>{if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);const release=()=>{el.classList.remove(cls);const i=cleanups.indexOf(release);if(i!==-1)cleanups.splice(i,1);};cleanups.push(release);setTimeout(release,ms);};
-      if(plan.draw&&!released)flash(pile(root,'deck'),'tt8-draw-cue');
+      if(plan.draw)flash(deckEl,'tt8-draw-cue');
       if(plan.shuffle){
-        const back=pile(root,'deck'),origin=(old?.size||0)>0?rect(pile(root,'limbo')):null;
+        const back=deckEl,origin=(old?.size||0)>0?limbo:null;
         if(plan.overload){
           let index=0;
           for(const transfer of plan.catcherFreed||[]){
-            const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
-            const from=rect(catcher);
+            const from=catcherRects.get(transfer.index);
             for(const c of transfer.removed){
               const source=old.get(c.id),start=source?.r||from;
               if(rectOK(start)&&rectOK(deck)&&back)animateFlight(source?.template||back,start,deck,null,Math.min(index++*32,600),cleanups,flightScope);
             }
           }
-          const from=rect(pile(root,'limbo'));
-          for(let i=0;i<plan.overloadLimbo;i++)if(back&&rectOK(from)&&rectOK(deck))animateFlight(back,from,deck,null,Math.min(index++*32,600),cleanups,flightScope);
+          const from=limbo;
+          if(back&&rectOK(from)&&rectOK(deck))for(const count of stackMotionCounts(plan.overloadLimbo))
+            animateFlight(back,from,deck,null,Math.min(index++*80,600),cleanups,flightScope,count);
         }else for(const transfer of plan.catcherFreed||[]){
-          const catcher=root.querySelector?.(`.tt5-catcher[data-action="inspectCatcher:${transfer.index}"]`);
-          const from=rect(catcher);if(back&&rectOK(from)&&rectOK(deck))
-            for(let i=0;i<Math.min(3,transfer.removed.length);i++)animateFlight(back,from,deck,null,i*85,cleanups,flightScope);
+          const from=catcherRects.get(transfer.index);if(back&&rectOK(from)&&rectOK(deck))
+            for(const [i,count] of stackMotionCounts(transfer.removed.length).entries())
+              animateFlight(back,from,deck,null,i*85,cleanups,flightScope,count);
         }
-        if(!plan.overload&&back&&rectOK(origin)&&rectOK(deck)&&(game.limbo||[]).length<(previous?.limbo||[]).length){
-          // Two generic card backs visualize the return from Limbo.
-          // No hidden card identity, order, or new game step is disclosed.
-          animateFlight(back,origin,deck,null,25,cleanups,flightScope);
-          animateFlight(back,origin,deck,null,110,cleanups,flightScope);
+        if(!plan.overload&&back&&rectOK(origin)&&rectOK(deck)){
+          // Correct return count, with a marked bundle for larger shuffles.
+          // Deck order and concealed faces are never displayed.
+          for(const [i,count] of stackMotionCounts(plan.returnedLimbo.length).entries())
+            animateFlight(back,origin,deck,null,25+i*85,cleanups,flightScope,count);
         }
-        shuffleOverlay(pile(root,'deck'),cleanups,plan.overload?CARD_MOTION.move+650:plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0,flightScope);
-        flash(pile(root,'deck'),'tt8-shuffle-cue',CARD_MOTION.shuffle);
+        shuffleOverlay(deckEl,cleanups,plan.overload?CARD_MOTION.move+650:plan.catcherFreed?.length?CARD_MOTION.move+220:plan.shuffle&&(old?.size||0)>0&&(game.limbo||[]).length===0?320:0,flightScope,deck);
+        flash(deckEl,'tt8-shuffle-cue',CARD_MOTION.shuffle);
       }
-      if(!released&&(plan.turn||plan.phase||plan.finished))flash(root.querySelector?.('.tt6-dock-status'),'tt8-progress-cue');
-      if(!released&&plan.turn)flash(root.querySelector?.('.tt6-current .tt6-player-heading, .tt2-top'),'tt8-turn-cue');
-      if(!released&&plan.phase&&game.phase==='decision')flash(root.querySelector?.('.tt6-workspace'),'tt8-decision-cue');
+      if(plan.turn||plan.phase||plan.finished)flash(statusEl,'tt8-progress-cue');
+      if(!released&&plan.turn)flash(turnEl,'tt8-turn-cue');
+      if(!released&&plan.phase&&game.phase==='decision')flash(workspaceEl,'tt8-decision-cue');
+      };
+      if(!meta.online){play();return;}
+      // Never replay a backlog forever. If Firebase sends more than two
+      // transitions while one is running, catch up to the latest view without
+      // presenting older movements over newer board positions. The cap below
+      // still allows every scheduled reveal to finish before the next job.
+      const delay=Math.min(420,8*CARD_MOTION.stagger);
+      const duration=Math.min(3700,Math.max(
+        CARD_MOTION.move+delay,
+        plan.drawn.length&&plan.draw?CARD_MOTION.reveal+Math.min(7,plan.drawn.length-1)*250:0,
+        plan.shuffle?CARD_MOTION.shuffle+450:0,
+        plan.premRevealed?.length?CARD_MOTION.reveal+Math.min(4,plan.premRevealed.length-1)*180:0
+      )+60);
+      motionQueue.enqueue(play,duration);
     },
-    reset(){last=null;key=null;pending=null;drop=null;stop();}
+    reset,
+    resync:reset
   };
 }

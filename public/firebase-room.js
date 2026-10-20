@@ -61,9 +61,12 @@ export async function firebaseEnd(code){return update(code,(room,uid)=>endRoom(r
 export async function firebaseAction(code,version,command){return update(code,(room,uid)=>playRoom(room,uid,version,command),'play');}
 export async function watchFirebaseRoom(code,onUpdate,onError){
   const c=await connect(),ref=roomRef(c,code);
-  return c.store.onSnapshot(ref,snap=>{
+  return c.store.onSnapshot(ref,{includeMetadataChanges:true},snap=>{
+    // Local speculative writes are not committed actions. Wait for the server
+    // before allowing them into the visible multiplayer animation timeline.
+    if(snap.metadata?.hasPendingWrites)return;
     if(!snap.exists())return onError(Error('Room deleted or unavailable'));
-    try{onUpdate(roomView(fromFirestore(snap.data()),c.uid));}catch(err){onError(err);}
+    try{onUpdate(roomView(fromFirestore(snap.data()),c.uid),{fromCache:!!snap.metadata?.fromCache});}catch(err){onError(err);}
   },onError);
 }
 export async function getFirebaseUid(){return (await connect()).uid;}
