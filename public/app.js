@@ -6,7 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
-import {arrangeGameplayHand} from './tabletop/orientation.js';
+import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
 import {renderCooperativeTabletop} from './tabletop/coop-board.js';
 import {createTabletopInteractions,soloLegalTargets,cooperativeLegalTargets,createDecisionReorder,moveOrderedCardToGap,restoreDiscardedCardToGap,isBlankGameTap} from './tabletop/interactions.js';
@@ -447,10 +447,14 @@ function historyPage(){const list=readHistory(localStorage),stats=summarizeHisto
  </div>`;}
 function fitGameTabletop(){
   const viewport=app.querySelector?.('.tt6-table-slot'),table=viewport?.querySelector?.('.tt2-root');
-  if(typeof arrangeGameplayHand==='function'&&typeof window!=='undefined')arrangeGameplayHand(app,window.matchMedia?.('(orientation: landscape)')?.matches??window.innerWidth>window.innerHeight);
+  if(typeof window!=='undefined'){
+    const landscape=window.matchMedia?.('(orientation: landscape)')?.matches??window.innerWidth>window.innerHeight;
+    fitLandscapeDock(app.querySelector('.game-viewport'),landscape);
+    arrangeGameplayHand(app,landscape);
+  }
   const result=fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
-  // The hand is outside the scaled board in landscape, so match its card size.
-  if(table)app.querySelector('.tt6-hand-shelf')?.style.setProperty('--tt15-card',table.style.getPropertyValue('--tt15-card'));
+  // Fit the actual playable hand shelf independently of board scaling.
+  if(typeof window!=='undefined'&&window.matchMedia?.('(orientation: landscape)')?.matches)sizeLandscapeHands(app.querySelector('.tt6-hand-shelf'));
   return result;
 }
 let lastRenderedMarkup=null;
@@ -930,16 +934,10 @@ addEventListener('resize',fitAfterViewportSettles);
 if(typeof window!=='undefined'){
  window.visualViewport?.addEventListener?.('resize',fitAfterViewportSettles);
  window.addEventListener?.('orientationchange',fitAfterViewportSettles);
- window.addEventListener?.('orientationchange',()=>{
-  // Safari can retain a magnified visual viewport through rotation. Reassert
-  // initial scale for that rotation, then immediately restore pinch zoom.
-  const meta=document.querySelector('meta[name="viewport"]');
-  if(meta){
-   const original=meta.content;
-   meta.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover';
-   requestAnimationFrame(()=>{meta.content=original;fitAfterViewportSettles();});
-  }
-  fitAfterViewportSettles();
+ // Do not rewrite the viewport meta tag during rotation. Toggling a temporary
+ // maximum-scale and immediately undoing it causes lasting iOS Safari zoom.
+ window.visualViewport?.addEventListener?.('scroll',()=>{
+  if(window.visualViewport?.scale===1)fitAfterViewportSettles();
  });
  window.addEventListener?.('pageshow',fitAfterViewportSettles);
 }

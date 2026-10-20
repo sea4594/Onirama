@@ -29,10 +29,10 @@ test('all landscape sizes reserve two equal hand/dock areas with board above',()
   const table={style:{setProperty(){},removeProperty(){}},dataset:{},querySelectorAll(){return []},querySelector(){return null},get scrollHeight(){return 0},getBoundingClientRect(){return {height}}};
   assert.equal(fitTabletop({clientWidth:width,clientHeight:height},table).layout,height<560?'short':'wide');
  }
- assert.match(css,/\.tt6-hand-shelf\{display:flex!important/);
+ assert.match(css,/\.tt6-hand-shelf\{[\s\S]*?display:flex!important/);
  assert.match(css,/width:50%;height:var\(--tt6-dock-height\)/);
- assert.match(css,/\.tt6-workspace\{inset:auto 0 0 50%!important;width:50%!important/);
- assert.match(css,/\.tt6-table-slot\{inset:0 0 var\(--tt6-dock-height\) 0!important/);
+ assert.match(css,/\.tt6-workspace\{[\s\S]*?width:50%!important/);
+ assert.match(css,/\.tt6-table-slot\{[\s\S]*?var\(--tt6-dock-height\)/);
  assert.match(css,/:has\(\.tt9-exp-denizens\):not\(:has\(\.tt8-towers-slot\)\)/);
 });
 
@@ -86,8 +86,8 @@ test('solo and co-op boards retain real expansion equipment and exactly one priv
 });
 
 test('rotation refits the transformed tabletop and restores normal pinch-zoom controls',()=>{
- assert.match(app,/meta\.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover'/);
- assert.match(app,/meta\.content=original;fitAfterViewportSettles\(\)/);
+ assert.doesNotMatch(app,/meta\.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover'/);
+ assert.match(app,/Do not rewrite the viewport meta tag during rotation/);
  assert.match(app,/\[80,200,400,750,1200\]/);
  assert.doesNotMatch(readFileSync('public/index.html','utf8'),/user-scalable=no|maximum-scale=1/);
 });

@@ -15,6 +15,7 @@ export function tabletopDimensions(width,height,mode='solo',zoneCount=0){
  const columns=zoneCount>=7?4:zoneCount>=4?3:2;
  return {shape,card:Math.round(card),mini:Math.round(mini),columns};
 }
+function landscapeFitMinimum(width,height){return width>height?.2:.5;}
 function overlapRows(table){
  for(const row of table.querySelectorAll('[data-tabletop-scroll]')){
   const cards=[...row.children].filter(c=>c.matches('.card.tiny'));
@@ -121,8 +122,27 @@ export function fitTabletop(viewport,table,{mode='solo',expansions=[]}={}){
   }
  }
  let zoom=1;
- if(table.scrollHeight>height){zoom=clamp((height-1)/table.scrollHeight,.5,1);table.style.width=`${width/zoom}px`;overlapRows(table);fitTiles(table);zoom=Math.min(zoom,(height-1)/table.scrollHeight);table.style.transform=`scale(${zoom})`;}
- else {table.style.height=`${height}px`;}
+ if(table.scrollHeight>height){
+  zoom=clamp((height-1)/table.scrollHeight,landscapeFitMinimum(width,height),1);
+  if(width>height){
+   // Each scale change requires a matching *layout* width. Otherwise a phone
+   // landscape board visually ends before the right safe-area boundary.
+   // Re-measure as the expanded width may reflow the expansion shelves.
+   for(let attempt=0;attempt<8;attempt++){
+    table.style.width=`${width/zoom}px`;
+    overlapRows(table);fitTiles(table);
+    const required=clamp((height-1)/Math.max(1,table.scrollHeight),.2,1);
+    if(required>=zoom-.001)break;
+    zoom=required;
+   }
+   table.style.width=`${width/zoom}px`;
+  }else{
+   table.style.width=`${width/zoom}px`;
+   overlapRows(table);fitTiles(table);
+   zoom=Math.min(zoom,(height-1)/table.scrollHeight);
+  }
+  table.style.transform=`scale(${zoom})`;
+ }else{table.style.height=`${height}px`;}
  // A resized solo or co-op board must still reach the action panel.
  // Scaling can otherwise leave an intermittent gap beneath the hand.
  if(zoom<1&&table.scrollHeight<height/zoom){
