@@ -33,7 +33,10 @@
 .shell-expansion-setup .shell-title-line{margin:0 0 12px}.shell-expansion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
 .shell-expansion-entry{min-width:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;border-bottom:1px solid var(--shell-edge);padding:8px 3px}
 .shell-expansion-choice{display:flex;align-items:center;gap:10px;font-size:.88rem;min-width:0;flex:1;cursor:pointer}.shell-expansion-choice input{flex-shrink:0;width:19px;height:19px;accent-color:var(--ui-accent);cursor:pointer}.shell-expansion-choice span{overflow-wrap:anywhere}
-.shell .shell-difficulty{min-height:32px;width:116px;min-width:0;max-width:calc(100% - 28px);box-sizing:border-box;padding:4px 7px;font-size:.74rem;border-radius:8px;margin-left:28px}
+.shell .shell-difficulty{min-height:32px;width:86px;min-width:0;max-width:calc(100% - 28px);box-sizing:border-box;padding:4px 5px;font-size:.74rem;border-radius:8px;margin-left:28px;flex:0 0 auto}
+.shell .shell-difficulty[data-current-level="extreme"]{width:119px}
+.shell .shell-difficulty[data-current-level="easy"],.shell .shell-difficulty[data-current-level="true"]{width:149px}
+.shell .shell-difficulty[data-current-level="apprentice"]{width:113px}
 .shell-presets{margin-top:12px}.shell-presets summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:.87rem;font-weight:650;min-height:30px}.shell-presets summary::-webkit-details-marker{display:none}.shell-presets summary::before{content:'▸';margin-right:9px;color:var(--ui-muted)}.shell-presets[open] summary::before{content:'▾'}
 .shell-preset-actions{display:flex;gap:8px;margin:12px 0}.shell-preset-actions>input{flex:1}.shell-preset-list{display:grid;gap:6px}.shell-preset{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid var(--shell-edge);padding:7px 2px}.shell-preset strong{flex:1;min-width:100px;font-size:.85rem;overflow-wrap:anywhere}.shell-preset button{min-height:34px}
 /* Settings, history and lessons */

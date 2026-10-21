@@ -27,16 +27,78 @@ export function rulesSections(expansions=[],coop=false){
   const base=BASE_RULES.filter(([heading])=>coop||heading!=='Two-player co-op');
   return [...base,...[...new Set(expansions)].filter(id=>Object.hasOwn(EXPANSION_RULES,id)).map(id=>EXPANSION_RULES[id])];
 }
-export function renderActionHistory(log=[]){
-  const entries=Array.isArray(log)?[...log].reverse():[];
-  const item=line=>{
-    const raw=String(line),match=raw.match(/\b(played|discarded) (red|blue|green|brown|wild) (sun|moon|key|glyph)\b/i);
-    if(!match)return `<li>${escape(raw)}</li>`;
-    const c={kind:'location',color:match[2].toLowerCase(),symbol:match[3].toLowerCase()};
-    const start=match.index+match[1].length+1,end=match.index+match[0].length;
-    return `<li>${escape(raw.slice(0,start))}<span class="tt9-log-card">${renderCard(c,{tiny:true})}</span>${escape(raw.slice(end))}</li>`;
-  };
-  return `<details class="game-menu-history" data-pause-history open><summary>Action log <small>${entries.length}</small></summary><ol class="tt9-action-log" aria-label="Previous game actions">${entries.map(item).join('')||'<li>No actions yet</li>'}</ol></details>`;
+// Game logs are strings in the engine for save compatibility. Interpret them
+// only for presentation: the underlying history is never changed or discarded.
+const TURN_MARKER=/^(.+?)'s turn\.$/i;
+const LOG_CHROME=/^(?:A new dream begins\.|Draft three personal Locations each\.|Ready to end turn\.|Started\.|Started game\.|Turn (?:started|ended)\.?|End(?:ed)? turn\.?)$/i;
+const LOG_ICONS=[
+  [/nightmare|incubus/i,'moon'],[/door|goal/i,'diamond'],[/tower/i,'tower'],
+  [/premonition|prophecy/i,'eye'],[/dreamcatcher|limbo|deck|shuffle/i,'layers'],
+  [/spell|book/i,'book'],[/mirror/i,'sparkle'],[/denizen|rallied/i,'users'],
+  [/discard|lost|sacrific/i,'discard-art'],[/draft|hand|draw/i,'cards']
+];
+function logCard(kind,color,symbol=''){
+  const c={kind,color:color.toLowerCase(),...(kind==='location'?{symbol:symbol.toLowerCase()}:{} )};
+  return `<span class="tt9-log-card">${renderCard(c,{tiny:true})}</span>`;
+}
+function shortLogText(raw,players=[]){
+  let text=String(raw).replace(/\s+/g,' ').trim();
+  for(const name of players){if(name&&text.toLowerCase().startsWith(name.toLowerCase()+' ')){text=text.slice(name.length+1);break;}}
+  text=text.replace(/\.$/,'');
+  text=text.charAt(0).toUpperCase()+text.slice(1);
+  text=text.replace(/^A card was placed beneath the Treasure Keeper$/i,'Stored under Treasure Keeper')
+    .replace(/^A Key was sacrificed$/i,'Sacrificed a Key')
+    .replace(/^Drew a card$/i,'Drew')
+    .replace(/^Limbo shuffled into deck$/i,'Limbo → Deck')
+    .replace(/^Swapped a private and shared card$/i,'Swapped personal ↔ shared')
+    .replace(/^All objectives completed\. Victory!?$/i,'Victory!')
+    .replace(/^Used (.+) Denizen$/i,'Used $1')
+    .replace(/^Rallied the (.+) Denizen$/i,'Rallied $1')
+    .replace(/^Played (\w+) Tower on the (left|right)$/i,'Placed $1 Tower · $2')
+    .replace(/^Cast (.+?); removed (\d+) cards from the game$/i,'Cast $1 · $2 cards spent');
+  // Visible card illustrations replace verbose color/symbol or Door names.
+  const picture=/(\b(?:played|discarded) )((?:red|blue|green|brown|wild)) (sun|moon|key|glyph)\b/i;
+  const match=text.match(picture);
+  if(match){
+    const first=match.index+match[1].length;
+    return `${escape(text.slice(0,first))}${logCard('location',match[2],match[3])}${escape(text.slice(first+match[2].length+1+match[3].length))}`;
+  }
+  const door=/\b(red|blue|green|brown|wild) Door\b/i;
+  const found=text.match(door);
+  if(found){
+    return `${escape(text.slice(0,found.index))}${logCard('door',found[1])}${escape(text.slice(found.index+found[0].length))}`;
+  }
+  return escape(text);
+}
+export function renderActionHistory(log=[],{players=[],coop=false}={}){
+  const names=(Array.isArray(players)?players:[]).map(p=>typeof p==='string'?p:p?.name||'').slice(0,2);
+  if(!names.length)names.push('You');
+  const seatOf=line=>names.findIndex(name=>name&&(line.toLowerCase().startsWith(name.toLowerCase()+' ')||line.toLowerCase().startsWith(name.toLowerCase()+"'s turn.")));
+  const groups=[];
+  let turn=1,seat=0,phase='play';
+  for(const value of Array.isArray(log)?log:[]){
+    const line=String(value??'').trim();
+    if(!line||LOG_CHROME.test(line))continue;
+    const turnMatch=line.match(TURN_MARKER);
+    if(turnMatch){turn++;phase='play';seat=Math.max(0,names.findIndex(name=>name.toLowerCase()===turnMatch[1].toLowerCase()));continue;}
+    const actor=seatOf(line);
+    const draft=/\bdrafted a card\.?$/i.test(line);
+    if(draft){phase='draft';if(actor>=0)seat=actor;}
+    else if(phase==='draft') {phase='play';turn=1;seat=0;}
+    else if(actor>=0)seat=actor;
+    // Refill narration is visual noise; it carries no additional card identity.
+    if(/^(?:Drew a card|Added to hand)\.$/i.test(line))continue;
+    const key=`${phase}:${turn}:${seat}`;
+    if(groups.at(-1)?.key!==key)groups.push({key,phase,turn,seat,entries:[]});
+    groups.at(-1).entries.push({line,icon:LOG_ICONS.find(([pattern])=>pattern.test(line))?.[1]||'circle'});
+  }
+  const contents=groups.reverse().map(group=>{
+    const who=names[group.seat]||`Player ${group.seat+1}`;
+    const heading=coop?(group.phase==='draft'?`Draft · ${who}`:`Turn ${group.turn} · ${who}`):`Turn ${group.turn}`;
+    return `<li class="tt9-log-turn${coop?` tt9-log-player-${group.seat}`:''}"><div class="tt9-log-turn-head"><span class="tt9-log-turn-dot" aria-hidden="true"></span><strong>${escape(heading)}</strong></div><ul class="tt9-log-events">${group.entries.map(({line,icon:kind})=>`<li><span class="tt9-log-event-icon" aria-hidden="true">${icon(kind)}</span><span class="tt9-log-message">${shortLogText(line,names)}</span></li>`).join('')}</ul></li>`;
+  }).join('');
+  const count=groups.reduce((n,g)=>n+g.entries.length,0);
+  return `<details class="game-menu-history" data-pause-history open><summary>Action log <small>${count}</small></summary><ol class="tt9-action-log" aria-label="Previous game actions">${contents||'<li class="tt9-log-empty">No actions yet</li>'}</ol></details>`;
 }
 // Shared by the main Settings page and the in-game Settings tab.
 export function renderSettingsContents({theme='moonlit',motion='normal',themes=[],commit=null}={}){
@@ -60,7 +122,7 @@ export function renderOverlay(kind,expansions=[],coop=false,settings={}){
     <header class="game-menu-head"><h2>Game menu</h2><button type="button" data-action="closeGameOverlay" class="game-menu-close" aria-label="Close game menu" title="Close">${icon('close')}</button></header>
     <nav class="game-menu-tabs" role="tablist" aria-label="Game menu tabs">${tabs}</nav>
     <div class="game-menu-content" data-game-menu-scroll>
-      <section id="game-menu-panel-log" role="tabpanel" aria-labelledby="game-menu-tab-log" ${active==='log'?'':'hidden'}>${renderActionHistory(settings.log)}</section>
+      <section id="game-menu-panel-log" role="tabpanel" aria-labelledby="game-menu-tab-log" ${active==='log'?'':'hidden'}>${renderActionHistory(settings.log,{players:settings.players,coop:settings.coop})}</section>
       <section id="game-menu-panel-settings" role="tabpanel" aria-labelledby="game-menu-tab-settings" ${active==='settings'?'':'hidden'}><div class="game-menu-settings-fields"><div class="shell shell-settings-body">${settingsFields}</div></div></section>
       <section id="game-menu-panel-rules" role="tabpanel" aria-labelledby="game-menu-tab-rules" ${active==='rules'?'':'hidden'}><div class="game-menu-accordions"><button type="button" class="game-menu-tutorial" data-action="tutorial">Guided tutorial</button>${renderRulesReference(expansions,coop,{inGame:true})}</div></section>
     </div>

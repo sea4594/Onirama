@@ -69,13 +69,15 @@ test('Host uses immediate optimistic UI and a coalescing asynchronous lobby writ
  assert.match(app,/setupPending=\{roomId,desired:config,optimistic:config,inFlight:false\}/);
  assert.match(app,/setupPending\.desired=config;setupPending\.optimistic=config/);
  assert.match(app,/config:room\.host&&setupPending\?\.roomId===room\.code\?setupPending\.optimistic:room\.config/);
- assert.match(app,/return queueLobbySetup\(\)/);
+ assert.match(app,/return queueLobbySetup\(true\)/);
+ assert.match(app,/if\(!fast\|\|!syncLobbySetupControls\(\)\)render\(\)/);
  assert.match(app,/&&setupPending\?\.roomId!==room\.code\?'':'disabled'/);
  assert.doesNotMatch(app,/Changing expansions resets the guest's readiness/);
 });
-test('Every difficulty select shares the same fixed width, unaffected by option text length',()=>{
+test('Difficulty selects are compact at Normal and expand only for long selected labels',()=>{
  const css=read('public/shell.css');
- assert.match(css,/\.shell \.shell-difficulty\{[^}]*width:116px;[^}]*box-sizing:border-box/);
+ assert.match(css,/\.shell \.shell-difficulty\{[^}]*width:86px;[^}]*box-sizing:border-box/);
+ assert.match(css,/data-current-level=\"extreme\"/);
  assert.match(read('public/app.js'),/Very hard \(6\)/);
 });
 test('Firestore adapter handles every room transaction path, including viewing and leaving',()=>{

@@ -113,3 +113,23 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @keyframes tt30-choice-pulse{0%{transform:scale(.97)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
 @media(max-width:480px){.tt30-spectator{gap:6px}.tt30-spectator-choice{padding:5px 8px;font-size:12px}.tt30-spectator-preview .card{width:56px!important}}
 @media(prefers-reduced-motion:reduce){.tt30-spectator-chosen{animation:none}}
+
+/* Compact, illustrated action timeline. Visual grouping follows logical turns,
+   not the start/end-turn engine narration; seat colors distinguish co-op turns. */
+.game-menu-dialog .tt9-action-log{display:grid;gap:10px;list-style:none;padding:3px 0 6px;margin:6px 0}
+.game-menu-dialog .tt9-log-turn{display:block;min-width:0;margin:0;padding:0 0 0 10px;border-left:3px solid var(--overlay-border);border-bottom:0}
+.game-menu-dialog .tt9-log-turn.tt9-log-player-0{border-left-color:#c49347}
+.game-menu-dialog .tt9-log-turn.tt9-log-player-1{border-left-color:#558eb5}
+.game-menu-dialog .tt9-log-turn-head{display:flex;align-items:center;gap:8px;min-height:23px;margin-bottom:3px;font-size:.82rem;color:var(--overlay-text)}
+.game-menu-dialog .tt9-log-turn-dot{display:inline-block;width:9px;height:9px;flex:none;border-radius:50%;background:var(--overlay-border)}
+.game-menu-dialog .tt9-log-player-0 .tt9-log-turn-dot{background:#c49347}
+.game-menu-dialog .tt9-log-player-1 .tt9-log-turn-dot{background:#558eb5}
+.game-menu-dialog .tt9-log-events{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.game-menu-dialog .tt9-log-events>li{display:flex;align-items:center;flex-wrap:nowrap;gap:7px;min-height:30px;padding:2px 0;border-bottom:1px solid var(--overlay-border);font-size:.82rem;line-height:1.35}
+.game-menu-dialog .tt9-log-events>li:last-child{border-bottom:0}
+.game-menu-dialog .tt9-log-event-icon{display:flex;align-items:center;justify-content:center;flex:0 0 20px;color:var(--overlay-primary)}
+.game-menu-dialog .tt9-log-event-icon .ui-icon{width:16px;height:16px}
+.game-menu-dialog .tt9-log-message{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-width:0;overflow-wrap:anywhere}
+.game-menu-dialog .tt9-log-card{display:inline-flex;align-items:center;flex:none}
+.game-menu-dialog .tt9-log-card .card.tiny{width:23px!important;height:32px!important;min-width:0;pointer-events:none}
+.game-menu-dialog .tt9-log-empty{font-size:.84rem;color:var(--overlay-muted)}
