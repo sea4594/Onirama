@@ -96,9 +96,11 @@ export function renderDenizenTabletop(g,{owner=null,canAct=true,decisionTargets=
  const stored=(d.treasure||[]).filter(c=>owner===null||c.owner===owner);
  const ownerName=owner===null?'Denizens':`${g.players[owner]?.name||'Player'} · Denizens`;
  const active=canAct&&['action','decision','turnComplete'].includes(g.phase)&&g.status==='active';
+ const canPlayStored=canAct&&g.phase==='action'&&g.status==='active'&&(owner===null||owner===g.active);
  const body=cards.map(c=>{const held=stored.filter(x=>x.holderId===c.id);
-  return `<span class="tt17-denizen-holder"><button type="button" class="tt17-denizen-card" data-action="denizen:${esc(c.id)}" aria-label="Inspect and use ${esc(c.ability)}" ${active&&c.owner===g.active?'':'aria-disabled="true"'}>${renderCard(c,{tiny:true})}</button>${held.map(h=>`<span class="tt22-keeper-overlay">${renderCard(h,{tiny:true,select:active||decisionTargets.has(h.id),interactive:active&&g.phase==='action',highlight:decisionTargets.has(h.id)})}</span>`).join('')}</span>`;
- }).join('')+stored.filter(h=>!cards.some(c=>c.id===h.holderId)).map(h=>`<span class="tt17-denizen-reserve">${renderCard(h,{tiny:true,select:active||decisionTargets.has(h.id),interactive:active&&g.phase==='action',highlight:decisionTargets.has(h.id)})}</span>`).join('');
- if(asShelf)return zone('denizens','Denizens',body,`<span class="tt5-count">${cards.length}</span>`);
- return `<section class="tt17-denizen-player" data-tt-zone="denizens" aria-label="${esc(ownerName)}"><div class="tt6-region-heading"><strong>${esc(ownerName)}</strong><b>${cards.length}</b></div><div class="tt17-denizen-cards">${body||'<span class="tt17-empty-denizens" aria-hidden="true"></span>'}</div></section>`;
+  return `<span class="tt17-denizen-holder"><button type="button" class="tt17-denizen-card" data-action="denizen:${esc(c.id)}" aria-label="Inspect and use ${esc(c.ability)}" ${active&&c.owner===g.active?'':'aria-disabled="true"'}>${renderCard(c,{tiny:true})}</button>${held.map(h=>`<span class="tt22-keeper-overlay">${renderCard(h,{tiny:true,select:canPlayStored||decisionTargets.has(h.id),interactive:canPlayStored,highlight:decisionTargets.has(h.id)})}</span>`).join('')}</span>`;
+ }).join('')+stored.filter(h=>!cards.some(c=>c.id===h.holderId)).map(h=>`<span class="tt17-denizen-reserve">${renderCard(h,{tiny:true,select:canPlayStored||decisionTargets.has(h.id),interactive:canPlayStored,highlight:decisionTargets.has(h.id)})}</span>`).join('');
+ const sizing=`style="--tt-denizen-unit:${(100/Math.max(1,cards.length+stored.filter(h=>!cards.some(c=>c.id===h.holderId)).length)).toFixed(5)}%"`;
+ if(asShelf)return zone('denizens','Denizens',`<div class="tt35-denizen-lane" ${sizing}>${body}</div>`,`<span class="tt5-count">${cards.length}</span>`);
+ return `<section class="tt17-denizen-player" data-tt-zone="denizens" aria-label="${esc(ownerName)}"><div class="tt6-region-heading"><strong>${esc(ownerName)}</strong><b>${cards.length}</b></div><div class="tt17-denizen-cards" ${sizing}>${body||'<span class="tt17-empty-denizens" aria-hidden="true"></span>'}</div></section>`;
 }

@@ -6,6 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {captureLabyrinthScroll,restoreLabyrinthScroll} from './tabletop/labyrinth-scroll.js';
 import {viewportRefitPlan} from './tabletop/viewport-refit.js';
 import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
 import {renderSoloTabletop} from './tabletop/solo-board.js';
@@ -423,7 +424,10 @@ function doorSearchDecision(g,p){
   const caught=all.filter(t=>t.source.startsWith('catch')&&t.color===color).filter((t,i,items)=>items.findIndex(x=>x.source===t.source)===i);
   const suffix=more?':chromatic':'';
   if(deck)actions.push(option(color,'from deck',true,`doorSearch:choose:${deck.id}${suffix}`));
-  else if(!caught.length)actions.push(option(color,'from deck',true,`doorSearch:search:${color}${suffix}`));
+  // A missing Door is never offered as a deck retrieval. A separate
+  // shuffle-only action remains available when it can free a Dreamcatcher.
+  else if(!caught.length&&searchableCatchers(g,{option:'search',doorColor:color}).length)
+   actions.push(btn('Shuffle to free a Dreamcatcher',`doorSearch:search:${color}${suffix}`,'tt21-muted'));
   for(const t of caught){
    const index=Number(t.source.slice(5))+1;
    actions.push(option(color,`from catcher ${index}`,false,`doorSearch:direct:${t.id}${suffix}`));
@@ -495,11 +499,11 @@ function denizenWorkspace(g){
  const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent?.id&&x.owner===g.active);if(!d)return null;
  const a=d.ability,info=cardHelp(d),stage=denizenIntent.step||'confirm';
  const hand=[...(g.players[g.active]?.hand||[]),...(g.mode==='coop'?g.shared||[]:[])];
- const movable=a==='keeper'?hand:[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)];
+ const movable=a==='keeper'||g.phase!=='action'?hand:[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)];
  const eligible=a==='keeper'?movable.filter(c=>c.kind!=='deadEnd'):a==='architect'?movable.filter(c=>c.kind==='location'&&g.players[g.active].labyrinth.at(-1)?.symbol===c.symbol):movable.filter(c=>c.kind==='location');
  const chromaticKeys=g.pending?.type==='door'?(g.pending.keys||[]).map(x=>[...hand,...(g.expansion?.oniverse?.treasure||[]).filter(c=>c.owner===g.active)].find(c=>c.id===x.id)).filter(c=>c&&c.color!==g.pending.card.color&&c.color!=='wild'):[];
  const chromaticDoors=g.pending?.type==='doorSearch'?(g.pending.targets||[]).filter(c=>c.color!==g.pending.color&&c.color!=='wild'):[];
- const available=a==='mirror'?g.pending?.type==='nightmare'&&!g.pending?.incubus:a==='chromatic'?Boolean(chromaticKeys.length||g.pending?.type==='doorSearch'):a==='keeper'?!g.expansion.oniverse.treasure.some(c=>c.holderId===d.id)&&eligible.length>0:a==='hammer'?g.players[g.active].labyrinth.length>0:a==='architect'?eligible.length>0:a==='cyclobot'?eligible.length>0&&g.discard.some(c=>c.kind==='location'):['squirrel','harpoon'].includes(a)?g.deckCount>0:false;
+ const available=a==='mirror'?g.pending?.type==='nightmare'&&!g.pending?.incubus:a==='chromatic'?Boolean(chromaticKeys.length||chromaticDoors.length):a==='keeper'?!g.expansion.oniverse.treasure.some(c=>c.holderId===d.id)&&eligible.length>0:a==='hammer'?g.players[g.active].labyrinth.length>0:a==='architect'?eligible.length>0:a==='cyclobot'?eligible.length>0&&g.discard.some(c=>c.kind==='location'):['squirrel','harpoon'].includes(a)?g.deckCount>0:false;
  let content='';
  if(stage==='confirm')content=`<div class="tt22-denizen-card">${card(d,{tiny:true})}</div><p><strong>${escape(info.title)}.</strong> ${escape(info.detail)}</p><div class="tt22-denizen-actions"><button class="primary" data-action="denizenUse" ${available?'':'disabled'}>Use</button>${btn('Cancel','denizenCancel')}</div>`;
  else if(stage==='pick')content=`<p>Select a ${a==='keeper'?'card to store':a==='architect'?'Location to play':'Location to exchange'}.</p><div class="tt22-denizen-choices">${eligible.map(c=>`<button type="button" class="tt22-denizen-choice" data-action="denizenCard:${escape(c.id)}">${card(c,{tiny:true})}</button>`).join('')}</div>${btn('Cancel','denizenCancel')}`;
@@ -559,7 +563,7 @@ function fitGameTabletop(){
 }
 let lastRenderedMarkup=null;
 function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='active')failsafeChoosing=false;tabletopAnimator?.before?.(state?.game,session?.id,page,{online:!IS_LOCAL_GAME()&&state?.room?.mode==='coop',version:state?.version});cardInspector?.close();const dialogFocus=typeof dialogController!=='undefined'?dialogController?.capture?.():null;const focused=document.activeElement;const focusKind=lastInputWasKeyboard?['action','pick','setting','expansion','difficulty'].find(k=>focused?.dataset?.[k]):null;const focusValue=focusKind?focused.dataset[focusKind]:null;
-  const previousLabyrinths=new Map([...(app.querySelectorAll?.('[data-tabletop-scroll]')||[])].map(el=>[el.dataset.tabletopScroll,{count:el.querySelectorAll('.card.tiny').length,left:el.scrollLeft}]));
+  const previousLabyrinths=typeof captureLabyrinthScroll==='function'?captureLabyrinthScroll(app):new Map();
   const previousDock=app.querySelector?.('.tt6-dock-scroll'),dockScroll=previousDock?.scrollTop||0,dockX=previousDock?.scrollLeft||0;
   const previousPile=app.querySelector?.('.tt6-pile-scroll'),pileScroll=previousPile?.scrollTop||0;
   const oldDiscardStrip=app.querySelector?.('.tt8-discard-history'),discardX=oldDiscardStrip?.scrollLeft,discardWasAtEnd=!oldDiscardStrip||oldDiscardStrip.scrollWidth-oldDiscardStrip.clientWidth-oldDiscardStrip.scrollLeft<=4;
@@ -615,7 +619,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
       }
     }
     // Preserve deliberate horizontal inspection; newly played cards remain visible.
-    for(const lane of app.querySelectorAll?.('[data-tabletop-scroll]')||[]){const old=previousLabyrinths.get(lane.dataset.tabletopScroll);if(old&&old.count===lane.querySelectorAll('.card.tiny').length)lane.scrollLeft=old.left;}
+    if(typeof restoreLabyrinthScroll==='function')restoreLabyrinthScroll(app,previousLabyrinths);
   }
   tabletopAnimator?.after?.(inGame?state.game:null,session?.id,page,{online:!IS_LOCAL_GAME()&&state?.room?.mode==='coop',version:state?.version});
   if(inGame&&replayFrames.length){const replayLayer=app.querySelector?.('[data-replay-layer]');if(replayLayer){replayAnimator?.reset?.();replayAnimator=createTabletopAnimator({root:replayLayer});fitReplay(replayLayer,replayFrames[replayIndex]);replayAnimator.after(replayFrames[replayIndex].frame,'replay','#/game');}}
@@ -815,7 +819,7 @@ async function handle(actionName){
   if(actionName.startsWith('premonitionNightmare:')&&g.pending?.type==='premonitionNightmare')return action({type:'premonitionNightmare',id:actionName.slice(21)});
   if(actionName.startsWith('effectRestore:')){effectDiscards.delete(actionName.slice(14));return render();}
   if(actionName.startsWith('effectDiscard:')){const id=actionName.slice(14);if(effectDiscards.has(id))effectDiscards.delete(id);else effectDiscards.add(id);return render();}
-  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen)return;denizenIntent={id,step:'confirm'};render();void publishSpectatorChoice('denizen');return;}
+  if(actionName.startsWith('denizen:')){const id=actionName.slice(8),denizen=(g.expansion?.oniverse?.rallied||[]).find(d=>d.id===id&&d.owner===g.active);if(!denizen||state?.room?.seat!==g.active||!['action','decision','turnComplete'].includes(g.phase))return;denizenIntent={id,step:'confirm'};render();void publishSpectatorChoice('denizen');return;}
   if(actionName==='denizenCancel'){denizenIntent=null;render();void publishSpectatorChoice('clear');return;}
   if(actionName==='denizenUse'&&denizenIntent){const d=(g.expansion?.oniverse?.rallied||[]).find(x=>x.id===denizenIntent.id&&x.owner===g.active);if(!d)return;const a=d.ability;
     if(a==='mirror'&&g.pending?.type==='nightmare')return action({type:'nightmare',option:'mirror',denizenId:d.id});

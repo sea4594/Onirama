@@ -24,14 +24,14 @@ function interfaceFor(s){
 }
 function commands(html){return [...html.matchAll(/data-action="(doorSearch:[^"]+)"/g)].map(m=>m[1]);}
 
-test('Base game offers exactly one colored search and Pass, even when its Door is exhausted',()=>{
+test('Base game never offers a missing Door as a deck retrieval',()=>{
  const s=fixture([]),ui=interfaceFor(s);assert.deepEqual(commands(ui.render()).map(x=>x.split(':')[1]),['choose','skip']);
- removeDeckColor(s,'blue');const exhausted=interfaceFor(s);assert.deepEqual(commands(exhausted.render()),['doorSearch:search:blue','doorSearch:skip']);
+ removeDeckColor(s,'blue');const exhausted=interfaceFor(s);assert.deepEqual(commands(exhausted.render()),['doorSearch:skip']);
  const before=s.shuffleSerial||0,n=act(s,{type:'doorSearch',option:'search',doorColor:'blue'});assertConserved(n);assert.equal(n.shuffleSerial,before+1);
 });
-test('Oniverse presents colored and wild Door choices as distinct searches, even when the wild Door is absent',()=>{
+test('Oniverse offers real deck Doors, not an absent wild Door',()=>{
  const s=fixture(['oniverse']),ui=interfaceFor(s);assert.deepEqual(commands(ui.render()).map(x=>x.split(':')[1]),['choose','choose','skip']);
- removeDeckColor(s,'wild');const absent=interfaceFor(s);assert(commands(absent.render()).includes('doorSearch:search:wild'));
+ removeDeckColor(s,'wild');const absent=interfaceFor(s);assert(!commands(absent.render()).includes('doorSearch:search:wild'));
  const n=act(s,{type:'doorSearch',option:'search',doorColor:'wild'});assertConserved(n);
 });
 test('Catcher and deck copies: only deck search and direct catch retrieval; never search then catch',()=>{
@@ -54,7 +54,7 @@ test('Exhausted deck Door permits catcher direct or failed search, but cannot fr
 });
 test('Deck search with no Door can free a different occupied catcher without claiming anything',()=>{
  const s=fixture(),b=move(s,c=>c.kind==='nightmare',s.moduleState.dreamcatchers.zones.catch0);
- removeDeckColor(s,'blue');const ui=interfaceFor(s);assert(commands(ui.render()).includes('doorSearch:search:blue'));
+ removeDeckColor(s,'blue');const ui=interfaceFor(s);assert(commands(ui.render()).includes('doorSearch:search:blue'));assert.match(ui.render(),/Shuffle to free a Dreamcatcher/);assert.doesNotMatch(ui.render(),/from deck/);
  const n=act(s,{type:'doorSearch',option:'search',doorColor:'blue',freeId:0});assertConserved(n);
  assert(!n.moduleState.dreamcatchers.zones.catch0.length);assert(n.deck.some(c=>c.id===b.id)||n.players[0].hand.some(c=>c.id===b.id));
 });
@@ -68,13 +68,13 @@ test('Chromatic Chaos is isolated from normal choices, requires explicit activat
  const n=act(s,{type:'doorSearch',option:'claim',doorId:red.id,chromatic:true});assertConserved(n);assert(n.players[0].doors.some(c=>c.id===red.id));assert(n.discard.some(c=>c.id===d.id));
  const blue=s.deck.find(c=>c.kind==='door'&&c.color==='blue');assert.throws(()=>act(s,{type:'doorSearch',option:'claim',doorId:blue.id,chromatic:true}),/only for a different-color/);
 });
-test('Chromatic Chaos control remains available even with no foreign Door left, and offers only alternate colors',()=>{
+test('Chromatic Chaos offers no nonexistent alternate-color Door',()=>{
  let s;for(let seed=1;seed<100;seed++){const candidate=newGame({seed,config:{expansions:['oniverse']}});if(candidate.deck.some(c=>c.ability==='chromatic')){s=candidate;break;}}
  assert(s);s.phase='decision';s.pending={type:'doorSearch',color:'blue'};chromatic(s);
  for(const color of ['red','green','brown'])removeDeckColor(s,color);
  const ui=interfaceFor(s);assert(commands(ui.render()).includes('doorSearch:chromatic'));
  ui.setChromatic(true);const alternate=commands(ui.render());
- for(const color of ['red','green','brown'])assert(alternate.includes(`doorSearch:search:${color}:chromatic`));
+ for(const color of ['red','green','brown'])assert(!alternate.includes(`doorSearch:search:${color}:chromatic`));
  assert(!alternate.some(x=>x.includes('doorSearch:choose:')||x.includes('doorSearch:search:blue')));
 });
 test('Chromatic Chaos only allows the failed-search path when the alternate Door is absent, spending the Denizen',()=>{

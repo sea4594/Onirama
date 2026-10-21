@@ -20,7 +20,7 @@ function matchingKeys(s,color){const chromatic=availableRallied(s,'chromatic').l
 function useDenizen(s,cmd){need(has(s,'oniverse'),'Door to the Oniverse is disabled');const d=availableRallied(s).find(x=>x.id===cmd.id);need(d,'Choose a rallied Denizen');
  const ability=d.ability;
  if(ability==='architect'){
-   const f=spots(s).find(x=>x.id===cmd.cardId);need(f?.card.kind==='location','Choose a Location for the Architect');
+   const f=spots(s).find(x=>x.id===cmd.cardId&& (s.phase==='action'||x.zone!=='treasure'));need(f?.card.kind==='location','Choose a Location for the Architect');
    need(own(s).labyrinth.length&&own(s).labyrinth.at(-1).symbol===f.card.symbol,'Architect must override a matching adjacent symbol');
    need(canPlayLocation(s,f.card,true),'Difficult Crossroads allows a Crossroad only second in a series');
    spendDenizen(s,d.id,ability);const c=takeSpot(s,cmd.cardId);own(s).labyrinth.push(c);const color=runLocation(s,c);note(s,`Architect played ${c.color} ${c.symbol}.`);
@@ -28,7 +28,7 @@ function useDenizen(s,cmd){need(has(s,'oniverse'),'Door to the Oniverse is disab
    if(cmd._interrupt){restoreInterrupt(s);return;}refill(s);return;
  }
  if(ability==='cyclobot'){
-   const f=spots(s).find(x=>x.id===cmd.cardId),i=s.discard.findIndex(x=>x.id===cmd.discardId);
+   const f=spots(s).find(x=>x.id===cmd.cardId&& (s.phase==='action'||x.zone!=='treasure')),i=s.discard.findIndex(x=>x.id===cmd.discardId);
    need(f?.card.kind==='location'&&i>=0&&s.discard[i].kind==='location','Exchange two Location cards');
    spendDenizen(s,d.id,ability);const c=takeSpot(s,cmd.cardId),j=s.discard.findIndex(x=>x.id===cmd.discardId),from=s.discard.splice(j,1)[0];s.discard.push(c);(f.zone==='shared'?s.shared:hand(s)).push(from);return;
  }
@@ -58,9 +58,9 @@ function canUseDenizenNow(s,d){
  if(!['action','decision','turnComplete'].includes(s.phase))return false;
  const a=d.ability,cards=spots(s),last=own(s).labyrinth.at(-1);
  if(a==='keeper')return !oni(s).zones.treasure.some(c=>c.holderId===d.id)&&cards.some(x=>x.zone!=='treasure'&&x.card.kind!=='deadEnd');
- if(a==='cyclobot')return cards.some(x=>x.card.kind==='location')&&s.discard.some(c=>c.kind==='location');
+ if(a==='cyclobot')return cards.some(x=>x.card.kind==='location'&&(s.phase==='action'||x.zone!=='treasure'))&&s.discard.some(c=>c.kind==='location');
  if(a==='hammer')return !!last;
- if(a==='architect')return cards.some(x=>x.card.kind==='location'&&last&&x.card.symbol===last.symbol&&canPlayLocation(s,x.card,true));
+ if(a==='architect')return cards.some(x=>x.card.kind==='location'&&(s.phase==='action'||x.zone!=='treasure')&&last&&x.card.symbol===last.symbol&&canPlayLocation(s,x.card,true));
  if(a==='squirrel'||a==='harpoon')return s.deck.length>0;
  return false; // Chromatic Chaos and Mirror act only on their matching triggered effects.
 }

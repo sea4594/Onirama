@@ -6,14 +6,14 @@ const colors={red:'Red',blue:'Blue',green:'Green',brown:'Brown',wild:'Wild'};
 const names={location:'Location',door:'Door',nightmare:'Nightmare',lostDream:'Lost Dream',happyDream:'Happy Dream',deadEnd:'Dead End',denizen:'Denizen',sphinx:'Sphinx',diver:'Diver',confusion:'Confusion',tower:'Tower'};
 export function inventoryCategory(card){
  const extension=card.expansion||'base',kind=card.kind,color=card.color||'',symbol=card.symbol||'',ability=card.ability||'',number=card.number||'';
- return [extension,kind,color,symbol,ability,number].join(':');
+ return [extension,kind,color,symbol,ability,number,...(kind==='tower'?[card.left||'',card.right||'']:[])].join(':');
 }
 export function pileInventory(state){
  const originals=createDeck(state.config?.expansions||[]);
  const groups=new Map();
  for(const card of originals){const key=inventoryCategory(card);if(!groups.has(key)){
-   const section=card.expansion||'base';
-   const label=[colors[card.color],card.symbol&&card.symbol[0].toUpperCase()+card.symbol.slice(1),kindLabel(card),card.ability&&card.ability[0].toUpperCase()+card.ability.slice(1),card.number].filter(Boolean).join(' ');
+   const section=card.expansion||'base',kind=card.kind;
+   const label=[colors[card.color],card.symbol&&card.symbol[0].toUpperCase()+card.symbol.slice(1),kindLabel(card),card.ability&&card.ability[0].toUpperCase()+card.ability.slice(1),card.number,...(kind==='tower'?[`Left ${card.left||'blank'}`,`Right ${card.right||'blank'}`]:[])].filter(Boolean).join(' ');
    groups.set(key,{key,section,label,total:0,deck:0,discard:0,limbo:0});
   }groups.get(key).total++;
  }

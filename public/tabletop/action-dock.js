@@ -131,8 +131,8 @@ export function renderInventoryTrack(count,total){
  return `<div class="tt10-count-track" role="img" aria-label="${remaining} of ${totalCards} remaining" style="--tt10-slots:${Math.max(1,slots)}">${Array.from({length:slots},(_,i)=>`<i aria-hidden="true" class="${i<filled?'tt10-count-filled':'tt10-count-empty'}"></i>`).join('')}</div>`;
 }
 function inventoryPreview(row){
- const [,kind='',color='',symbol='',ability='',number='']=row.key.split(':');
- return renderCard({kind,color,symbol,ability,number,expansion:row.section},{tiny:true});
+ const [,kind='',color='',symbol='',ability='',number='',left='',right='']=row.key.split(':');
+ return renderCard({kind,color,symbol,ability,number,left,right,expansion:row.section},{tiny:true});
 }
 export function renderPileInspector(game,pile,seat=null){
  if(pile==='reserve'&&game.expansion?.premonitions){

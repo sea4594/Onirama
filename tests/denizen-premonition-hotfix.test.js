@@ -24,7 +24,9 @@ test('Keeper reserve remains card-shaped and playable from coop, not duplicated 
  let s=game(['oniverse'],'coop');s.phase='action';s.active=0;s.players[0].hand.push(pull(s,c=>c.kind==='location'));
  const d=rally(s,'keeper');const c=s.players[0].hand[0];s=act(s,{type:'useDenizen',id:d.id,cardId:c.id});assertConserved(s);
  const v=viewFor(s,0),html=renderCooperativeTabletop(v,{seat:0});assert.match(html,/tt22-keeper-overlay/);
- assert.match(html,new RegExp('data-pick="'+c.id+'"'));
+ assert.doesNotMatch(html,new RegExp('data-pick="'+c.id+'"')); // no normal card play while resolving a decision
+ s.phase='action';s.pending=null;const active=renderCooperativeTabletop(viewFor(s,0),{seat:0});
+ assert.match(active,new RegExp('data-pick="'+c.id+'"')); // ordinary hand actions may use Keeper's card
 });
 test('Squirrel interrupted Peek resumes the previous decision and preserves deck cards',()=>{
  let s=game(),d=rally(s,'squirrel'),n=pending(s);s=act(s,{type:'useDenizen',id:d.id});assertConserved(s);
