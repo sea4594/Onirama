@@ -113,10 +113,13 @@ export function renderActionDock(game,seat,{selectedId=null,legal=[],dialog=null
  }
  if(game.status!=='active')controls=button('Exit','exitFinished')+button('Play again','playAgain');
  const content=dialog?.html||controls||'';
+ const turnName=game.mode==='coop'&&game.status==='active'&&Number.isInteger(game.active)&&game.active>=0&&game.active<2
+  ?(game.players?.[game.active]?.name||`Player ${game.active+1}`):null;
+ const turnLabel=turnName?`<span class="tt34-turn-name" data-turn-seat="${game.active}" title="${escape(turnName)}" aria-label="Current turn: ${escape(turnName)}">${escape(turnName)}</span>`:'';
  const menu=`<button type="button" class="game-menu-trigger tt27-dock-menu" data-action="openGamePause" aria-label="Pause menu" title="Pause menu">${icon('pause')}</button>`;
  const drawn=seat===game.active&&game.phase==='decision'&&game.pending?.card&&game.pending.type!=='door'?`<div class="tt8-drawn-card" aria-label="Drawn card">${renderCard(game.pending.card,{tiny:true})}</div>`:'';
  const required=game.status==='active'&&seat===game.active&&(game.phase==='decision'||game.phase==='draft');
- return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status"><strong role="status">${escape(title)}</strong>${menu}</div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
+ return `<section class="tt6-workspace ${required?'tt8-required':''}" data-action-dock data-dock-phase="${escape(game.phase)}" aria-label="Game actions"><div class="tt6-dock-status">${turnLabel}<strong role="status">${escape(title)}</strong>${menu}</div><div class="tt6-dock-scroll" role="region" aria-label="Available actions"><div class="${dialog?'tt6-dock-decision':'tt6-dock-buttons'} ${drawn?'tt9-drawn-layout':''}" ${dialog?`data-dock-decision="${escape(dialog.type)}"`:''}>${drawn}${drawn?`<div class="tt9-drawn-actions">${content}</div>`:content}</div></div></section>`;
 }
 // Replay is a peer of Pause in the dock status row, never an overlaid
 // absolute control at the corner of the entire panel.

@@ -2,8 +2,8 @@
    The player's controls and the separate landscape hand shelf remain uncovered. */
 .game-viewport>.tt6-table-slot>.tt34-wait-turn{
  position:absolute;inset:0;z-index:5;pointer-events:none;
- background:repeating-linear-gradient(135deg,transparent 0 16px,rgba(5,16,23,.055) 16px 18px);
- box-shadow:inset 0 0 0 3px var(--table-gold-line),inset 0 0 0 7px rgba(3,12,20,.17),inset 0 0 35px rgba(3,12,20,.12);
+ background:linear-gradient(rgba(4,14,26,.14),rgba(4,14,26,.14)),repeating-linear-gradient(135deg,transparent 0 14px,rgba(4,15,28,.16) 14px 16px);
+ box-shadow:inset 0 0 0 2px var(--table-gold-line),inset 0 0 0 6px rgba(3,12,23,.48),inset 0 0 0 8px rgba(210,179,115,.14),inset 0 0 38px rgba(3,12,23,.25);
 }
 .game-viewport .tt34-wait-label{
  position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);
@@ -28,6 +28,21 @@
 }
 .game-viewport .tt6-workspace:has(.tt9-replay-launch) .tt6-dock-status strong{
  display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* Name of the active player, in the header's left corner. The prompt stays
+   alongside it; Replay and Pause keep their existing right-hand slots. */
+.game-viewport .tt6-workspace .tt6-dock-status:has(.tt34-turn-name){
+ justify-content:flex-start!important;gap:6px!important;padding-left:7px!important;text-align:left;
+}
+.game-viewport .tt6-workspace .tt34-turn-name{
+ display:block;flex:0 1 auto;max-width:min(37%,15ch);min-width:0;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ font-size:clamp(10px,1.2vw,11px);font-weight:650;line-height:1.2;
+ color:var(--ui-muted);border-left:2px solid #c49347;padding-left:5px;
+}
+.game-viewport .tt6-workspace .tt34-turn-name[data-turn-seat="1"]{border-left-color:#558eb5}
+.game-viewport .tt6-workspace .tt34-turn-name+strong{
+ flex:1 1 0;min-width:0;text-align:left;
 }
 @media (orientation:landscape) and (max-height:430px){
  .game-viewport .tt34-wait-label{top:3px;padding:3px 9px;font-size:11px}
