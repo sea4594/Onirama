@@ -3,7 +3,11 @@
 import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,updateSetup,startRoom,restartRoom,playRoom,leaveRoom,endRoom,roomView,seatFor} from './engine/firebase-protocol.js';
 import {explainRoomPermissionError} from './firebase-permissions.js';
 import {toFirestore,fromFirestore} from './firebase-wire.js';
+import {createOptimisticQueue} from './firebase-optimistic.js';
 let clientPromise;
+const roomCache=new Map(),actionQueues=new Map();
+function remember(code,room){const key=String(code).toUpperCase(),prior=roomCache.get(key);if(!room.__localUid&&prior?.__localUid)Object.defineProperty(room,'__localUid',{value:prior.__localUid,configurable:true});if(!prior||room.version>=prior.version)roomCache.set(key,room);}
+export function hasPendingFirebaseActions(code){return !!actionQueues.get(String(code).toUpperCase())?.hasPending();}
 function config(){const c=window.ONIRAMA_FIREBASE_CONFIG;return c&&['apiKey','authDomain','projectId','appId'].every(k=>typeof c[k]==='string'&&c[k].length)?c:null;}
 export function firebaseConfigured(){return !!config();}
 async function connect(){
@@ -28,8 +32,8 @@ function roomRef(c,code){return c.store.doc(c.db,ROOM_COLLECTION,String(code).to
 function code4(){let code='';while(code.length<4){const bytes=new Uint8Array(4);crypto.getRandomValues(bytes);for(const x of bytes){if(x<234&&code.length<4)code+=String.fromCharCode(65+x%26);}}return code;}
 async function update(code,transition,operation='update'){const c=await connect();const ref=roomRef(c,code);
   try{
-    await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');const previous=fromFirestore(snap.data()),next=transition(previous,c.uid);if(next!==previous)tx.set(ref,toFirestore(next));});
-    return await loadRoom(code);
+    const room=await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');const previous=fromFirestore(snap.data()),next=transition(previous,c.uid);if(next!==previous)tx.set(ref,toFirestore(next));return next;});
+    Object.defineProperty(room,'__localUid',{value:c.uid,configurable:true});remember(code,room);return roomView(room,c.uid);
   }catch(err){throw explainRoomPermissionError(err,operation);}
 }
 export async function createFirebaseRoom(name,setup){
@@ -51,7 +55,7 @@ export async function joinFirebaseRoom(code,name){
  }
  throw Error('Room is full, ended, or the invitation code is invalid.');
 }
-export async function loadRoom(code){const c=await connect(),snap=await c.store.getDoc(roomRef(c,code));if(!snap.exists())throw Error('Room not found or expired');return roomView(fromFirestore(snap.data()),c.uid);}
+export async function loadRoom(code){const c=await connect(),snap=await c.store.getDoc(roomRef(c,code));if(!snap.exists())throw Error('Room not found or expired');const raw=fromFirestore(snap.data());Object.defineProperty(raw,'__localUid',{value:c.uid,configurable:true});remember(code,raw);return roomView(raw,c.uid);}
 export async function firebaseReady(code,ready){return update(code,(room,uid)=>setReady(room,uid,ready),'ready');}
 export async function firebaseSetup(code,config){return update(code,(room,uid)=>updateSetup(room,uid,config),'setup');}
 export async function firebaseStart(code){return update(code,(room,uid)=>startRoom(room,uid),'start');}
@@ -59,6 +63,42 @@ export async function firebaseRestart(code){return update(code,(room,uid)=>resta
 export async function firebaseLeave(code){const c=await connect(),ref=roomRef(c,code);await c.store.runTransaction(c.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');tx.set(ref,toFirestore(leaveRoom(fromFirestore(snap.data()),c.uid)));});}
 export async function firebaseEnd(code){return update(code,(room,uid)=>endRoom(room,uid));}
 export async function firebaseAction(code,version,command){return update(code,(room,uid)=>playRoom(room,uid,version,command),'play');}
+// Prediction uses only a server-confirmed room snapshot held inside the Firebase
+// adapter. The UI receives a seat-filtered view, never the raw game/deck.
+export function firebaseActionImmediate(code,command,{onView,onError,beforeCommit}={}){
+  const key=String(code).toUpperCase(),raw=roomCache.get(key);
+  if(!raw)throw Error('Waiting for multiplayer synchronization.');
+  let queue=actionQueues.get(key);
+  if(!queue){
+    // UID is taken from the authenticated Firebase client during submission;
+    // local prediction uses the current room seat from the last view caller.
+    queue=createOptimisticQueue({
+      latest:()=>roomCache.get(key),
+      predict:(room,entry)=>playRoom(room,entry.uid,room.version,entry.command),
+      submit:async(entry,expectedGame)=>{
+        const c=await connect(),ref=roomRef(c,key);
+        try{
+          const confirmed=await c.store.runTransaction(c.db,async tx=>{
+            const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');
+            const before=fromFirestore(snap.data());
+            if(JSON.stringify(before.game??null)!==expectedGame)throw Error('Game changed on the other device. Actions have been resynchronized.');
+            const after=playRoom(before,c.uid,before.version,entry.command);
+            tx.set(ref,toFirestore(after));return after;
+          });
+          remember(key,confirmed);return confirmed;
+        }catch(err){throw explainRoomPermissionError(err,'play');}
+      },
+      present:(room,speculative)=>{if(room)onView?.(roomView(room,callerUid),speculative);},
+      failed:err=>onError?.(err)
+    });
+    actionQueues.set(key,queue);
+  }
+  const callerUid=roomCache.get(key)?.__localUid;
+  if(!callerUid)throw Error('Multiplayer identity is not ready.');
+  return queue.enqueue({uid:callerUid,command},beforeCommit);
+}
+export function clearFirebasePrediction(code){const key=String(code).toUpperCase();actionQueues.get(key)?.reset();actionQueues.delete(key);}
+
 export async function watchFirebaseRoom(code,onUpdate,onError){
   const c=await connect(),ref=roomRef(c,code);
   return c.store.onSnapshot(ref,{includeMetadataChanges:true},snap=>{
@@ -66,7 +106,7 @@ export async function watchFirebaseRoom(code,onUpdate,onError){
     // before allowing them into the visible multiplayer animation timeline.
     if(snap.metadata?.hasPendingWrites)return;
     if(!snap.exists())return onError(Error('Room deleted or unavailable'));
-    try{onUpdate(roomView(fromFirestore(snap.data()),c.uid),{fromCache:!!snap.metadata?.fromCache});}catch(err){onError(err);}
+    try{const raw=fromFirestore(snap.data());Object.defineProperty(raw,'__localUid',{value:c.uid,configurable:true});remember(code,raw);if(!hasPendingFirebaseActions(code))onUpdate(roomView(raw,c.uid),{fromCache:!!snap.metadata?.fromCache});}catch(err){onError(err);}
   },onError);
 }
 export async function getFirebaseUid(){return (await connect()).uid;}

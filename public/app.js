@@ -142,21 +142,21 @@ async function refresh(){if(IS_LOCAL_GAME()){
   session={id:hot?'hotseat':'local',seat};online=true;error='';sessionMeta();recordCurrentResult();render();announceCurrent();
  }catch(e){console.error('Unable to resume local game',e);session=null;state=null;version=0;localStorage.removeItem('onirama.session');error='Cannot open this saved game ('+e.message+'). The save has been preserved; you can start a new game or resume the other save.';setRoute('#/');}
  return;
- }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
-function closeEndedRoom(){const endedByMe=exitingRoom===session?.id,wasGame=!!state?.room?.started;stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;multiplayerTab='online';error=endedByMe?'':wasGame?'The host ended the game.':'The host ended the lobby.';setRoute('#/multiplayer');}
+ }if(!session)return;const roomId=session.id,credential=session.token;try{const data=session.transport==='firebase'?await firebase.loadRoom(roomId):await api(`/api/rooms/${roomId}/state`);if(session?.id!==roomId||session?.token!==credential)return;if(Number.isInteger(data.version)&&data.version>=version&&! (session?.transport==='firebase'&&firebase.hasPendingFirebaseActions(roomId))){if(data.room?.ended){closeEndedRoom();return;}captureSpectatorChoice(data);state=data;version=data.version;error='';if(data.room?.started&&page==='#/multiplayer')setRoute('#/game');recordCurrentResult();render();announceCurrent();}}catch(e){if(session?.id===roomId&&session?.token===credential)setError(e.message);}}
+function closeEndedRoom(){if(session?.transport==='firebase')firebase.clearFirebasePrediction?.(session.id);const endedByMe=exitingRoom===session?.id,wasGame=!!state?.room?.started;stopReplay();cancelStream();session=null;state=null;version=0;localStorage.removeItem('onirama.session');gameOverlay=null;multiplayerTab='online';error=endedByMe?'':wasGame?'The host ended the game.':'The host ended the lobby.';setRoute('#/multiplayer');}
 async function departRoom(end=false){
  if(!session||['local','hotseat'].includes(session.id))return;
  if(end&&!state?.room?.host)return setError('Only the host can end the game.');
  if(end&&!confirm('End the game for both players?'))return;
  if(busy)return;busy=true;const roomId=session.id;exitingRoom=roomId;
  try{
-  if(session.transport==='firebase'){if(end)await firebase.firebaseEnd(roomId);else await firebase.firebaseLeave(roomId);}
+  if(session.transport==='firebase'){firebase.clearFirebasePrediction?.(roomId);if(end)await firebase.firebaseEnd(roomId);else await firebase.firebaseLeave(roomId);}
   else await api(`/api/rooms/${roomId}/${end?'end':'leave'}`,'POST',{});
   // An end-room snapshot may already have closed the session while we awaited Firebase.
   if(session?.id===roomId){stopReplay();cancelStream();session=null;state=null;version=0;gameOverlay=null;localStorage.removeItem('onirama.session');multiplayerTab='online';error='';setRoute('#/multiplayer');}
  }catch(e){if(session?.id===roomId)setError(e.message);}finally{if(exitingRoom===roomId)exitingRoom=null;busy=false;render();}
 }
-function saveSession(o){stopReplay();cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
+function saveSession(o){if(session?.transport==='firebase')firebase.clearFirebasePrediction?.(session.id);stopReplay();cancelStream();state=null;version=0;session={id:o.room.id,token:o.token||'',seat:o.room.seat,...(o.transport==='firebase'?{transport:'firebase',uid:o.uid}: {})};localStorage.setItem('onirama.session',JSON.stringify(session));}
 async function create(mode,repeatConfig=null){
   const name=mode==='solo'?'You':(document.querySelector('#name')?.value||playerDisplayName||'').trim();if(mode==='coop'&&!name)return setError('Enter a display name to host.');const config=repeatConfig||{ruleset:'official',expansions:[...selectedExpansions],difficulties:Object.fromEntries(Object.entries(selectedDifficulties).filter(([id,value])=>selectedExpansions.has(id)&&value!=='normal'))};busy=true;render();
   try{if(STATIC_SITE&&mode==='solo'){cancelStream();localEngine??=await import('./engine/game.js');const game=localEngine.newGame({mode:'solo',config,interactiveDraw:true,names:['You']});localStorage.setItem('onirama.solo.v1',JSON.stringify(game));session={id:'local',seat:0};localStorage.setItem('onirama.session',JSON.stringify(session));beginGuestSession();await refresh();setRoute('#/game');return;}const o=mode==='coop'&&USE_FIREBASE?{...(await firebase.createFirebaseRoom(name,config)),transport:'firebase',uid:await firebase.getFirebaseUid()}:await api(mode==='solo'?'/api/solo':'/api/rooms','POST',{name,config});saveSession(o);beginGuestSession();await refresh();setRoute(mode==='coop'?'#/multiplayer':'#/game');startStream();}
@@ -234,7 +234,7 @@ function queueLobbySetup(fast=false){
 // not submit the choice or reset the local selection, and the room still checks
 // that the announcing player owns the active turn.
 async function publishSpectatorChoice(choice){
- if(IS_LOCAL_GAME()||!session||state?.room?.seat!==state?.game?.active)return;
+ if(IS_LOCAL_GAME()||!session||state?.room?.seat!==state?.game?.active||session.transport==='firebase'&&firebase.hasPendingFirebaseActions(session.id))return;
  const prior=previewInFlight;
  const task=(async()=>{try{
   if(prior)await prior;
@@ -245,7 +245,53 @@ async function publishSpectatorChoice(choice){
  previewInFlight=task;
  try{await task;}finally{if(previewInFlight===task)previewInFlight=null;}
 }
-async function action(command){if(busy||state?.room?.paused||state?.room?.ended)return;busy=true;render();try{if(previewInFlight)await previewInFlight;if(IS_LOCAL_GAME()){localEngine??=await import('./engine/game.js');const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1',original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;const updated=localEngine.act(original,command);localEngine.assertConserved(updated);localStorage.setItem(storeKey,JSON.stringify(updated));if(hot)advanceHotseatReplay(localStorage,original,updated,command);if(hot&&updated.active!==wasActive)passDevice=true;selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();return;}if(session.transport==='firebase')await firebase.firebaseAction(session.id,version,command);else await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;await refresh();}catch(e){tabletopAnimator?.clearDragRelease?.();setError(e.message);await refresh();}finally{busy=false;render();tabletopAnimator?.clearDragRelease?.();}}
+function clearCommittedActionSelection(){selected=null;mirrorTarget=null;cyclobotTarget=null;denizenIntent=null;premonitionKeysSelected.clear();spellOpen=false;spellSelected.clear();effectOrder=[];effectPick=null;incantationStage='claim';effectDiscards.clear();nightChoice=null;happyPremonitionChoice=null;happyBanishMode=false;choicePage=0;spellGoals=[];swapPersonalId=null;swapSharedId=null;freeSearchId='';doorSearchIntent=null;doorSearchChromatic=false;failsafeChoosing=false;searchFreeIntent=null;happyFetchSelection=null;}
+// Online moves are displayed synchronously using the same engine as the
+// server transaction. A later server acknowledgement is reconciliation, not a
+// reason to freeze the local board or replay the same movement.
+function action(command){
+ if(busy||state?.room?.paused||state?.room?.ended)return;
+ if(session?.transport==='firebase'){
+  try{
+   const roomId=session.id,uid=session.uid;
+   const queued=firebase.firebaseActionImmediate(roomId,command,{
+    beforeCommit:previewInFlight,
+    onView:(next,speculative)=>{
+     if(session?.id!==roomId||session?.uid!==uid)return;
+     const unchanged=JSON.stringify([state?.game,state?.room])===JSON.stringify([next.game,next.room]);
+     state=next;version=next.version;error='';
+     if(speculative)clearCommittedActionSelection();
+     if(!unchanged){recordCurrentResult();render();announceCurrent();}
+    },
+    onError:(err)=>{if(session?.id!==roomId||session?.uid!==uid)return;tabletopAnimator?.clearDragRelease?.();setError(err.message);void refresh();}
+   });
+   // Network submission continues in the background; subsequent legal actions
+   // can immediately use the newly predicted game instead of awaiting Firebase.
+   void queued.settled.catch(()=>{});
+  }catch(e){tabletopAnimator?.clearDragRelease?.();setError(e.message);}
+  return;
+ }
+ return (async()=>{
+  busy=true;render();
+  try{
+   if(previewInFlight)await previewInFlight;
+   if(IS_LOCAL_GAME()){
+    localEngine??=await import('./engine/game.js');
+    const hot=IS_HOTSEAT(),storeKey=hot?'onirama.hotseat.v1':'onirama.solo.v1';
+    const original=JSON.parse(localStorage.getItem(storeKey)),wasActive=original.active;
+    const updated=localEngine.act(original,command);localEngine.assertConserved(updated);
+    localStorage.setItem(storeKey,JSON.stringify(updated));
+    if(hot)advanceHotseatReplay(localStorage,original,updated,command);
+    if(hot&&updated.active!==wasActive)passDevice=true;
+    clearCommittedActionSelection();await refresh();return;
+   }
+   await api(`/api/rooms/${session.id}/action`,'POST',{expectedVersion:version,command});
+   clearCommittedActionSelection();await refresh();
+  }catch(e){tabletopAnimator?.clearDragRelease?.();setError(e.message);await refresh();}
+  finally{busy=false;render();tabletopAnimator?.clearDragRelease?.();}
+ })();
+}
+
 async function startStream(){
   if(IS_LOCAL_GAME()){cancelStream();online=true;render();return;}
   if(session?.transport==='firebase'){
