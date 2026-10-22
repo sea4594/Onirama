@@ -334,6 +334,8 @@ export function createTabletopAnimator({root}){
   const reset=()=>{last=null;key=null;lastVersion=null;pending=null;drop=null;clearMotion();};
   return {
     dragRelease(id,from){if(id&&rectOK(from))drop={id,from};},
+    // A rejected command must not lend its drop point to a later action.
+    clearDragRelease(){drop=null;},
     // Rotation, substantial viewport changes, and reduced-motion switches
     // invalidate coordinates, NOT the authoritative last public game state.
     viewportChanged(){pending=null;drop=null;clearMotion();},
@@ -343,7 +345,7 @@ export function createTabletopAnimator({root}){
       if(page!=='#/game'||!game){reset();return;}
       const nextKey=`${roomKey||''}:${game.mode}`;
       const changed=last&&key===nextKey&&signature(last)!==signature(game);
-      if(key!==nextKey){clearMotion();return;}
+      if(key!==nextKey){clearMotion();drop=null;return;}
       const continuity=meta.online?networkMotionContinuity(lastVersion,meta.version):'continuous';
       if(continuity==='resync'){
         // Even if the visible game coincidentally matches, drop old movement
@@ -364,7 +366,16 @@ export function createTabletopAnimator({root}){
       const nextKey=`${roomKey||''}:${game.mode}`;
       const event=pending,previous=last;pending=null;last=game;key=nextKey;
       lastVersion=meta.online&&Number.isSafeInteger(meta.version)?meta.version:null;
-      if(!event||!enabled()){drop=null;return;}
+      if(!event){
+        // The action dispatcher rerenders with busy=true BEFORE Firebase has
+        // committed a new game state. Keep the card's actual drop coordinates
+        // through these unchanged renders; the eventual accepted transition
+        // must start at the release point, not the original hand position.
+        // A room/route change, reconnection or reduced motion invalidates it.
+        if(!enabled()||!last||key!==nextKey)drop=null;
+        return;
+      }
+      if(!enabled()){drop=null;return;}
       const {plan,old}=event,now=capture(root),released=drop;drop=null;
       // Snapshot DOM anchors at the same instant as the state transition;
       // a later Firebase render must not retarget an earlier animation.

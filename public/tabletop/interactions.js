@@ -119,10 +119,25 @@ export function createTabletopInteractions({root, getGame, getSeat=()=>0, isBusy
       // turn. Consume exactly that click; the next pointerdown resets the guard.
       suppressClick=true;
     }
+    // pointerup may arrive without a final pointermove (notably on iOS).
+    // Capture where the finger/mouse ACTUALLY released the card, rather than
+    // the previous move event or the original hand slot.
+    if(dragging&&ghost){
+      ghost.style.left=`${e.clientX-pointer.offsetX}px`;
+      ghost.style.top=`${e.clientY-pointer.offsetY}px`;
+    }
     const released=dragging&&ghost?.getBoundingClientRect?.();
     clearDrag();
-    if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
-    if(drop){onDrop(cardId,released);dispatch(drop.dataset.ttDrop,cardId);return;}
+    if(drop?.dataset.ttCard){const first=swapZone(cardId),second=swapZone(drop.dataset.ttCard);onDrop(cardId,released);onSwap(first==='personal'?cardId:drop.dataset.ttCard,second==='shared'?drop.dataset.ttCard:cardId);return;}
+    if(drop){
+      // Only arm an animation for a legal, accepted action. Do not leak a
+      // failed drop's coordinates into the next unrelated game transition.
+      if(legal(cardId).includes(drop.dataset.ttDrop)){
+        onDrop(cardId,released);
+        dispatch(drop.dataset.ttDrop,cardId);
+      }
+      return;
+    }
     if(dragging||cancelled)onClearSelection();
   }
   function onPointerDown(e){
