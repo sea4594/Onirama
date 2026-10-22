@@ -817,3 +817,54 @@
  min-height:36px!important;margin:0!important;padding:4px 2px!important;
 }
 .game-viewport .tt6-dock-decision .tt33-free-step .tt21-free-buttons button:disabled{opacity:.35!important}
+/* Tower artwork is a single card-relative composition in every context:
+   draft, hands, alignment, pile inspection, previews, and flying cards.
+   Earlier viewport-based font clamps and em-sized SVGs made the tower and
+   sun/moon marks tiny when a cooperative draft card was scaled down.  Each
+   glyph now occupies a fixed fraction of the card's own face, never a fixed
+   screen size.  The card, artwork and symbols therefore scale together. */
+.card.card-kind-tower{container-type:inline-size!important}
+.card.card-kind-tower>.tt5-tower-face{
+ position:relative!important;display:block!important;width:100%!important;height:100%!important;
+ min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
+ box-sizing:border-box!important;overflow:hidden!important
+}
+.card.card-kind-tower .tt8-tower-marks{
+ position:absolute!important;top:0!important;bottom:0!important;
+ width:25%!important;height:100%!important;min-width:0!important;
+ display:block!important
+}
+.card.card-kind-tower .tt8-tower-left{left:0!important;right:auto!important}
+.card.card-kind-tower .tt8-tower-right{right:0!important;left:auto!important}
+.card.card-kind-tower .tt8-tower-mark{
+ position:absolute!important;left:6%!important;right:6%!important;
+ display:grid!important;place-items:center!important;
+ width:88%!important;height:19%!important;margin:0!important;padding:0!important;
+ line-height:1!important;font-size:inherit!important;transform:none!important
+}
+.card.card-kind-tower .tt8-tower-mark[data-tower-mark="moon"]{top:27%!important;bottom:auto!important}
+.card.card-kind-tower .tt8-tower-mark[data-tower-mark="sun"]{top:63%!important;bottom:auto!important}
+.card.card-kind-tower .tt8-tower-mark>.ui-icon{
+ display:block!important;flex:none!important;box-sizing:border-box!important;
+ width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+ max-width:100%!important;max-height:100%!important;margin:0!important;
+ aspect-ratio:1!important;transform:none!important
+}
+.card.card-kind-tower .tt5-tower-face>.tt11-tower-emblem{
+ position:absolute!important;left:25%!important;right:25%!important;top:25%!important;
+ width:50%!important;height:34%!important;display:grid!important;place-items:center!important;
+ min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
+ font-size:inherit!important;line-height:1!important;transform:none!important
+}
+.card.card-kind-tower .tt5-tower-face>.tt11-tower-emblem>.ui-icon{
+ display:block!important;flex:none!important;box-sizing:border-box!important;
+ width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+ max-width:100%!important;max-height:100%!important;margin:0!important;
+ aspect-ratio:1!important;transform:none!important
+}
+.card.card-kind-tower .tt5-tower-face>.tt11-tower-number{
+ position:absolute!important;left:15%!important;right:15%!important;bottom:2%!important;
+ width:70%!important;margin:0!important;padding:0!important;
+ font-size:26cqw!important;line-height:1!important;text-align:center!important;
+ white-space:nowrap!important;transform:none!important
+}
