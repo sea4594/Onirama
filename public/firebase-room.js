@@ -3,7 +3,7 @@
 import {ROOM_COLLECTION,makeRoom,allocateRoom,joinRoom,setReady,updateSetup,startRoom,restartRoom,playRoom,leaveRoom,endRoom,roomView,seatFor} from './engine/firebase-protocol.js';
 import {explainRoomPermissionError} from './firebase-permissions.js';
 import {toFirestore,fromFirestore} from './firebase-wire.js';
-import {createOptimisticQueue} from './firebase-optimistic.js';
+import {createOptimisticQueue,canonicalGameKey} from './firebase-optimistic.js';
 let clientPromise;
 const roomCache=new Map(),actionQueues=new Map();
 function remember(code,room){const key=String(code).toUpperCase(),prior=roomCache.get(key);if(!room.__localUid&&prior?.__localUid)Object.defineProperty(room,'__localUid',{value:prior.__localUid,configurable:true});if(!prior||room.version>=prior.version)roomCache.set(key,room);}
@@ -81,7 +81,7 @@ export function firebaseActionImmediate(code,command,{onView,onError,beforeCommi
           const confirmed=await c.store.runTransaction(c.db,async tx=>{
             const snap=await tx.get(ref);if(!snap.exists())throw Error('Room not found');
             const before=fromFirestore(snap.data());
-            if(JSON.stringify(before.game??null)!==expectedGame)throw Error('Game changed on the other device. Actions have been resynchronized.');
+            if(canonicalGameKey(before)!==expectedGame)throw Error('Game changed on the other device. Actions have been resynchronized.');
             const after=playRoom(before,c.uid,before.version,entry.command);
             tx.set(ref,toFirestore(after));return after;
           });

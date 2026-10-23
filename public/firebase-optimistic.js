@@ -1,10 +1,22 @@
 // Local-first UI for online actions. Every speculative state is derived with the
 // same rules engine as the Firestore transaction; server commits remain final.
 // This module never persists speculative state or exposes the raw room to UI.
+// JSON object property order is not game state. Firestore's wire conversion
+// can recreate the same game with differently ordered map keys; comparing raw
+// JSON.stringify strings mistakenly rejects valid queued turns.
+// Arrays remain ordered: their order is game-significant.
+export function canonicalGameKey(room){
+ return JSON.stringify(room?.game??null,(_key,value)=>{
+  if(!value||typeof value!=='object'||Array.isArray(value))return value;
+  const sorted=Object.create(null);
+  for(const key of Object.keys(value).sort())sorted[key]=value[key];
+  return sorted;
+ });
+}
 export function createOptimisticQueue({latest,predict,submit,present,failed,maxPending=12}){
   let pending=[],shadow=null,draining=false,epoch=0;
   const hasPending=()=>pending.length>0;
-  const gameKey=room=>JSON.stringify(room?.game??null);
+  const gameKey=canonicalGameKey;
   function reset(reason){
     epoch++;
     const abandoned=pending;pending=[];shadow=null;

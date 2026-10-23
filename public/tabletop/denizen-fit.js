@@ -13,6 +13,19 @@ export function denizenCardWidth(availableWidth, count, gap=3) {
  return Math.min(DENIZEN_MAX_WIDTH,Math.max(DENIZEN_MIN_WIDTH,fit));
 }
 
+// Use actual element dimensions with inline !important. The board has many
+// legacy card sizing overrides; a CSS variable alone cannot protect the face
+// when a later/more-specific card rule sizes its button or artwork to zero.
+function setRect(el,width,height){
+ const style=el?.style;
+ if(!style?.setProperty)return;
+ for(const [name,value] of [
+  ['box-sizing','border-box'],['width',`${width}px`],['min-width',`${width}px`],
+  ['max-width',`${width}px`],['height',`${height}px`],
+  ['min-height',`${height}px`],['max-height',`${height}px`],
+  ['flex',`0 0 ${width}px`],['aspect-ratio','1 / 1.42']
+ ])style.setProperty(name,value,'important');
+}
 export function fitDenizenCards(root){
  if(!root?.querySelectorAll)return 0;
  let fitted=0;
@@ -25,6 +38,17 @@ export function fitDenizenCards(root){
   const gap=parseFloat(css?.columnGap||css?.gap)||3;
   const width=denizenCardWidth(Math.max(0,(lane.clientWidth||0)-pad),cards.length,gap);
   lane.style?.setProperty?.('--tt35-measured-width',`${width}px`);
+  const height=Math.round(width*1.42*100)/100;
+  for(const holder of cards){
+   setRect(holder,width,height);
+   // Keeper reserves are cards themselves; rallied Denizens are inside a
+   // button. These are the same physical rectangle, not nested flex tracks.
+   const face=holder.classList.contains('tt17-denizen-reserve')
+    ?holder.querySelector?.(':scope > .card')
+    :holder.querySelector?.(':scope > .tt17-denizen-card');
+   setRect(face,width,height);
+   if(face!==holder)setRect(face?.querySelector?.(':scope > .card'),width,height);
+  }
   fitted++;
  }
  return fitted;
