@@ -6,6 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {fitDenizenCards} from './tabletop/denizen-fit.js';
 import {captureLabyrinthScroll,restoreLabyrinthScroll} from './tabletop/labyrinth-scroll.js';
 import {viewportRefitPlan} from './tabletop/viewport-refit.js';
 import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
@@ -603,6 +604,7 @@ function fitGameTabletop(){
     arrangeGameplayHand(app,landscape);
   }
   const result=fitTabletop(viewport,table,{mode:state?.game?.mode,expansions:state?.game?.config?.expansions||[]});
+  if(typeof fitDenizenCards==='function')fitDenizenCards(viewport);
   // Fit the actual playable hand shelf independently of board scaling.
   if(typeof window!=='undefined'&&window.matchMedia?.('(orientation: landscape)')?.matches)sizeLandscapeHands(app.querySelector('.tt6-hand-shelf'));
   return result;

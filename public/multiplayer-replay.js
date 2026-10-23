@@ -6,6 +6,7 @@ import {renderActionDock} from './tabletop/action-dock.js';
 import {replayCaption,opponentReplay} from './engine/replay.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {fitDenizenCards} from './tabletop/denizen-fit.js';
 import {arrangeGameplayHand,fitLandscapeDock,sizeLandscapeHands} from './tabletop/orientation.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export {opponentReplay,replayCaption};
@@ -36,5 +37,6 @@ export function fitReplay(layer,entry){
  arrangeGameplayHand(layer,landscape);
  applyTabletopMetrics(table,{mode:entry.frame.mode,expansions:entry.frame.config?.expansions||[]});
  fitTabletop(slot,table,{mode:entry.frame.mode,expansions:entry.frame.config?.expansions||[]});
+ fitDenizenCards(slot);
  if(landscape)sizeLandscapeHands(shell.querySelector('.tt6-hand-shelf'));
 }

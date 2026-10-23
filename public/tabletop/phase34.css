@@ -168,3 +168,33 @@
 .game-viewport .tt2-root :is(.tt35-denizen-lane,.tt17-denizen-cards) :is(.tt17-denizen-card,.tt17-denizen-reserve)>.card.tiny{
   width:100%!important;min-width:0!important;height:100%!important;max-width:100%!important;aspect-ratio:1/1.42!important;
 }
+
+/* Denizen collapse guard: a definite physical card rectangle, never a
+   percentage flex-basis tied to an auto-sized child. JS supplies a measured
+   width when the lane is visible; the 44px fallback remains fully legible. */
+.game-viewport .tt2-root :is(.tt35-denizen-lane,.tt17-denizen-cards) :is(.tt17-denizen-holder,.tt17-denizen-reserve){
+  --tt35-width:var(--tt35-measured-width,44px);
+  box-sizing:border-box!important;
+  flex:0 0 var(--tt35-width)!important;
+  width:var(--tt35-width)!important;
+  min-width:var(--tt35-width)!important;
+  max-width:var(--tt35-width)!important;
+  height:calc(var(--tt35-width)*1.42)!important;
+  min-height:calc(var(--tt35-width)*1.42)!important;
+  max-height:calc(var(--tt35-width)*1.42)!important;
+  aspect-ratio:1/1.42!important;
+  overflow:visible!important;
+}
+.game-viewport .tt2-root :is(.tt35-denizen-lane,.tt17-denizen-cards) .tt17-denizen-card,
+.game-viewport .tt2-root :is(.tt35-denizen-lane,.tt17-denizen-cards) :is(.tt17-denizen-card,.tt17-denizen-reserve)>.card.tiny,
+.game-viewport .tt2-root :is(.tt35-denizen-lane,.tt17-denizen-cards) .tt17-denizen-card>.card.tiny{
+  box-sizing:border-box!important;
+  flex:none!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  aspect-ratio:1/1.42!important;
+}
