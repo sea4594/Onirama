@@ -1,0 +1,81 @@
+/* Phase 3 — landscape responsive containment.
+   Portrait composition and card dimensions are intentionally untouched.
+   Overflowing card choices must be reachable, not invisibly cropped by
+   earlier action-dock rules. Canonical card art remains in card-geometry.css. */
+@media (orientation: landscape) {
+  .game-viewport .tt6-workspace .tt6-dock-scroll {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .game-viewport .tt6-workspace .tt6-dock-decision,
+  .game-viewport .tt6-workspace .tt6-dock-decision .decision {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    /* Children own their scrolling; don't clip their scrollports. */
+    overflow: visible !important;
+  }
+  .game-viewport .tt6-dock-decision :is(.tt3-order-list, .tt4-card-choices, .cards) {
+    display: flex !important;
+    flex-flow: row nowrap !important;
+    justify-content: flex-start !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+  }
+  .game-viewport .tt6-dock-decision .tt3-order-list > .tt3-order-item,
+  .game-viewport .tt6-dock-decision .tt4-card-choices > .tt4-card-option {
+    flex: 0 0 auto !important;
+    min-width: 0;
+    max-width: none !important;
+  }
+  /* Hand shelf is outside the transformed tabletop. It may scroll horizontally
+     when enough cards are present to reach the legibility minimum. */
+  .game-viewport > .tt6-hand-shelf :is(.tt2-hand-row, .tt6-hand-cards) {
+    min-width: 0;
+    justify-content: safe center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .game-viewport > .tt6-hand-shelf :is(.tt2-hand-card, .tt6-card-wrap) {
+    flex-shrink: 0 !important;
+  }
+  /* Transforming expansion contents below 28% would render unreadable cards.
+     Retain the readable floor and provide a scrollport only in that case. */
+  .game-viewport .tt2-root[data-tt15-layout]:is([data-tt15-layout="wide"], [data-tt15-layout="short"])
+    .tt5-expansions > .tt5-zone[data-tt-responsive-overflow="true"] {
+    overflow: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+
+/* A portrait tablet has the phone's vertical board composition, but a wider
+   action panel. Keep large card decisions reachable without altering the
+   meticulously tuned phone-portrait footprint. */
+@media (orientation: portrait) and (min-width: 600px) {
+  .game-viewport .tt6-workspace .tt6-dock-scroll {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+  }
+  .game-viewport .tt6-dock-decision :is(.tt3-order-list, .tt4-card-choices, .cards) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+}

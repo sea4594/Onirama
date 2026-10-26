@@ -40,10 +40,16 @@ function fitTiles(table){
   inner.style.transform='';inner.style.left='0px';inner.style.top='18px';
   const width=Math.max(inner.scrollWidth,inner.offsetWidth),height=Math.max(inner.scrollHeight,inner.offsetHeight);
   const availableWidth=Math.max(1,zone.clientWidth-9),availableHeight=Math.max(1,zone.clientHeight-21);
-  const scale=clamp(Math.min(availableWidth/Math.max(1,width),availableHeight/Math.max(1,height)),.28,1);
+  const needed=Math.min(availableWidth/Math.max(1,width),availableHeight/Math.max(1,height));
+  // At the legibility floor, don't silently clip the remaining equipment.
+  // Make that specific zone scrollable instead (the rest stay unchanged).
+  const overflows=needed<.28&&table.dataset.tt15Layout!=='portrait';
+  if(overflows)zone.dataset.ttResponsiveOverflow='true';
+  else delete zone.dataset.ttResponsiveOverflow;
+  const scale=clamp(needed,.28,1);
   inner.style.transform=scale<.995?`scale(${scale})`:'';
-  inner.style.left=`${Math.max(4,(zone.clientWidth-width*scale)/2)}px`;
-  inner.style.top=`${17+Math.max(1,(availableHeight-height*scale)/2)}px`;
+  inner.style.left=overflows?'4px':`${Math.max(4,(zone.clientWidth-width*scale)/2)}px`;
+  inner.style.top=overflows?'18px':`${17+Math.max(1,(availableHeight-height*scale)/2)}px`;
  }
 }
 function assign(table,plan,{mode,width,height,zoneCount,tier,cardFactor=1}={}){

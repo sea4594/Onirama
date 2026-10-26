@@ -5,10 +5,11 @@ const handAnchors = new WeakMap();
 
 export function landscapeCardWidth(width, height, count, {gap=3, heading=17, padding=10}={}) {
   if (count < 1 || width <= 0 || height <= 0) return 0;
-  return Math.max(0, Math.floor(Math.min(
-    (width - padding - gap*(count-1))/count,
-    (height - heading - padding)/CARD_HEIGHT_RATIO
-  )));
+  // Horizontal scrolling is preferable to crushing a crowded hand into
+  // illegible slivers. Respect the available height even on very short phones.
+  const widthFit = Math.floor((width - padding - gap*(count-1))/count);
+  const heightFit = Math.max(0, Math.floor((height - heading - padding)/CARD_HEIGHT_RATIO));
+  return Math.min(heightFit, Math.max(24, widthFit));
 }
 
 export function sizeLandscapeHands(shelf) {
