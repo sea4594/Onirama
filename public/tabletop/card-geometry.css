@@ -101,3 +101,14 @@
 @container (max-width: 35px) {
   .card-kind-denizen > .card-label { display: none !important; }
 }
+
+/* Phase 6: an inline-size container can have a 0px intrinsic grid track in
+   compact draft/hand cards. Anchor Tower artwork to the physical card face,
+   rather than letting percentage-sized children resolve against that track. */
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card).card-kind-tower > .tt5-tower-face {
+  position: absolute !important;
+  inset: 2px !important;
+  width: auto !important;
+  height: auto !important;
+}

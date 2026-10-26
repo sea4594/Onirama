@@ -11,4 +11,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # A real Chrome binary makes geometry regressions release blockers in CI.
+      # Local Macs without Chrome keep the full Node gate and get a visible warning.
+      - uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          chrome-version: stable
       - run: npm run release:gate
+        env:
+          ONIRAMA_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
+          ONIRAMA_REQUIRE_BROWSER: '1'
