@@ -1,0 +1,177 @@
+/* Phase 4 — decision controls use the actual dock space. The established
+   phone-portrait treatment is intentionally left untouched. Cards remain
+   proportional via card-geometry.css; overflowing choices can be scrolled. */
+@media (orientation: landscape), (orientation: portrait) and (min-width: 600px) {
+  .game-viewport .tt6-workspace .tt6-dock-scroll {
+    align-items: safe center !important;
+    justify-content: safe center !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+  }
+  .game-viewport .tt6-workspace .tt6-dock-decision,
+  .game-viewport .tt6-workspace .tt6-dock-decision > .decision {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  .game-viewport .tt6-dock-decision .decision :is(.tt3-order-list,.tt4-card-choices,.tt22-prem-options,.tt21-free-cards,.tt26-fetch-strip) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: safe center !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .game-viewport .tt6-dock-decision .decision .tt3-order-list > .tt3-order-item,
+  .game-viewport .tt6-dock-decision .decision .tt4-card-choices > .tt4-card-option {
+    box-sizing: border-box !important;
+    flex: 0 0 var(--tt36-decision-card, var(--tt26-panel-card)) !important;
+    width: var(--tt36-decision-card, var(--tt26-panel-card)) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  .game-viewport .tt6-dock-decision .decision :is(.tt3-order-handle,.tt4-card-option) .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / var(--tt-card-height-ratio,1.42) !important;
+  }
+  /* Prophecy: the discard remains alongside the ordered cards, and Confirm
+     stays below them. Both groups may be browsed when the device is narrow. */
+  .game-viewport .tt6-dock-decision .decision.tt7-prophecy {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-prophecy > .tt7-compact-row {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    flex-wrap: nowrap !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-prophecy .tt26-prophecy-cards {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: safe center !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-prophecy .tt26-prophecy-cards > .tt3-order-item {
+    flex: 0 0 var(--tt7-card-width) !important;
+    width: var(--tt7-card-width) !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-prophecy .tt7-prophecy-slot {
+    flex-shrink: 0 !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-prophecy > button[data-action="prophecyConfirm"] {
+    flex: 0 0 auto;
+    align-self: center;
+  }
+  /* Happy Dream: keep discard visibly adjacent to retained cards. Each lane
+     scrolls its own contents so its neighbor never gets clipped off-screen. */
+  .game-viewport .tt6-dock-decision .decision.tt23-happy-peek {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-happy-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    justify-content: flex-start !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-happy-row > .tt23-peek-cards {
+    flex: 1 1 62% !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: safe center !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-happy-row > .tt23-happy-discard {
+    flex: 1 1 38% !important;
+    width: auto !important;
+    min-width: min(68px, 30%) !important;
+    max-width: 45% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-happy-discard .tt23-discard-stack {
+    width: max-content !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-peek-cards > .tt3-order-item,
+  .game-viewport .tt6-dock-decision .tt23-discard-stack > .tt23-discard-card {
+    flex: 0 0 var(--tt23-card-width) !important;
+    width: var(--tt23-card-width) !important;
+    min-width: 0 !important;
+  }
+  .game-viewport .tt6-dock-decision .tt23-happy-controls {
+    flex: 0 0 auto !important;
+    position: relative;
+    z-index: 1;
+  }
+  /* Five-card Incantations and their confirmation share the dock without
+     forcing a tiny fixed icon size or hiding the last card. */
+  .game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: safe center !important;
+    min-width: 0 !important;
+  }
+  .game-viewport .tt6-workspace .tt6-dock-decision .tt20-incantation-cards > :is(.tt20-incantation-choice,.tt20-incantation-reveal,.tt3-order-item) {
+    flex: 0 0 var(--tt31-card-width) !important;
+    width: var(--tt31-card-width) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  /* Nightmare options never depend on a single long unbroken row. */
+  .game-viewport .tt6-dock-decision .tt7-night-options {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    width: min(100%, 540px) !important;
+    max-width: 100% !important;
+  }
+  .game-viewport .tt6-dock-decision .tt7-night-options > button {
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+    text-wrap: balance;
+  }
+  /* Multiplayer draft: cards fit when possible; a readable width floor is
+     maintained with a swipeable row if eight cards cannot fit. */
+  .game-viewport .tt28-draft-cards {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    justify-content: safe center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
+    scrollbar-width: thin;
+  }
+  .game-viewport .tt28-draft-cards > .card {
+    box-sizing: border-box !important;
+    flex: 0 0 var(--tt36-draft-card, 48px) !important;
+    width: var(--tt36-draft-card, 48px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    aspect-ratio: 1 / var(--tt-card-height-ratio,1.42) !important;
+  }
+}

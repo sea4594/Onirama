@@ -6,6 +6,7 @@ import {renderSpellbook,spellEligibility} from './tabletop/spellbook.js';
 import {createCardInspector,cardHelp} from './tabletop/card-inspection.js';
 import {applyTabletopMetrics} from './tabletop/layout.js';
 import {fitTabletop} from './tabletop/fit.js';
+import {fitDecisionPanel} from './tabletop/decision-fit-phase4.js';
 import {fitDenizenCards} from './tabletop/denizen-fit.js';
 import {captureLabyrinthScroll,restoreLabyrinthScroll} from './tabletop/labyrinth-scroll.js';
 import {viewportRefitPlan} from './tabletop/viewport-refit.js';
@@ -644,6 +645,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
   if(inGame){
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
+    if(typeof fitDecisionPanel==='function')fitDecisionPanel(app);
     tabletopController?.syncTargets?.(selected||'');
     const pending=state.game.pending;
     if(failsafeChoosing&&state.game.phase==='action'&&state.room?.seat===state.game.active&&state.game.expansion?.dreamcatchers){
@@ -1098,6 +1100,7 @@ function resizeGameplay(){
   if(table&&viewport){table.style.transform='';table.style.zoom='1';table.style.width=`${viewport.clientWidth}px`;table.style.height='auto';}
   applyTabletopMetrics(table,{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
   fitGameTabletop();
+  if(typeof fitDecisionPanel==='function')fitDecisionPanel(app);
   if(typeof restoreLabyrinthScroll==='function')restoreLabyrinthScroll(app,labyrinthScroll);
  }
 }
