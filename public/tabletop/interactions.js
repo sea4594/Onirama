@@ -208,8 +208,19 @@ export function animateReorderCommit(root,kind,movedId,commit,{releasedRect=null
     return map;
   };
   const before=rects();
+  // Rebuilding a decision panel must not strand keyboard players on the page
+  // body after they move a card. Follow the same card, not its old position.
+  const active=typeof document==='undefined'?null:document.activeElement;
+  const focusedHandle=active?.closest?.('[data-tt-order-handle]');
+  const restoreFocus=focusedHandle&&root?.contains?.(focusedHandle)
+    ?focusedHandle.dataset.ttOrderHandle:null;
   // Reducers and rendering are authoritative; motion is purely decorative.
   const result=commit();
+  if(restoreFocus){
+    const handle=[...(root?.querySelectorAll?.('[data-tt-order-handle]')||[])]
+      .find(el=>el.dataset.ttOrderHandle===restoreFocus);
+    handle?.focus?.({preventScroll:true});
+  }
   if(reduced||typeof document==='undefined'||document.documentElement.dataset.motion==='reduced'||
     (typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches))return result;
   const after=rects();
@@ -266,11 +277,48 @@ export function gapAtPoint(list,x,y){
  for(const c of row.cards)if(x<c.box.left+c.box.width/2)return c.index;
  return row.cards.at(-1).index+1;
 }
+/** Edge-driven auto-scroll for decision rows; zero in the safe central area.
+ * Works with either mouse or stationary touch, without changing card geometry. */
+export function reorderEdgeScrollDelta(x,left,right,{edge=36,maxStep=14}={}){
+  if(![x,left,right].every(Number.isFinite)||right<=left)return 0;
+  const threshold=Math.max(1,Math.min(edge,(right-left)/3));
+  if(x<left+threshold)return -Math.max(1,Math.round(maxStep*Math.min(1,(left+threshold-x)/threshold)));
+  if(x>right-threshold)return Math.max(1,Math.round(maxStep*Math.min(1,(x-(right-threshold))/threshold)));
+  return 0;
+}
 export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{},onRestore=()=>{},onUndiscard=()=>{}}){
-  let press=null,ghost=null,highlight=null,tap=null,suppress=false;
+  let press=null,ghost=null,highlight=null,tap=null,suppress=false,scrollFrame=null,scrollPointer=null;
   const group=kind=>[...root.querySelectorAll('[data-tt-order-group]')].find(l=>l.dataset.ttOrderGroup===kind);
+  const raf=callback=>typeof requestAnimationFrame==='function'?requestAnimationFrame(callback):null;
+  const cancelFrame=id=>{if(id!==null&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(id);};
+  function stopEdgeScroll(){cancelFrame(scrollFrame);scrollFrame=null;scrollPointer=null;}
+  function edgeTick(){
+    scrollFrame=null;
+    if(!press?.dragging||!scrollPointer)return;
+    const list=group(press.kind==='happyDiscard'?'effect':press.kind);
+    if(!list||!list.isConnected){stopEdgeScroll();return;}
+    const bounds=list.getBoundingClientRect();
+    if(scrollPointer.y<bounds.top-42||scrollPointer.y>bounds.bottom+42){stopEdgeScroll();return;}
+    const dx=list.scrollWidth>list.clientWidth
+      ?reorderEdgeScrollDelta(scrollPointer.x,bounds.left,bounds.right):0;
+    let advanced=false;
+    if(dx){
+      const before=list.scrollLeft;
+      list.scrollLeft=Math.max(0,Math.min(list.scrollWidth-list.clientWidth,before+dx));
+      if(list.scrollLeft!==before){
+        advanced=true;
+        const gap=gapAtPoint(list,scrollPointer.x,scrollPointer.y);
+        if(gap!==null)markGap(list,gap);
+      }
+    }
+    if(advanced&&scrollPointer&&press?.dragging)scrollFrame=raf(edgeTick);
+  }
+  function watchEdge(x,y){
+    scrollPointer={x,y};
+    if(scrollFrame===null)scrollFrame=raf(edgeTick);
+  }
   function eraseLine(){highlight?.classList.remove('tt5-insert-before','tt5-insert-after');highlight=null;}
-  function clear(){ghost?.remove();ghost=null;eraseLine();press?.item?.classList.remove('tt3-order-dragging');press=null;}
+  function clear(){stopEdgeScroll();ghost?.remove();ghost=null;eraseLine();press?.item?.classList.remove('tt3-order-dragging');press=null;}
   function cancelTap(){
     root.querySelectorAll('.tt5-order-selected,.tt5-order-picking').forEach(el=>el.classList.remove('tt5-order-selected','tt5-order-picking'));
     root.querySelectorAll('[data-tt-order-gap]').forEach(el=>el.remove());tap=null;
@@ -278,6 +326,7 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
   // Markers are layered over the actual gaps, not inserted into the flex flow:
   // even densely packed decision cards stay at their existing sizes/positions.
   function showGaps(list,id,kind){
+    list.querySelectorAll('[data-tt-order-gap]').forEach(marker=>marker.remove());
     const items=[...list.querySelectorAll(':scope > [data-tt-order-id]')],origin=items.findIndex(item=>item.dataset.ttOrderId===id);
     if(origin<0)return;
     const area=list.getBoundingClientRect();
@@ -299,6 +348,23 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
       list.appendChild(marker);
     }
   }
+  function syncGeometry(){
+    if(!tap)return;
+    const list=group(tap.kind);
+    const item=[...(list?.querySelectorAll?.(':scope > [data-tt-order-id]')||[])]
+      .find(el=>el.dataset.ttOrderId===tap.id);
+    if(!item||!canReorder(tap.kind)){cancelTap();return;}
+    // The dock can be refitted after selection (including iOS rotation).
+    // Recompute marker coordinates from the actual current card rectangles.
+    const focused=typeof document==='undefined'?null:document.activeElement;
+    const focusedGap=focused?.dataset?.ttOrderGap;
+    item.classList.add('tt5-order-selected');list.classList.add('tt5-order-picking');
+    showGaps(list,tap.id,tap.kind);
+    if(focusedGap!==undefined){
+      [...list.querySelectorAll('[data-tt-order-gap]')]
+        .find(el=>el.dataset.ttOrderGap===focusedGap)?.focus?.({preventScroll:true});
+    }
+  }
   function markGap(list,gap){
     eraseLine();const items=[...list.querySelectorAll(':scope > [data-tt-order-id]')];
     highlight=gap===items.length?items.at(-1):items[gap];
@@ -307,8 +373,6 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
   function dragGap(x,y){
     const list=group(press.kind==='happyDiscard'?'effect':press.kind);if(!list)return null;
     const rect=list.getBoundingClientRect();if(y<rect.top-45||y>rect.bottom+45||x<rect.left-42||x>rect.right+42)return null;
-    if(x<rect.left+30)list.scrollLeft-=11;
-    if(x>rect.right-30)list.scrollLeft+=11;
     return {list,index:gapAtPoint(list,x,y)??0};
   }
   function down(e){
@@ -335,11 +399,17 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
       card.setAttribute('aria-hidden','true');document.body.appendChild(card);ghost=card;
     }
     e.preventDefault();ghost.style.left=`${e.clientX-press.offsetX}px`;ghost.style.top=`${e.clientY-press.offsetY}px`;
-    const target=dragGap(e.clientX,e.clientY);if(target)markGap(target.list,target.index);else eraseLine();
+    const target=dragGap(e.clientX,e.clientY);if(target){markGap(target.list,target.index);watchEdge(e.clientX,e.clientY);}else{eraseLine();stopEdgeScroll();}
   }
   function up(e){
     if(!press||e.pointerId!==press.pointerId)return;
     const {dragging,id}=press,target=dragging?dragGap(e.clientX,e.clientY):null;
+    // iOS pointerup may have no final pointermove. Continue the reorder from
+    // the actual finger release coordinates, as for normal hand card drops.
+    if(dragging&&ghost){
+      ghost.style.left=`${e.clientX-press.offsetX}px`;
+      ghost.style.top=`${e.clientY-press.offsetY}px`;
+    }
     const releasedRect=dragging?ghost?.getBoundingClientRect?.():null;
     const isHappy=press.kind==='effect'&&root.querySelector('[data-tt-happy-discard]');
     const slot=isHappy|| (press.kind==='prophecy'?root.querySelector('[data-tt-prophecy-discard]'):null);
@@ -399,9 +469,14 @@ export function createDecisionReorder({root,canReorder,onReorder,onDiscard=()=>{
     }
     if(e.key==='Enter'||e.key===' '){activate(item);e.preventDefault();}
   }
+  // Scroll offsets and refits can move insertion gaps without changing the
+  // selected card. Keep markers aligned with the live (possibly scrollable) row.
+  function onScroll(e){if(tap&&e.target?.closest?.('[data-tt-order-group]'))syncGeometry();}
+  root.addEventListener('scroll',onScroll,true);
+  window.addEventListener('resize',syncGeometry);
   root.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});
   window.addEventListener('pointerup',up);window.addEventListener('pointercancel',clear);window.addEventListener('blur',clear);
   root.addEventListener('click',click,true);root.addEventListener('keydown',key);
-  return {dispose(){clear();cancelTap();root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key);}};
+  return {syncGeometry,dispose(){clear();cancelTap();root.removeEventListener('scroll',onScroll,true);window.removeEventListener('resize',syncGeometry);root.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',clear);window.removeEventListener('blur',clear);root.removeEventListener('click',click,true);root.removeEventListener('keydown',key);}};
 }
 

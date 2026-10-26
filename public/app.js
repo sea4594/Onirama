@@ -646,6 +646,7 @@ function render(){if(state?.game?.phase!=='action'||state?.game?.status!=='activ
     applyTabletopMetrics(app.querySelector?.('.tt2-root'),{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
     fitGameTabletop();
     if(typeof fitDecisionPanel==='function')fitDecisionPanel(app);
+    decisionReorderController?.syncGeometry?.();
     tabletopController?.syncTargets?.(selected||'');
     const pending=state.game.pending;
     if(failsafeChoosing&&state.game.phase==='action'&&state.room?.seat===state.game.active&&state.game.expansion?.dreamcatchers){
@@ -972,7 +973,7 @@ async function handle(actionName){
 }
 // Interaction adapter: gestures never mutate state. They produce the same
 // validated play/discard commands as the original buttons.
-let tabletopController=null,dialogController=null,cardInspector=null;
+let tabletopController=null,decisionReorderController=null,dialogController=null,cardInspector=null;
 let tabletopAnimator=typeof createTabletopAnimator==='function'?createTabletopAnimator({root:app}):null;
 function installTabletopController(){
   if(typeof createTabletopInteractions!=='function')return; // lightweight legacy UI test harness
@@ -992,7 +993,7 @@ function installTabletopController(){
       return action({type,id});
     }
   });
-  createDecisionReorder({root:app,
+  decisionReorderController=createDecisionReorder({root:app,
     canReorder:kind=>!busy&&page==='#/game'&&state?.game?.phase==='decision'&&state.room?.seat===state.game.active&&['effect','prophecy'].includes(kind)&&!(kind==='effect'&&state.game.pending?.type==='incantation'&&state.game.pending.cards.some(c=>c.kind==='door')),
     onUndiscard:()=>{if(state?.game?.pending?.type!=='prophecy'||!prophecyDiscard)return;prophecyDiscard=null;render();},
     onDiscard:id=>{if(state?.game?.pending?.type==='happyPeek'){effectDiscards.add(id);render();return;}if(state?.game?.pending?.type!=='prophecy')return;prophecyDiscard=id;render();},
@@ -1101,6 +1102,7 @@ function resizeGameplay(){
   applyTabletopMetrics(table,{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
   fitGameTabletop();
   if(typeof fitDecisionPanel==='function')fitDecisionPanel(app);
+  decisionReorderController?.syncGeometry?.();
   if(typeof restoreLabyrinthScroll==='function')restoreLabyrinthScroll(app,labyrinthScroll);
  }
 }

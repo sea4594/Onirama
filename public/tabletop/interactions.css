@@ -59,3 +59,8 @@
 }
 /* Reordering cards must never add a tinted backing behind the cards. */
 .game-viewport .tt6-dock-decision :is(.tt3-order-list,.tt24-reveal-list,.tt20-incantation-cards,.tt23-peek-cards,.tt3-order-item.tt5-order-selected){background:transparent!important;box-shadow:none!important}
+
+/* UI Phase 5: the draggable preview remains the same physical card face.
+   No independent rotation or magnification, regardless of gesture type. */
+.tt3-ghost{transform:none!important}
+.tt3-order-ghost{transform:none}
