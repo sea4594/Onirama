@@ -71,7 +71,7 @@ test('Only the active multiplayer owner can select a stored Treasure Keeper card
 });
 
 function row(name,ids,scrollLeft=0,width=175){
- const lane={dataset:{tabletopScroll:name},scrollLeft,scrollWidth:width,
+ const lane={dataset:{tabletopScroll:name},scrollLeft,scrollWidth:width,clientWidth:100,
   querySelectorAll:()=>ids.map(id=>({getAttribute:()=>id}))};
  return lane;
 }
@@ -83,13 +83,13 @@ test('Labyrinth follows a new card all the way to the next slot but preserves ma
  lanes[0]=row('labyrinth-0',['a','b','c'],0,460);
  lanes[1]=row('labyrinth-1',['p'],0,250);
  restoreLabyrinthScroll(root(lanes),before);
- assert.equal(lanes[0].scrollLeft,460);
+ assert.equal(lanes[0].scrollLeft,360);
  assert.equal(lanes[1].scrollLeft,7);
  // Replacement at the same count still exposes the next slot.
  const again=captureLabyrinthScroll(root(lanes));
  lanes[0]=row('labyrinth-0',['a','b','d'],0,495);
  restoreLabyrinthScroll(root(lanes),again);
- assert.equal(lanes[0].scrollLeft,495);
+ assert.equal(lanes[0].scrollLeft,395);
 });
 
 test('Old Denizen interrupt powers are retained but stored cards cannot be used by interrupts',()=>{

@@ -1086,6 +1086,9 @@ render();if(typeof createCardInspector==='function')cardInspector=createCardInsp
 // iOS updates layout/visual viewports over several frames after rotation.
 // Every fit starts from untransformed tabletop geometry in fitTabletop().
 function resizeGameplay(){
+ // A refit can change the row's scrollable width without changing its cards.
+ // Preserve the active-end anchor (or deliberate manual inspection position).
+ const labyrinthScroll=typeof captureLabyrinthScroll==='function'?captureLabyrinthScroll(app):new Map();
  if(replayFrames.length)fitReplay(app.querySelector?.('[data-replay-layer]'),replayFrames[replayIndex]);
  if(page==='#/game'&&state?.room?.started){
   const table=app.querySelector?.('.tt2-root');
@@ -1095,6 +1098,7 @@ function resizeGameplay(){
   if(table&&viewport){table.style.transform='';table.style.zoom='1';table.style.width=`${viewport.clientWidth}px`;table.style.height='auto';}
   applyTabletopMetrics(table,{mode:state.game.mode,expansions:state.game.config?.expansions||[]});
   fitGameTabletop();
+  if(typeof restoreLabyrinthScroll==='function')restoreLabyrinthScroll(app,labyrinthScroll);
  }
 }
 let viewportRefits=[];
