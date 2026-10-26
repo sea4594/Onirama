@@ -1,3 +1,4 @@
+import {CARD_HEIGHT_RATIO} from './card-geometry.js';
 /* Move the original hand DOM, not a clone, so selection/dragging and private
    multiplayer card backs retain their existing identities across rotation. */
 const handAnchors = new WeakMap();
@@ -6,7 +7,7 @@ export function landscapeCardWidth(width, height, count, {gap=3, heading=17, pad
   if (count < 1 || width <= 0 || height <= 0) return 0;
   return Math.max(0, Math.floor(Math.min(
     (width - padding - gap*(count-1))/count,
-    (height - heading - padding)/1.42
+    (height - heading - padding)/CARD_HEIGHT_RATIO
   )));
 }
 

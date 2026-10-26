@@ -1,3 +1,4 @@
+import {CARD_HEIGHT_RATIO,cardHeight} from './card-geometry.js';
 // Size Denizen cards against the lane's measured, unscaled content width.
 // A card always retains a definite width and height: percentage-based flex
 // sizing with height:auto can form a circular intrinsic-size dependency and
@@ -23,7 +24,7 @@ function setRect(el,width,height){
   ['box-sizing','border-box'],['width',`${width}px`],['min-width',`${width}px`],
   ['max-width',`${width}px`],['height',`${height}px`],
   ['min-height',`${height}px`],['max-height',`${height}px`],
-  ['flex',`0 0 ${width}px`],['aspect-ratio','1 / 1.42']
+  ['flex',`0 0 ${width}px`],['aspect-ratio',`1 / ${CARD_HEIGHT_RATIO}`]
  ])style.setProperty(name,value,'important');
 }
 export function fitDenizenCards(root){
@@ -38,7 +39,7 @@ export function fitDenizenCards(root){
   const gap=parseFloat(css?.columnGap||css?.gap)||3;
   const width=denizenCardWidth(Math.max(0,(lane.clientWidth||0)-pad),cards.length,gap);
   lane.style?.setProperty?.('--tt35-measured-width',`${width}px`);
-  const height=Math.round(width*1.42*100)/100;
+  const height=Math.round(cardHeight(width)*100)/100;
   for(const holder of cards){
    setRect(holder,width,height);
    // Keeper reserves are cards themselves; rallied Denizens are inside a

@@ -1,0 +1,103 @@
+/* Phase 2: one card-relative illustration coordinate system.
+   Import LAST, after the legacy tabletop styles. Each area decides how wide
+   its card can be; it must not independently size the art inside that card.
+   Width is the only dimension used for illustration geometry (cqw or %).
+   This does NOT change the existing portrait/tabletop grid or zone order. */
+:root { --tt-card-height-ratio: 1.42; }
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card, .tt9-log-card .card) {
+  box-sizing: border-box !important;
+  aspect-ratio: 1 / var(--tt-card-height-ratio) !important;
+  container-type: inline-size;
+  position: relative;
+}
+
+/* Hands, multiplayer draft and decision previews must obtain HEIGHT from
+   their allotted WIDTH. Do not force this on stack faces that are already
+   measured by the deck/pile or Denizen fitters. */
+.game-viewport :is(.tt2-hand-card, .tt6-card-wrap, .tt6-draft-cards,
+    .tt3-order-handle, .tt4-card-option, .tt22-prem-key, .tt22-denizen-choice) .card,
+.game-viewport .tt6-hand-shelf :is(.tt2-hand-card, .tt6-card-wrap) .card {
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / var(--tt-card-height-ratio) !important;
+}
+
+/* All illustrated faces use the same square SVG viewport inside the card.
+   The SVG itself always fills its square and never inherits a viewport-font
+   width, so Draft / Hand / Discard / Animation show exactly the same art. */
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card):not(.card-kind-tower) > .symbol {
+  --tt-card-art-width: 66%;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: var(--tt-card-art-width) !important;
+  height: auto !important;
+  max-width: var(--tt-card-art-width) !important;
+  max-height: none !important;
+  aspect-ratio: 1 !important;
+  transform: translate(-50%, -50%) !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card):not(.card-kind-tower).card-kind-location > .symbol {
+  --tt-card-art-width: 59%;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card):not(.card-kind-tower).card-kind-door > .symbol {
+  --tt-card-art-width: 74%;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card):not(.card-kind-tower).card-kind-denizen > .symbol {
+  --tt-card-art-width: 64%;
+  top: 45% !important;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card,
+    .tt6-pile-inspector .card):not(.card-kind-tower) > .symbol > .ui-icon {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+/* Tower uses the same physical card container. Its separate emblem, edge
+   Sun/Moon icons, and number are already measured from the card face by the
+   canonical Tower rules in card-system.css, not from screen-sized fonts. */
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card).card-kind-tower > .tt5-tower-face {
+  display: block !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card).card-kind-tower .tt8-tower-mark > .ui-icon,
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card).card-kind-tower .tt11-tower-emblem > .ui-icon {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Denizen name labels shrink with the card; miniature cards show the emblem
+   alone (full names remain available via inspection/accessibility labels). */
+:is(.game-viewport .card, .tt8-flying-card.card, .tt10-reveal-front > .card).card-kind-denizen:not(.tiny) > .card-label {
+  font-size: clamp(6px, 13cqw, 11px) !important;
+  max-width: 94% !important;
+  box-sizing: border-box !important;
+}
+@container (max-width: 35px) {
+  .card-kind-denizen > .card-label { display: none !important; }
+}

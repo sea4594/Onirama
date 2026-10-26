@@ -1,3 +1,4 @@
+import {fitCardRect,cardHeight} from './card-geometry.js';
 import {CARD_MOTION,cardTransferDuration,catcherTransferCounts} from './animation-timing.js';
 import {renderCard} from './cards.js';
 import {planExpansionMotion,expansionMotionSignature,expansionDestinationRect} from './animation-expansions.js';
@@ -183,11 +184,7 @@ export function flightGeometry(from,to){
 export function cardFlightRects(from,to,card=true){
   if(!rectOK(from)||!rectOK(to))return null;
   if(!card)return {from,to};
-  const fit=r=>{
-    const width=Math.min(r.width,r.height/1.42),height=width*1.42;
-    return {left:r.left+(r.width-width)/2,top:r.top+(r.height-height)/2,width,height};
-  };
-  return {from:fit(from),to:fit(to)};
+  return {from:fitCardRect(from),to:fitCardRect(to)};
 }
 function animateFlight(template,from,to,target,delay,active,scope,count=1){
   if(!rectOK(from)||!rectOK(to))return;
@@ -238,7 +235,7 @@ export function revealCenter(from,to,{screenWidth,screenHeight,cardWidth,cardHei
 const publicCardMap=game=>new Map(arrays(game).flatMap(a=>cards(a).map(c=>[c.id,c])));
 function revealGhost(card,from,to,delay,cleanups,{premonition=false,target=null,scope=null}={}){
  if(!rectOK(from)||!rectOK(to)||typeof document==='undefined')return;
- const width=Math.min(148,Math.max(93,innerWidth*.26)),height=Math.round(width*1.42);
+ const width=Math.min(148,Math.max(93,innerWidth*.26)),height=Math.round(cardHeight(width));
  const {x:cx,y:cy}=revealCenter(from,to,{screenWidth:innerWidth,screenHeight:innerHeight,cardWidth:width,cardHeight:height});
  if(target)target.style.visibility='hidden';
  const overlay=document.createElement('div');overlay.className='tt10-reveal-flight';
